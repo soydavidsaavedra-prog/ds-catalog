@@ -13,8 +13,8 @@ type Props = {
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
 
-  const product = catalogEngine.getProductBySlug(slug);
-
+  const product = await catalogEngine.getProductBySlug(slug);
+  
   if (!product) {
     notFound();
   }

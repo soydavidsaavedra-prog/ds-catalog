@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import DSHeading from "@/components/ui/DSHeading";
-import DSProductForm from "@/components/admin/products/DSProductForm";
+import DSProductForm from "@/components/admin/products/product-form/DSProductForm";
 
 import { catalogEngine } from "@/engines/catalog/catalog.engine";
 
@@ -16,9 +16,10 @@ export default async function EditProductPage({
 }: Props) {
   const { id } = await params;
 
-  const product = catalogEngine.getProductById(
-    Number(id)
-  );
+  const product =
+    await catalogEngine.getProductById(
+      Number(id)
+    );
 
   if (!product) {
     notFound();

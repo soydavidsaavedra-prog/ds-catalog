@@ -1,4 +1,5 @@
 import type { Product } from "@/types/product";
+import type { ProductImage } from "@/types/product-image";
 
 type SupabaseProduct = {
   id: number;
@@ -16,46 +17,42 @@ type SupabaseProduct = {
   active: boolean;
   featured: boolean;
   tags: string[];
-  images: string[];
+  images: (string | ProductImage)[];
   variants: Product["variants"];
 };
 
-export function mapProduct(
-  product: SupabaseProduct
-): Product {
+export function mapProduct(product: SupabaseProduct): Product {
   return {
     id: product.id,
-
     slug: product.slug,
-
     sku: product.sku,
-
     name: product.name,
-
     shortDescription: product.short_description,
-
     description: product.description,
-
     brand: product.brand,
-
     category: product.category,
-
     price: Number(product.price),
-
     compareAtPrice: Number(product.compare_at_price),
-
     currency: product.currency,
-
     stock: product.stock,
-
     active: product.active,
-
     featured: product.featured,
+    tags: product.tags ?? [],
 
-    tags: product.tags,
+    images: (product.images ?? []).map((image) => {
+      if (typeof image === "string") {
+        return {
+          path: image.replace(/^\/products\//, ""),
+          alt: "",
+        };
+      }
 
-    images: product.images,
+      return {
+        path: image.path,
+        alt: image.alt ?? "",
+      };
+    }),
 
-    variants: product.variants,
+    variants: product.variants ?? [],
   };
 }

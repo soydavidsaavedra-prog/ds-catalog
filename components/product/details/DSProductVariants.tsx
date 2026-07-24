@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ProductVariant } from "@/types/product";
+
+import type {
+  ProductVariant,
+  ProductSize,
+} from "@/types/product";
+
 import DSWhatsAppButton from "./DSWhatsAppButton";
 
 type Props = {
@@ -13,8 +18,13 @@ export default function DSProductVariants({
   productName,
   variants,
 }: Props) {
-  const [selectedColor, setSelectedColor] = useState(variants[0]);
-  const [selectedSize, setSelectedSize] = useState<number>();
+  const [selectedColor, setSelectedColor] = useState<ProductVariant>(
+    variants[0]
+  );
+
+  const [selectedSize, setSelectedSize] = useState<
+    ProductSize | undefined
+  >();
 
   useEffect(() => {
     setSelectedSize(selectedColor.sizes[0]);
@@ -22,7 +32,6 @@ export default function DSProductVariants({
 
   return (
     <div className="space-y-6">
-
       <div>
         <h3 className="mb-3 font-semibold">
           Color
@@ -31,10 +40,11 @@ export default function DSProductVariants({
         <div className="flex flex-wrap gap-2">
           {variants.map((variant) => (
             <button
-              key={variant.color}
+              key={variant.id}
+              type="button"
               onClick={() => setSelectedColor(variant)}
               className={`rounded-xl border px-4 py-2 transition ${
-                selectedColor.color === variant.color
+                selectedColor.id === variant.id
                   ? "bg-black text-white"
                   : "bg-white"
               }`}
@@ -53,15 +63,16 @@ export default function DSProductVariants({
         <div className="flex flex-wrap gap-2">
           {selectedColor.sizes.map((size) => (
             <button
-              key={size}
+              key={size.id}
+              type="button"
               onClick={() => setSelectedSize(size)}
               className={`rounded-xl border px-4 py-2 transition ${
-                selectedSize === size
+                selectedSize?.id === size.id
                   ? "bg-black text-white"
                   : "bg-white"
               }`}
             >
-              {size}
+              {size.size}
             </button>
           ))}
         </div>
@@ -70,9 +81,8 @@ export default function DSProductVariants({
       <DSWhatsAppButton
         productName={productName}
         color={selectedColor.color}
-        size={selectedSize}
+        size={selectedSize?.size}
       />
-
     </div>
   );
 }

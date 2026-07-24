@@ -1,8 +1,7 @@
-import { products } from "@/data/products";
 import type { Product } from "@/types/product";
 
 class SearchEngine {
-  search(query: string): Product[] {
+  search(products: Product[], query: string): Product[] {
     if (!query.trim()) return products;
 
     const value = query.toLowerCase();
@@ -19,11 +18,11 @@ class SearchEngine {
     });
   }
 
-  getBrands() {
+  getBrands(products: Product[]) {
     return [...new Set(products.map((p) => p.brand))].sort();
   }
 
-  getCategories() {
+  getCategories(products: Product[]) {
     return [...new Set(products.map((p) => p.category))].sort();
   }
 }

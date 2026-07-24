@@ -1,43 +1,108 @@
-import { products } from "@/data/products";
+import { supabase } from "@/lib/supabase";
+import { mapProduct } from "@/mappers/product.mapper";
 import type { Product } from "@/types/product";
 
 class ProductRepository {
-  getAll(): Product[] {
-    return [...products];
+  async getAll(): Promise<Product[]> {
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .order("id");
+
+    if (error) throw error;
+
+    console.log("RAW PRODUCTS", data);
+
+    return (data ?? []).map(mapProduct);
   }
 
-  getById(id: number): Product | undefined {
-    return products.find((product) => product.id === id);
+  async getById(id: number): Promise<Product | null> {
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) return null;
+
+    console.log("RAW PRODUCT", data);
+
+    return mapProduct(data);
   }
 
-  getBySlug(slug: string): Product | undefined {
-    return products.find((product) => product.slug === slug);
+  async getBySlug(slug: string): Promise<Product | null> {
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .eq("slug", slug)
+      .single();
+
+    if (error) return null;
+
+    console.log("RAW PRODUCT", data);
+
+    return mapProduct(data);
   }
 
-  create(product: Product): void {
-    products.push(product);
+  async create(product: Product) {
+    const { error } = await supabase
+      .from("products")
+      .insert({
+        slug: product.slug,
+        sku: product.sku,
+        name: product.name,
+        short_description: product.shortDescription,
+        description: product.description,
+        brand: product.brand,
+        category: product.category,
+        price: product.price,
+        compare_at_price: product.compareAtPrice,
+        currency: product.currency,
+        stock: product.stock,
+        active: product.active,
+        featured: product.featured,
+        tags: product.tags,
+        images: product.images,
+        variants: product.variants,
+      });
+
+    if (error) throw error;
   }
 
-  update(product: Product): void {
-    const index = products.findIndex(
-      (p) => p.id === product.id
-    );
+  async update(product: Product) {
+    const { error } = await supabase
+      .from("products")
+      .update({
+        slug: product.slug,
+        sku: product.sku,
+        name: product.name,
+        short_description: product.shortDescription,
+        description: product.description,
+        brand: product.brand,
+        category: product.category,
+        price: product.price,
+        compare_at_price: product.compareAtPrice,
+        currency: product.currency,
+        stock: product.stock,
+        active: product.active,
+        featured: product.featured,
+        tags: product.tags,
+        images: product.images,
+        variants: product.variants,
+      })
+      .eq("id", product.id);
 
-    if (index >= 0) {
-      products[index] = product;
-    }
+    if (error) throw error;
   }
 
-  delete(id: number): void {
-    const index = products.findIndex(
-      (p) => p.id === id
-    );
+  async delete(id: number) {
+    const { error } = await supabase
+      .from("products")
+      .delete()
+      .eq("id", id);
 
-    if (index >= 0) {
-      products.splice(index, 1);
-    }
+    if (error) throw error;
   }
 }
 
-export const productRepository =
-  new ProductRepository();
+export const productRepository = new ProductRepository();

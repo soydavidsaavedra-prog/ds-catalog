@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+
+import type { ProductImage } from "@/types/product-image";
+
 import DSGalleryMain from "./DSGalleryMain";
 import DSGalleryThumbs from "./DSGalleryThumbs";
 
 type Props = {
-  images: string[];
+  images: ProductImage[];
   name: string;
 };
 
@@ -15,11 +18,13 @@ export default function DSGallery({
 }: Props) {
   const [current, setCurrent] = useState(0);
 
+  const currentImage = images[current];
+
   return (
     <div>
       <DSGalleryMain
-        image={images[current]}
-        alt={name}
+        image={currentImage?.path ?? ""}
+        alt={currentImage?.alt || name}
       />
 
       <DSGalleryThumbs

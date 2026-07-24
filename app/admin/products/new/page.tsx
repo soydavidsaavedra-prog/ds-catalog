@@ -1,5 +1,5 @@
 import DSHeading from "@/components/ui/DSHeading";
-import DSProductForm from "@/components/admin/products/DSProductForm";
+import DSProductForm from "@/components/admin/products/product-form/DSProductForm";
 
 export default function NewProductPage() {
   return (

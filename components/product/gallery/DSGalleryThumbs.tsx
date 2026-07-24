@@ -2,8 +2,10 @@
 
 import Image from "next/image";
 
+import type { ProductImage } from "@/types/product-image";
+
 type Props = {
-  images: string[];
+  images: ProductImage[];
   current: number;
   onChange: (index: number) => void;
 };
@@ -17,7 +19,8 @@ export default function DSGalleryThumbs({
     <div className="mt-4 flex gap-3">
       {images.map((image, index) => (
         <button
-          key={image}
+          key={image.path}
+          type="button"
           onClick={() => onChange(index)}
           className={`relative h-20 w-20 overflow-hidden rounded-lg border-2 ${
             current === index
@@ -26,8 +29,8 @@ export default function DSGalleryThumbs({
           }`}
         >
           <Image
-            src={image}
-            alt=""
+            src={image.path}
+            alt={image.alt}
             fill
             className="object-cover"
           />

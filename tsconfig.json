@@ -1,6 +1,5 @@
 {
-  "compilerOptions": { 
-    "ignoreDeprecations": "6.0",
+  "compilerOptions": {
     "target": "ES2017",
 
     "lib": [
@@ -19,6 +18,8 @@
     "module": "esnext",
     "moduleResolution": "bundler",
 
+    "baseUrl": ".",
+
     "resolveJsonModule": true,
     "isolatedModules": true,
 
@@ -26,10 +27,10 @@
 
     "incremental": true,
 
-    "baseUrl": ".",
-
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ]
     },
 
     "plugins": [

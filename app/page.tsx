@@ -1,10 +1,12 @@
 import DSProductGrid from "@/components/catalog/grid/DSProductGrid";
+import { catalogEngine } from "@/engines/catalog/catalog.engine";
 import { storeEngine } from "@/engines/store/store.engine";
 
-export default function Home() {
+export default async function Home() {
+  const products = await catalogEngine.getAllProducts();
+
   return (
     <main className="mx-auto max-w-7xl px-8 py-10">
-
       <h1 className="text-center text-5xl font-bold">
         {storeEngine.getName()}
       </h1>
@@ -14,9 +16,8 @@ export default function Home() {
       </p>
 
       <div className="mt-10">
-        <DSProductGrid />
+        <DSProductGrid products={products} />
       </div>
-
     </main>
   );
 }

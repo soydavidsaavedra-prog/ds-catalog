@@ -1,51 +1,24 @@
-import DSHeading from "@/components/ui/DSHeading";
-import DSDashboardCard from "@/components/admin/dashboard/DSDashboardCard";
+import Link from "next/link";
 
-import { statisticsEngine } from "@/engines/statistics/statistics.engine";
+import DSButton from "@/components/ui/DSButton";
+import DSProductsTable from "@/components/admin/products/DSProductsTable";
+import DSAdminHeader from "@/components/admin/layout/DSAdminHeader";
 
-export default function AdminPage() {
+export default async function ProductsPage() {
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
+      <DSAdminHeader
+        title="Productos"
+        subtitle="Administra el catálogo."
+      >
+        <Link href="/admin/products/new">
+          <DSButton>
+            + Nuevo producto
+          </DSButton>
+        </Link>
+      </DSAdminHeader>
 
-      <DSHeading
-        title="Dashboard"
-        subtitle="Resumen general de la tienda."
-      />
-
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-
-        <DSDashboardCard
-          title="Productos"
-          value={statisticsEngine.totalProducts()}
-        />
-
-        <DSDashboardCard
-          title="Marcas"
-          value={statisticsEngine.totalBrands()}
-        />
-
-        <DSDashboardCard
-          title="Categorías"
-          value={statisticsEngine.totalCategories()}
-        />
-
-        <DSDashboardCard
-          title="Stock"
-          value={statisticsEngine.totalStock()}
-        />
-
-        <DSDashboardCard
-          title="Destacados"
-          value={statisticsEngine.totalFeaturedProducts()}
-        />
-
-        <DSDashboardCard
-          title="Precio promedio"
-          value={`$ ${statisticsEngine.averagePrice()}`}
-        />
-
-      </div>
-
+      <DSProductsTable />
     </div>
   );
 }

@@ -1,34 +1,35 @@
 import { productRepository } from "./product.repository";
+import type { Product } from "@/types/product";
 
 class CatalogEngine {
-  getAllProducts() {
+  async getAllProducts(): Promise<Product[]> {
     return productRepository.getAll();
   }
 
-  getProductBySlug(slug: string) {
-    return productRepository.getBySlug(slug);
-  }
-
-  getFeaturedProducts() {
-    return productRepository
-      .getAll()
-      .filter((product) => product.featured);
-  }
-
-  getProductById(id: number) {
+  async getProductById(id: number): Promise<Product | null> {
     return productRepository.getById(id);
   }
 
-  createProduct(product: Parameters<typeof productRepository.create>[0]) {
-    productRepository.create(product);
+  async getProductBySlug(slug: string): Promise<Product | null> {
+    return productRepository.getBySlug(slug);
   }
 
-  updateProduct(product: Parameters<typeof productRepository.update>[0]) {
-    productRepository.update(product);
+  async getFeaturedProducts(): Promise<Product[]> {
+    const products = await productRepository.getAll();
+
+    return products.filter((product) => product.featured);
   }
 
-  deleteProduct(id: number) {
-    productRepository.delete(id);
+  async createProduct(product: Product) {
+    await productRepository.create(product);
+  }
+
+  async updateProduct(product: Product) {
+    await productRepository.update(product);
+  }
+
+  async deleteProduct(id: number) {
+    await productRepository.delete(id);
   }
 }
 
