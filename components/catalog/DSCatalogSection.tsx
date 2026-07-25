@@ -20,10 +20,11 @@ export default function DSCatalogSection({
   const [query, setQuery] = useState("");
   const [brand, setBrand] = useState("");
 
-  // Estos estados se utilizarán en las siguientes tareas.
   const [category] = useState("");
-  const [sort] = useState<ProductSort>("newest");
-  const [onlyAvailable] = useState(false);
+  const [sort, setSort] =
+    useState<ProductSort>("newest");
+  const [onlyAvailable] =
+    useState(false);
 
   const brands = useMemo(() => {
     return searchEngine.getBrands(allProducts);
@@ -53,8 +54,10 @@ export default function DSCatalogSection({
         query={query}
         brand={brand}
         brands={brands}
+        sort={sort}
         onQueryChange={setQuery}
         onBrandChange={setBrand}
+        onSortChange={setSort}
       />
 
       <div className="mb-4 text-sm text-gray-500">
