@@ -1,21 +1,101 @@
 import type { Product } from "@/types/product";
 
+export type ProductSort =
+  | "newest"
+  | "name-asc"
+  | "name-desc"
+  | "price-asc"
+  | "price-desc";
+
+type FilterProductsParams = {
+  products: Product[];
+  query?: string;
+  brand?: string;
+  category?: string;
+  onlyAvailable?: boolean;
+  sort?: ProductSort;
+};
+
 class SearchEngine {
-  search(products: Product[], query: string): Product[] {
-    if (!query.trim()) return products;
+  filterProducts({
+    products,
+    query = "",
+    brand = "",
+    category = "",
+    onlyAvailable = false,
+    sort = "newest",
+  }: FilterProductsParams): Product[] {
+    let result = [...products];
 
-    const value = query.toLowerCase();
+    // Buscar
+    if (query.trim()) {
+      const value = query.toLowerCase();
 
-    return products.filter((product) => {
-      return (
-        product.name.toLowerCase().includes(value) ||
-        product.brand.toLowerCase().includes(value) ||
-        product.category.toLowerCase().includes(value) ||
-        product.tags.some((tag) =>
-          tag.toLowerCase().includes(value)
-        )
+      result = result.filter((product) => {
+        return (
+          product.name.toLowerCase().includes(value) ||
+          product.brand.toLowerCase().includes(value) ||
+          product.category.toLowerCase().includes(value) ||
+          product.tags.some((tag) =>
+            tag.toLowerCase().includes(value)
+          )
+        );
+      });
+    }
+
+    // Marca
+    if (brand) {
+      result = result.filter(
+        (product) => product.brand === brand
       );
-    });
+    }
+
+    // Categoría
+    if (category) {
+      result = result.filter(
+        (product) => product.category === category
+      );
+    }
+
+    // Disponibilidad
+    if (onlyAvailable) {
+      result = result.filter(
+        (product) => product.stock > 0
+      );
+    }
+
+    // Ordenamiento
+    switch (sort) {
+      case "name-asc":
+        result.sort((a, b) =>
+          a.name.localeCompare(b.name)
+        );
+        break;
+
+      case "name-desc":
+        result.sort((a, b) =>
+          b.name.localeCompare(a.name)
+        );
+        break;
+
+      case "price-asc":
+        result.sort((a, b) =>
+          a.price - b.price
+        );
+        break;
+
+      case "price-desc":
+        result.sort((a, b) =>
+          b.price - a.price
+        );
+        break;
+
+      case "newest":
+      default:
+        break;
+    }
+
+    return result;
   }
 
   getBrands(products: Product[]) {

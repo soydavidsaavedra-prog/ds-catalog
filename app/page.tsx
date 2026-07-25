@@ -1,4 +1,5 @@
-import DSProductGrid from "@/components/catalog/grid/DSProductGrid";
+import DSCatalogSection from "@/components/catalog/DSCatalogSection";
+
 import { catalogEngine } from "@/engines/catalog/catalog.engine";
 import { storeEngine } from "@/engines/store/store.engine";
 
@@ -16,7 +17,9 @@ export default async function Home() {
       </p>
 
       <div className="mt-10">
-        <DSProductGrid products={products} />
+        <DSCatalogSection
+          products={products}
+        />
       </div>
     </main>
   );
