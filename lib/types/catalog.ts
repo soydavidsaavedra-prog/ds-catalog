@@ -30,6 +30,8 @@ export interface Category {
   order: number;
   active: boolean;
   featured: boolean;
+  /** Null for a top-level category (e.g. Dama); set to a parent's id for a subcategory (e.g. Skinny under Dama). */
+  parentId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -77,6 +79,18 @@ export interface SiteSettings {
   instagram: string;
   facebook: string;
   tiktok: string;
+  /** Home hero content — editable from /admin/inicio. Falls back to the launch copy when unset. */
+  heroEyebrow: string;
+  heroTitleLine1: string;
+  heroTitleLine2: string;
+  heroSubtitle: string;
+  heroTagline: string;
+  heroCtaLabel: string;
+  heroCtaHref: string;
+  heroImage: string;
+  /** Percent (0-100) — CSS object-position of the hero background image. */
+  heroImagePositionX: number;
+  heroImagePositionY: number;
 }
 
 export type SortOption =

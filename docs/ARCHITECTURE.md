@@ -81,6 +81,37 @@ configurarse tanto en `.env.local` (desarrollo) como en Vercel → Project
 Settings → Environment Variables (producción); sin ellas el build falla en
 `generateStaticParams`.
 
+## Categorías jerárquicas (Dama/Caballero/Niño → subcategorías)
+
+`Category` tiene un campo `parentId` (nullable, self-referencing vía
+`ns_categories.parent_id`). Una categoría con `parentId: null` es principal
+(ej. Dama); una con `parentId` apuntando a otra categoría es una subcategoría
+(ej. Skinny bajo Dama). `buildCategoryTree()` en
+`lib/repositories/category-repository.ts` agrupa la lista plana en árbol para
+el admin y el header; `getDescendantSlugs()` resuelve los slugs de una
+categoría principal + sus hijas, usado por `/[categoria]/page.tsx` (vía
+`NSCatalogView`'s `forcedCategorySlugs`) para que la página de una categoría
+principal agregue productos de todas sus subcategorías. Los productos siguen
+apuntando a una sola categoría (la subcategoría, nivel hoja) — no hubo cambio
+de esquema en `ns_products`. El campo `audience` (dama/caballero/nino/unisex)
+sigue existiendo por separado como filtro rápido del catálogo — no se fusionó
+con esta jerarquía para no arriesgar el filtrado existente.
+
+## Portada del home editable (`/admin/inicio`)
+
+El Hero (`components/home/NSHero.tsx`) recibe todo su contenido por props
+(texto, imagen, posición) en lugar de tenerlo hardcodeado; los valores por
+defecto de esas props son exactamente la copy original de lanzamiento, así
+que el home no cambia visualmente hasta que un admin lo edite.
+`SiteSettings` tiene los campos `hero*` (persistidos en `ns_settings`) y
+`/admin/inicio` los edita con vista previa en vivo: el mismo componente
+`<NSHero>` se renderiza dentro de una caja escalada con `transform: scale()`
+(su altura usa `vh`, así que se ve auto-contenido y proporcional en el
+panel). La imagen se sube al bucket `ns-product-images` de Supabase Storage
+(mismo endpoint `/admin/api/upload` que usan los productos) y su posición se
+ajusta con dos sliders (0-100%) que se traducen a `object-position` vía la
+nueva prop `objectPosition` de `NSMedia`.
+
 ## Autenticación de administrador
 
 Sin proveedor externo, sin cuentas de comprador. Una sola contraseña

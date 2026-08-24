@@ -14,11 +14,13 @@ export function NSProductForm({
   action,
   categories,
   product,
+  nextReference,
   submitLabel = "Guardar producto",
 }: {
   action: (prevState: ActionState, formData: FormData) => Promise<ActionState>;
   categories: Category[];
   product?: Product;
+  nextReference?: string;
   submitLabel?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
@@ -38,7 +40,16 @@ export function NSProductForm({
         </div>
         <div>
           <NSLabel htmlFor="reference">Referencia</NSLabel>
-          <NSInput id="reference" name="reference" defaultValue={product?.reference} placeholder="NS-001" required />
+          <NSInput
+            id="reference"
+            name="reference"
+            defaultValue={product?.reference ?? nextReference}
+            placeholder="NS-001"
+            required
+          />
+          {!product ? (
+            <p className="mt-1 text-xs text-muted-foreground">Generada automáticamente — puedes cambiarla.</p>
+          ) : null}
         </div>
         <div>
           <NSLabel htmlFor="slug">Slug (URL)</NSLabel>

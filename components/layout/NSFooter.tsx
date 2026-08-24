@@ -5,6 +5,8 @@ import { NSLogo } from "@/components/brand/NSLogo";
 
 export async function NSFooter() {
   const categories = await listCategories({ activeOnly: true });
+  const topLevelCategories = categories.filter((c) => c.parentId === null);
+  const subcategories = categories.filter((c) => c.parentId !== null);
 
   return (
     <footer id="contacto" className="border-t border-ink-800 bg-ink-950 text-ink-200">
@@ -37,16 +39,18 @@ export async function NSFooter() {
           <p className="text-xs font-semibold uppercase tracking-widest text-ink-0">Catálogo</p>
           <ul className="mt-4 space-y-2.5 text-sm">
             <li><Link href="/catalogo" className="hover:text-accent">Ver todo</Link></li>
-            <li><Link href="/catalogo?audience=dama" className="hover:text-accent">Dama</Link></li>
-            <li><Link href="/catalogo?audience=caballero" className="hover:text-accent">Caballero</Link></li>
-            <li><Link href="/catalogo?audience=nino" className="hover:text-accent">Niños</Link></li>
+            {topLevelCategories.map((c) => (
+              <li key={c.slug}>
+                <Link href={`/${c.slug}`} className="hover:text-accent">{c.name}</Link>
+              </li>
+            ))}
           </ul>
         </div>
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-ink-0">Colecciones</p>
           <ul className="mt-4 space-y-2.5 text-sm">
-            {categories.slice(0, 6).map((c) => (
+            {subcategories.slice(0, 6).map((c) => (
               <li key={c.slug}>
                 <Link href={`/${c.slug}`} className="hover:text-accent">
                   {c.name}

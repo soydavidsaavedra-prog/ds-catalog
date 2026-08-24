@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { listCategories } from "@/lib/repositories/category-repository";
 import { listProducts } from "@/lib/repositories/product-repository";
+import { getSettings } from "@/lib/repositories/settings-repository";
 import { siteConfig } from "@/lib/config/site";
 import { NSHero } from "@/components/home/NSHero";
 import { NSFactoryStory } from "@/components/home/NSFactoryStory";
@@ -15,20 +16,35 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const [categories, products] = await Promise.all([
+  const [categories, products, settings] = await Promise.all([
     listCategories({ activeOnly: true }),
     listProducts({ activeOnly: true }),
+    getSettings(),
   ]);
 
   const nuevos = products.filter((p) => p.isNew);
   const destacados = products.filter((p) => p.featured);
   const ofertas = products.filter((p) => p.onSale);
 
+  const topLevelCategories = categories.filter((c) => c.parentId === null && c.featured);
+  const subcategories = categories.filter((c) => c.parentId !== null);
+
   return (
     <>
-      <NSHero />
+      <NSHero
+        eyebrow={settings.heroEyebrow}
+        titleLine1={settings.heroTitleLine1}
+        titleLine2={settings.heroTitleLine2}
+        subtitle={settings.heroSubtitle}
+        tagline={settings.heroTagline}
+        ctaLabel={settings.heroCtaLabel}
+        ctaHref={settings.heroCtaHref}
+        image={settings.heroImage}
+        imagePositionX={settings.heroImagePositionX}
+        imagePositionY={settings.heroImagePositionY}
+      />
       <NSFactoryStory />
-      <NSCollections categories={categories} />
+      <NSCollections topLevelCategories={topLevelCategories} subcategories={subcategories} />
       <NSFeaturedProducts nuevos={nuevos} destacados={destacados} ofertas={ofertas} />
       <NSBrandStatement />
     </>

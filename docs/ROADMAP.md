@@ -9,9 +9,14 @@ Ver `docs/ARCHITECTURE.md` para decisiones técnicas y pendientes detallados.
 ## Hecho
 
 - [x] Design system de marca (negro, dorado #F8C909, denim) — `config/theme/*`, `app/globals.css`
-- [x] Capa de datos: tipos, seed (~36 productos demo / 9 categorías / banners / settings),
+- [x] Capa de datos: tipos, seed (~36 productos demo / categorías jerárquicas / banners / settings),
       repositorios CRUD sobre Supabase (Postgres) — persiste en Vercel
 - [x] Subida de imágenes de admin a Supabase Storage (bucket público `ns-product-images`)
+- [x] Categorías en 2 niveles (Dama/Caballero/Niño → Skinny/Cargo/Jogger/...), con selector de
+      categoría padre en el admin y páginas `/[categoria]` que agregan productos de subcategorías
+- [x] Referencia de producto autogenerada (`NS-XXX` consecutivo) al crear, editable manualmente
+- [x] Editor visual de portada del home (`/admin/inicio`): imagen subida desde el computador,
+      posición ajustable, textos y botón editables, con vista previa en vivo del componente real
 - [x] Carrito (Zustand + localStorage) y motor de pedido por WhatsApp
 - [x] Componentes base: NSLogo, NSButton, NSBadge, NSPrice, NSInput, NSMedia (+ placeholders)
 - [x] Header/nav/menú móvil/búsqueda, footer, cart drawer, botón flotante de WhatsApp
@@ -26,9 +31,9 @@ Ver `docs/ARCHITECTURE.md` para decisiones técnicas y pendientes detallados.
 ## Pendiente (ver "Lo que falta para producción" en ARCHITECTURE.md)
 
 - [ ] Logo oficial real (hoy: recreación fiel en SVG, documentada)
-- [ ] Ejecutar `supabase/schema.sql` en el proyecto Supabase del usuario y correr
-      `npm run seed:supabase` (pendiente de que el usuario lo haga localmente,
-      ver ARCHITECTURE.md)
+- [ ] Volver a ejecutar `supabase/schema.sql` (agrega `parent_id` en categorías y los campos
+      `hero_*` en settings — idempotente, seguro de re-correr) y `npm run seed:supabase`
+      (pendiente de que el usuario lo haga localmente, ver ARCHITECTURE.md)
 - [ ] Fotografía real de producto
 - [ ] Importación masiva vía CSV (arquitectura lista, falta el endpoint)
 - [ ] Variables de entorno de producción (`ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`,

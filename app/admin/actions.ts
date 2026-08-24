@@ -154,6 +154,7 @@ export async function createCategoryAction(formData: FormData): Promise<void> {
   const name = String(formData.get("name") ?? "").trim();
   const slug = slugify(String(formData.get("slug") ?? "").trim() || name);
   if (!name || !slug) return;
+  const parentId = String(formData.get("parentId") ?? "").trim() || null;
 
   await createCategory({
     name,
@@ -162,6 +163,7 @@ export async function createCategoryAction(formData: FormData): Promise<void> {
     image: `placeholder:${slug}:1`,
     active: true,
     featured: false,
+    parentId,
   });
   revalidatePath("/");
   revalidatePath("/admin/categorias");
@@ -170,11 +172,13 @@ export async function createCategoryAction(formData: FormData): Promise<void> {
 export async function updateCategoryAction(id: string, formData: FormData): Promise<void> {
   const name = String(formData.get("name") ?? "").trim();
   const slug = slugify(String(formData.get("slug") ?? "").trim() || name);
+  const parentId = String(formData.get("parentId") ?? "").trim() || null;
 
   await updateCategory(id, {
     name,
     slug,
     description: String(formData.get("description") ?? "").trim(),
+    parentId,
   });
   revalidatePath("/");
   revalidatePath("/catalogo");
@@ -244,6 +248,23 @@ export async function updateSettingsAction(_prev: ActionState, formData: FormDat
     instagram: String(formData.get("instagram") ?? "").trim(),
     facebook: String(formData.get("facebook") ?? "").trim(),
     tiktok: String(formData.get("tiktok") ?? "").trim(),
+  });
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
+export async function updateHeroSettingsAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  await updateSettings({
+    heroEyebrow: String(formData.get("heroEyebrow") ?? "").trim(),
+    heroTitleLine1: String(formData.get("heroTitleLine1") ?? "").trim(),
+    heroTitleLine2: String(formData.get("heroTitleLine2") ?? "").trim(),
+    heroSubtitle: String(formData.get("heroSubtitle") ?? "").trim(),
+    heroTagline: String(formData.get("heroTagline") ?? "").trim(),
+    heroCtaLabel: String(formData.get("heroCtaLabel") ?? "").trim(),
+    heroCtaHref: String(formData.get("heroCtaHref") ?? "").trim(),
+    heroImage: String(formData.get("heroImage") ?? "").trim(),
+    heroImagePositionX: Number(formData.get("heroImagePositionX") ?? 50),
+    heroImagePositionY: Number(formData.get("heroImagePositionY") ?? 50),
   });
   revalidatePath("/", "layout");
   return { success: true };

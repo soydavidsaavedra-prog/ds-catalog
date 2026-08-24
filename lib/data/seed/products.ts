@@ -284,7 +284,7 @@ function toProduct(seed: Seed): Product {
     price: seed.price,
     wholesalePrice: seed.wholesale,
     description: seed.description,
-    categorySlug: seed.category,
+    categorySlug: `${seed.audience}-${seed.category}`,
     audience: seed.audience,
     images: [`placeholder:${seed.category}:${seed.id}`],
     sizes: seed.sizes,

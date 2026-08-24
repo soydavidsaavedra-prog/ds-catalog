@@ -21,6 +21,7 @@ export interface CategoryRow {
   order: number;
   active: boolean;
   featured: boolean;
+  parent_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -77,6 +78,16 @@ export interface SettingsRow {
   instagram: string;
   facebook: string;
   tiktok: string;
+  hero_eyebrow: string;
+  hero_title_line1: string;
+  hero_title_line2: string;
+  hero_subtitle: string;
+  hero_tagline: string;
+  hero_cta_label: string;
+  hero_cta_href: string;
+  hero_image: string;
+  hero_image_position_x: number;
+  hero_image_position_y: number;
 }
 
 // Each Row/Insert/Update is intersected with Record<string, unknown> so the

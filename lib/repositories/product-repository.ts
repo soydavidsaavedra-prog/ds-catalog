@@ -125,6 +125,20 @@ export async function deleteProduct(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function getNextReference(): Promise<string> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.from("ns_products").select("reference");
+  if (error) throw error;
+
+  const max = (data as { reference: string }[]).reduce((highest, { reference }) => {
+    const match = /^NS-(\d+)$/.exec(reference.trim());
+    if (!match) return highest;
+    return Math.max(highest, Number(match[1]));
+  }, 0);
+
+  return `NS-${String(max + 1).padStart(3, "0")}`;
+}
+
 export async function isSlugTaken(slug: string, excludeId?: string): Promise<boolean> {
   const supabase = getSupabaseClient();
   let query = supabase.from("ns_products").select("id", { count: "exact", head: true }).eq("slug", slug);

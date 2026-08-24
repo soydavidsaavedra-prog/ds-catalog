@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils/cn";
 
 const LINKS = [
   { href: "/admin", label: "Dashboard", icon: DashboardIcon },
+  { href: "/admin/inicio", label: "Inicio", icon: HomeIcon },
   { href: "/admin/productos", label: "Productos", icon: ProductIcon },
   { href: "/admin/categorias", label: "Categorías", icon: CategoryIcon },
   { href: "/admin/pedidos", label: "Pedidos", icon: OrderIcon },
@@ -64,6 +65,9 @@ function iconProps() {
 }
 function DashboardIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><rect x="2.5" y="2.5" width="6" height="6" rx="1" /><rect x="11.5" y="2.5" width="6" height="6" rx="1" /><rect x="2.5" y="11.5" width="6" height="6" rx="1" /><rect x="11.5" y="11.5" width="6" height="6" rx="1" /></svg>;
+}
+function HomeIcon({ className }: { className?: string }) {
+  return <svg className={className} {...iconProps()} aria-hidden><path d="M3 9.5 10 3l7 6.5" /><path d="M5 8.5V17h10V8.5" /></svg>;
 }
 function ProductIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><path d="M3 6l7-3.5L17 6v8l-7 3.5L3 14V6Z" /><path d="M3 6l7 3.5L17 6M10 9.5V17" /></svg>;

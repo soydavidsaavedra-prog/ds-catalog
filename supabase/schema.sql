@@ -36,10 +36,17 @@ create table if not exists ns_categories (
   "order" integer not null default 0,
   active boolean not null default true,
   featured boolean not null default false,
+  parent_id uuid references ns_categories (id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
+-- Backfills parent_id on a table created by an earlier version of this schema.
+alter table ns_categories add column if not exists parent_id uuid references ns_categories (id) on delete set null;
+
+create index if not exists ns_categories_parent_id_idx on ns_categories (parent_id);
+
+drop trigger if exists ns_categories_set_updated_at on ns_categories;
 create trigger ns_categories_set_updated_at
   before update on ns_categories
   for each row execute function set_updated_at();
@@ -74,6 +81,7 @@ create table if not exists ns_products (
 
 create index if not exists ns_products_category_slug_idx on ns_products (category_slug);
 
+drop trigger if exists ns_products_set_updated_at on ns_products;
 create trigger ns_products_set_updated_at
   before update on ns_products
   for each row execute function set_updated_at();
@@ -120,8 +128,32 @@ create table if not exists ns_settings (
   currency text not null default 'USD',
   instagram text not null default '',
   facebook text not null default '',
-  tiktok text not null default ''
+  tiktok text not null default '',
+  -- Home hero content, editable from /admin/inicio (see components/home/NSHero.tsx).
+  hero_eyebrow text not null default 'Calidad · Diseño · Confort',
+  hero_title_line1 text not null default 'El Nuevo',
+  hero_title_line2 text not null default 'Sánchez',
+  hero_subtitle text not null default 'Especialista en Jeans',
+  hero_tagline text not null default 'De la fábrica a tus manos',
+  hero_cta_label text not null default 'Explorar colección',
+  hero_cta_href text not null default '/catalogo',
+  hero_image text not null default 'placeholder:hero:hero-1',
+  hero_image_position_x numeric(5, 2) not null default 50,
+  hero_image_position_y numeric(5, 2) not null default 50
 );
+
+-- Backfills the hero_* columns (with their defaults) on a table created by
+-- an earlier version of this schema — existing rows get the default values.
+alter table ns_settings add column if not exists hero_eyebrow text not null default 'Calidad · Diseño · Confort';
+alter table ns_settings add column if not exists hero_title_line1 text not null default 'El Nuevo';
+alter table ns_settings add column if not exists hero_title_line2 text not null default 'Sánchez';
+alter table ns_settings add column if not exists hero_subtitle text not null default 'Especialista en Jeans';
+alter table ns_settings add column if not exists hero_tagline text not null default 'De la fábrica a tus manos';
+alter table ns_settings add column if not exists hero_cta_label text not null default 'Explorar colección';
+alter table ns_settings add column if not exists hero_cta_href text not null default '/catalogo';
+alter table ns_settings add column if not exists hero_image text not null default 'placeholder:hero:hero-1';
+alter table ns_settings add column if not exists hero_image_position_x numeric(5, 2) not null default 50;
+alter table ns_settings add column if not exists hero_image_position_y numeric(5, 2) not null default 50;
 
 alter table ns_settings enable row level security;
 

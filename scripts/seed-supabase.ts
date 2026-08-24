@@ -34,8 +34,14 @@ const supabase = createClient(
 );
 
 async function seedCategories() {
-  const rows = categoriesSeed.map((c) => ({
-    id: c.id.startsWith("cat-") ? undefined : c.id, // let Postgres generate a real uuid for the demo string ids
+  // categoriesSeed.id/parentId are local demo ids (e.g. "cat-dama"), not real
+  // Postgres uuids — parents are upserted first (without id/parent_id, so
+  // Postgres generates the real uuid), then children are upserted with
+  // parent_id resolved to that real uuid via the parent's slug.
+  const parents = categoriesSeed.filter((c) => c.parentId === null);
+  const children = categoriesSeed.filter((c) => c.parentId !== null);
+
+  const parentRows = parents.map((c) => ({
     slug: c.slug,
     name: c.name,
     description: c.description,
@@ -43,11 +49,39 @@ async function seedCategories() {
     order: c.order,
     active: c.active,
     featured: c.featured,
+    parent_id: null,
   }));
 
-  const { error } = await supabase.from("ns_categories").upsert(rows, { onConflict: "slug" });
-  if (error) throw error;
-  console.log(`✓ ${rows.length} categorías`);
+  const { data: insertedParents, error: parentError } = await supabase
+    .from("ns_categories")
+    .upsert(parentRows, { onConflict: "slug" })
+    .select("id, slug");
+  if (parentError) throw parentError;
+
+  const realIdBySlug = new Map((insertedParents ?? []).map((row) => [row.slug, row.id]));
+  const localIdToSlug = new Map(parents.map((p) => [p.id, p.slug]));
+
+  const childRows = children.map((c) => {
+    const parentSlug = localIdToSlug.get(c.parentId!);
+    const parentRealId = parentSlug ? realIdBySlug.get(parentSlug) : undefined;
+    if (!parentRealId) throw new Error(`No pude resolver el id real del padre de "${c.slug}"`);
+
+    return {
+      slug: c.slug,
+      name: c.name,
+      description: c.description,
+      image: c.image,
+      order: c.order,
+      active: c.active,
+      featured: c.featured,
+      parent_id: parentRealId,
+    };
+  });
+
+  const { error: childError } = await supabase.from("ns_categories").upsert(childRows, { onConflict: "slug" });
+  if (childError) throw childError;
+
+  console.log(`✓ ${parentRows.length + childRows.length} categorías (${parentRows.length} principales, ${childRows.length} subcategorías)`);
 }
 
 async function seedProducts() {
@@ -104,6 +138,16 @@ async function seedSettings() {
         instagram: settingsSeed.instagram,
         facebook: settingsSeed.facebook,
         tiktok: settingsSeed.tiktok,
+        hero_eyebrow: settingsSeed.heroEyebrow,
+        hero_title_line1: settingsSeed.heroTitleLine1,
+        hero_title_line2: settingsSeed.heroTitleLine2,
+        hero_subtitle: settingsSeed.heroSubtitle,
+        hero_tagline: settingsSeed.heroTagline,
+        hero_cta_label: settingsSeed.heroCtaLabel,
+        hero_cta_href: settingsSeed.heroCtaHref,
+        hero_image: settingsSeed.heroImage,
+        hero_image_position_x: settingsSeed.heroImagePositionX,
+        hero_image_position_y: settingsSeed.heroImagePositionY,
       },
       { onConflict: "id" },
     );

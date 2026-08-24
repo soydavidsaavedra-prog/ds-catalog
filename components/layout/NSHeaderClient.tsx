@@ -13,16 +13,20 @@ interface NavCategory {
   name: string;
 }
 
+interface NavParentCategory extends NavCategory {
+  children: NavCategory[];
+}
+
 const NAV_LINKS = [
   { href: "/", label: "Inicio" },
   { href: "/catalogo", label: "Catálogo" },
 ];
 
 export function NSHeaderClient({
-  categories,
+  parents,
   whatsappNumber,
 }: {
-  categories: NavCategory[];
+  parents: NavParentCategory[];
   whatsappNumber: string;
 }) {
   const [scrolled, setScrolled] = useState(false);
@@ -100,16 +104,28 @@ export function NSHeaderClient({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 6 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute left-1/2 top-full grid w-64 -translate-x-1/2 grid-cols-2 gap-x-4 gap-y-2 rounded-card border border-ink-800 bg-ink-900 p-4 shadow-modal"
+                    className="absolute left-1/2 top-full grid w-[32rem] -translate-x-1/2 grid-cols-4 gap-x-5 gap-y-4 rounded-card border border-ink-800 bg-ink-900 p-5 shadow-modal"
                   >
-                    {categories.map((c) => (
-                      <Link
-                        key={c.slug}
-                        href={`/${c.slug}`}
-                        className="text-xs font-medium uppercase tracking-wide text-ink-200 hover:text-accent"
-                      >
-                        {c.name}
-                      </Link>
+                    {parents.map((parent) => (
+                      <div key={parent.slug} className="flex flex-col gap-2">
+                        <Link
+                          href={`/${parent.slug}`}
+                          className="text-xs font-semibold uppercase tracking-wide text-accent hover:underline"
+                        >
+                          {parent.name}
+                        </Link>
+                        <div className="flex flex-col gap-1.5">
+                          {parent.children.map((child) => (
+                            <Link
+                              key={child.slug}
+                              href={`/${child.slug}`}
+                              className="text-xs font-medium uppercase tracking-wide text-ink-300 hover:text-accent"
+                            >
+                              {child.name}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
                     ))}
                   </motion.div>
                 ) : null}
@@ -187,14 +203,28 @@ export function NSHeaderClient({
               <p className="pt-4 text-xs font-semibold uppercase tracking-widest text-accent">
                 Colecciones
               </p>
-              {categories.map((c) => (
-                <Link
-                  key={c.slug}
-                  href={`/${c.slug}`}
-                  className="border-b border-ink-800 py-3 text-sm font-medium uppercase tracking-wide text-ink-200"
-                >
-                  {c.name}
-                </Link>
+              {parents.map((parent) => (
+                <div key={parent.slug} className="border-b border-ink-800 py-3">
+                  <Link
+                    href={`/${parent.slug}`}
+                    className="block text-sm font-semibold uppercase tracking-wide text-ink-0"
+                  >
+                    {parent.name}
+                  </Link>
+                  {parent.children.length > 0 ? (
+                    <div className="mt-2 flex flex-col gap-2 pl-3">
+                      {parent.children.map((child) => (
+                        <Link
+                          key={child.slug}
+                          href={`/${child.slug}`}
+                          className="text-sm font-medium uppercase tracking-wide text-ink-300"
+                        >
+                          {child.name}
+                        </Link>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
               ))}
               <a
                 href={`https://wa.me/${whatsappNumber}`}

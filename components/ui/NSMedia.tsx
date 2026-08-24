@@ -11,6 +11,8 @@ interface NSMediaProps {
   sizes?: string;
   priority?: boolean;
   fill?: boolean;
+  /** CSS object-position (e.g. "50% 30%") for a real photo — ignored for placeholder art. */
+  objectPosition?: string;
 }
 
 /**
@@ -27,6 +29,7 @@ export function NSMedia({
   sizes,
   priority,
   fill = true,
+  objectPosition,
 }: NSMediaProps) {
   const placeholder = parsePlaceholder(src);
 
@@ -54,6 +57,7 @@ export function NSMedia({
           sizes={sizes ?? "(min-width: 1024px) 25vw, 50vw"}
           priority={priority}
           className="object-cover"
+          style={objectPosition ? { objectPosition } : undefined}
         />
       </div>
     );
