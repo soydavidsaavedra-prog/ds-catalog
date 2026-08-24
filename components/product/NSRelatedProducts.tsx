@@ -1,8 +1,15 @@
 import type { Product } from "@/lib/types/catalog";
 import { NSSectionHeading } from "@/components/ui/NSSectionHeading";
 import { NSProductGrid } from "@/components/catalog/NSProductGrid";
+import type { PaymentBadgeInfo } from "@/components/catalog/NSProductCard";
 
-export function NSRelatedProducts({ products }: { products: Product[] }) {
+export function NSRelatedProducts({
+  products,
+  paymentBadge,
+}: {
+  products: Product[];
+  paymentBadge?: PaymentBadgeInfo;
+}) {
   if (products.length === 0) return null;
 
   return (
@@ -10,7 +17,7 @@ export function NSRelatedProducts({ products }: { products: Product[] }) {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <NSSectionHeading eyebrow="Combina con" title="También te puede interesar" />
         <div className="mt-8">
-          <NSProductGrid products={products} />
+          <NSProductGrid products={products} paymentBadge={paymentBadge} />
         </div>
       </div>
     </section>

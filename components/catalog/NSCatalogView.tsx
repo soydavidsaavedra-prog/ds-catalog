@@ -1,6 +1,7 @@
 import type { CatalogFilters } from "@/lib/types/catalog";
 import { listCategories } from "@/lib/repositories/category-repository";
 import { listProducts } from "@/lib/repositories/product-repository";
+import { getSettings } from "@/lib/repositories/settings-repository";
 import {
   applyCatalogFilters,
   collectColors,
@@ -13,8 +14,13 @@ import { NSSectionHeading } from "@/components/ui/NSSectionHeading";
 
 interface NSCatalogViewProps {
   filters: CatalogFilters;
-  /** When set (a /[category] page), the category picker is hidden and facets scope to this category. */
-  forcedCategorySlug?: string;
+  /**
+   * When set (a /[category] page), the category picker is hidden and facets
+   * scope to these slugs. A leaf category passes just its own slug; a
+   * top-level category (e.g. Dama) passes its own slug plus every
+   * subcategory's slug, aggregating products across all of them.
+   */
+  forcedCategorySlugs?: string[];
   eyebrow: string;
   title: string;
   description?: string;
@@ -28,38 +34,40 @@ interface NSCatalogViewProps {
  */
 export async function NSCatalogView({
   filters,
-  forcedCategorySlug,
+  forcedCategorySlugs,
   eyebrow,
   title,
   description,
 }: NSCatalogViewProps) {
-  const [categories, allProducts] = await Promise.all([
+  const [categories, allProducts, settings] = await Promise.all([
     listCategories({ activeOnly: true }),
     listProducts({ activeOnly: true }),
+    getSettings(),
   ]);
 
-  const scopeProducts = forcedCategorySlug
-    ? allProducts.filter((p) => p.categorySlug === forcedCategorySlug)
+  const scopeProducts = forcedCategorySlugs
+    ? allProducts.filter((p) => forcedCategorySlugs.includes(p.categorySlug))
     : allProducts;
 
-  const results = applyCatalogFilters(scopeProducts, {
-    ...filters,
-    category: forcedCategorySlug ?? filters.category,
-  });
+  const results = applyCatalogFilters(scopeProducts, filters);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-      {forcedCategorySlug ? null : (
+      {forcedCategorySlugs ? null : (
         <NSSectionHeading eyebrow={eyebrow} title={title} description={description} />
       )}
 
-      <div className={forcedCategorySlug ? "flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" : "mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"}>
+      <div className={forcedCategorySlugs ? "flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" : "mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"}>
         <NSCatalogSearchInput />
       </div>
 
       <div className="mt-5">
         <NSFilterBar
-          categories={forcedCategorySlug ? undefined : categories.map((c) => ({ slug: c.slug, name: c.name }))}
+          categories={
+            forcedCategorySlugs
+              ? undefined
+              : categories.filter((c) => c.parentId !== null).map((c) => ({ slug: c.slug, name: c.name }))
+          }
           sizes={collectSizes(scopeProducts)}
           colors={collectColors(scopeProducts)}
           resultCount={results.length}
@@ -67,7 +75,10 @@ export async function NSCatalogView({
       </div>
 
       <div className="mt-8">
-        <NSProductGrid products={results} />
+        <NSProductGrid
+          products={results}
+          paymentBadge={{ icon: settings.paymentBadgeIcon, label: settings.paymentBadgeLabel }}
+        />
       </div>
     </div>
   );

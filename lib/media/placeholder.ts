@@ -16,8 +16,8 @@ export interface ParsedPlaceholder {
   seed: string;
 }
 
-export function parsePlaceholder(src: string): ParsedPlaceholder | null {
-  if (!src.startsWith("placeholder:")) return null;
+export function parsePlaceholder(src: string | null | undefined): ParsedPlaceholder | null {
+  if (!src || !src.startsWith("placeholder:")) return null;
   const [, category = "otros", seed = "0"] = src.split(":");
   return { category, seed };
 }

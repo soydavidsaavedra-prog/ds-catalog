@@ -45,7 +45,8 @@ lib/
   config/site.ts        — configuración central de marca (nunca hardcodear)
   types/                 — contratos de datos (Product, Category, Order...)
   data/seed/             — datos de demostración
-  db/jsonStore.ts        — "base de datos" actual (ver abajo)
+  db/supabaseClient.ts    — cliente Supabase server-only (service_role)
+  db/supabase-types.ts    — tipos Row/Insert/Update hechos a mano (ver abajo)
   repositories/           — CRUD por entidad, la única puerta a los datos
   search/catalog-engine.ts — filtrado/orden/búsqueda, compartido por todas las rutas de catálogo
   cart/cart-store.ts       — estado del carrito
@@ -54,29 +55,122 @@ lib/
   media/placeholder.ts     — arte de reemplazo mientras no hay fotos reales
 ```
 
-## Capa de datos: por qué JSON en archivo, no Postgres/Supabase todavía
+## Capa de datos: Supabase (Postgres)
 
-El brief pide evaluar Supabase/Postgres, pero crear una cuenta externa y
-generar credenciales es una decisión que requiere que el usuario las
-proporcione — está explícitamente fuera de lo que se puede decidir de forma
-autónoma. En su lugar:
+El admin persiste sobre un proyecto Supabase propio del usuario (tablas
+nuevas, sin tocar datos de proyectos anteriores). El esquema completo vive en
+`supabase/schema.sql` — se ejecuta una sola vez en el SQL Editor de Supabase.
 
-- `lib/db/jsonStore.ts` persiste cada entidad en `.data/<entidad>.json`
-  (ignorado por git). Es real: el panel admin escribe y lee de ahí, sobrevive
-  reinicios del servidor de desarrollo.
+- `lib/db/supabaseClient.ts` crea un cliente **server-only**, autenticado con
+  `SUPABASE_SERVICE_ROLE_KEY`, que evita RLS por completo. Las tablas tienen
+  RLS activado sin policies: solo el service_role (usado exclusivamente en el
+  servidor) puede leer/escribir. La anon key nunca se usa desde el cliente.
+- `lib/db/supabase-types.ts` define el tipo `Database` a mano (Row/Insert/Update
+  por tabla) para que `@supabase/supabase-js` infiera tipos correctos en
+  `.select()/.insert()/.update()`.
 - Cada `lib/repositories/*.ts` expone solo funciones async (`listX`, `getXBySlug`,
-  `createX`, `updateX`, `deleteX`) — ningún componente toca `jsonStore` ni el
-  filesystem directamente.
+  `createX`, `updateX`, `deleteX`) que traducen entre las filas de Postgres
+  (snake_case) y los tipos de la app (camelCase) — ningún componente toca
+  Supabase directamente.
+- `npm run seed:supabase` (`scripts/seed-supabase.ts`) puebla el catálogo de
+  demo (upsert por slug/id, seguro de re-ejecutar).
 
-**Migrar a Supabase/Postgres más adelante es reemplazar el contenido de estos
-archivos de repositorio (mismas firmas de función) por queries SQL** — los
-componentes y Server Actions no cambian. Cuando el usuario tenga un proyecto
-Supabase, ese es el único trabajo real de migración.
+Variables de entorno requeridas (ver `.env.example`): `NEXT_PUBLIC_SUPABASE_URL`,
+`NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` — deben
+configurarse tanto en `.env.local` (desarrollo) como en Vercel → Project
+Settings → Environment Variables (producción); sin ellas el build falla en
+`generateStaticParams`.
 
-Limitación importante: en una plataforma serverless (Vercel, etc.) el
-filesystem es de solo lectura en producción, así que las escrituras del admin
-no persistirán ahí. Esto es aceptable para desarrollo/demo; es la señal de
-que toca migrar a una base de datos real antes de operar en producción.
+## Categorías jerárquicas (Dama/Caballero/Niño → subcategorías)
+
+`Category` tiene un campo `parentId` (nullable, self-referencing vía
+`ns_categories.parent_id`). Una categoría con `parentId: null` es principal
+(ej. Dama); una con `parentId` apuntando a otra categoría es una subcategoría
+(ej. Skinny bajo Dama). `buildCategoryTree()` en
+`lib/repositories/category-repository.ts` agrupa la lista plana en árbol para
+el admin y el header; `getDescendantSlugs()` resuelve los slugs de una
+categoría principal + sus hijas, usado por `/[categoria]/page.tsx` (vía
+`NSCatalogView`'s `forcedCategorySlugs`) para que la página de una categoría
+principal agregue productos de todas sus subcategorías. Los productos siguen
+apuntando a una sola categoría (la subcategoría, nivel hoja) — no hubo cambio
+de esquema en `ns_products`. El campo `audience` (dama/caballero/nino/unisex)
+sigue existiendo por separado como filtro rápido del catálogo — no se fusionó
+con esta jerarquía para no arriesgar el filtrado existente.
+
+## Portada del home editable (`/admin/inicio`)
+
+El Hero (`components/home/NSHero.tsx`) recibe todo su contenido por props
+(texto, imagen, posición) en lugar de tenerlo hardcodeado; los valores por
+defecto de esas props son exactamente la copy original de lanzamiento, así
+que el home no cambia visualmente hasta que un admin lo edite.
+`SiteSettings` tiene los campos `hero*` (persistidos en `ns_settings`) y
+`/admin/inicio` los edita con vista previa en vivo: el mismo componente
+`<NSHero>` se renderiza dentro de una caja escalada con `transform: scale()`
+(su altura usa `vh`, así que se ve auto-contenido y proporcional en el
+panel). La imagen se sube al bucket `ns-product-images` de Supabase Storage
+(mismo endpoint `/admin/api/upload` que usan los productos) y su posición se
+ajusta con dos sliders (0-100%) que se traducen a `object-position` vía la
+nueva prop `objectPosition` de `NSMedia`.
+
+## Logo de marca e ícono de método de pago (Cashea)
+
+Ambos son campos de `SiteSettings` (`brandLogo`, `paymentBadgeIcon`,
+`paymentBadgeLabel`), subidos por el admin desde `/admin/configuracion` vía
+`NSSingleImageUploader` (mismo endpoint `/admin/api/upload`, ahora también
+acepta SVG). `NSLogo` recibe un `src` opcional: si `SiteSettings.brandLogo`
+tiene una URL real, la renderiza directamente (el archivo subido ya trae el
+mark + wordmark completos); si está vacío, cae al recreation en SVG de
+siempre — cero riesgo de romper el branding mientras el admin no sube nada.
+
+El ícono de pago se muestra vía `NSPaymentBadge` en tarjetas de producto y en
+la ficha de producto — nada se ve si `paymentBadgeIcon` está vacío, y cada
+producto puede ocultarlo individualmente con `Product.hidePaymentBadge`.
+Importante: `NSProductCard`, `NSFeaturedProducts` y todo lo que cuelga de
+ellos se importan también desde componentes cliente (ej. la home usa
+`NSFeaturedProducts`, que es `"use client"`), así que **no** pueden llamar a
+`getSettings()` directamente (rompería con `server-only`) — el ícono/label
+se resuelven una sola vez donde ya hay un Server Component (`getSettings()`
+está envuelto en `cache()` de React para deduplicar esa consulta) y bajan
+como prop plano (`paymentBadge: {icon, label}`) a través de
+`NSProductGrid` → `NSProductCard`.
+
+## Orden de categorías
+
+`reorderCategories`/`moveCategoryAction` (`app/admin/actions.ts`) intercambian
+el campo `order` con el hermano (misma `parentId`) adyacente — es lo que
+`/admin/categorias` usa en los botones ↑/↓, y lo que determina el orden en el
+header, footer, y las secciones del home.
+
+## Foto real por categoría
+
+`/admin/categorias` ahora tiene `NSSingleImageUploader` en el campo `image`
+de cada categoría (antes solo se auto-asignaba `placeholder:<slug>:1`, sin
+forma de subir una foto real). Sube al mismo bucket que todo lo demás; si
+queda vacío, sigue cayendo al arte de placeholder generado.
+
+## Sección "Nuestra fábrica" editable
+
+`NSFactoryStory` (home) sigue el mismo patrón que `NSHero`: recibe
+`eyebrow`/`title`/`description`/`stepImages` por props con la copy original
+como default. Las 5 etiquetas de paso (Tela/Corte/Confección/Detalle/
+Producto) se mantienen fijas a propósito — solo el texto del encabezado y
+las 5 fotos son editables, vía `/admin/inicio` (`NSStoryEditorForm`, mismo
+patrón de vista previa en vivo con `transform: scale()` que el editor del
+Hero). `NSSingleImageUploader` ahora acepta un `onChange` opcional para que
+un formulario padre pueda reflejar la nueva URL en su propio estado (así la
+vista previa se actualiza al subir, no solo al guardar).
+
+## Contacto/footer conectado a SiteSettings
+
+El footer usaba `siteConfig` (constantes del código) para redes sociales,
+correo y ubicación — el formulario de `/admin/configuracion` ya permitía
+editar instagram/facebook/tiktok, pero esos cambios nunca se reflejaban en
+el sitio. `SiteSettings` ganó `brandDescription`, `whatsappDisplay`,
+`contactEmail`, `contactAddress`, `contactMapsUrl`; `NSFooter` y `NSHeader`
+ahora leen todo desde `getSettings()`. La dirección se muestra como link a
+`contactMapsUrl` (un enlace de "Compartir" de Google Maps) cuando está
+configurado, texto plano si no. `siteConfig` sigue existiendo solo como
+fallback de build-time/env (ver `lib/data/seed/settings.ts`).
 
 ## Autenticación de administrador
 
@@ -97,9 +191,9 @@ de demo usa el esquema `placeholder:<categoria>:<seed>`. `NSMedia` detecta
 ese esquema y dibuja `NSPlaceholderArt` (SVG generado: degradado denim,
 líneas de costura, monograma NS) en vez de una foto rota — es un estado de
 diseño intencional, no un placeholder roto. En cuanto el admin sube una foto
-real (`/admin/api/upload`, guarda en `public/uploads/`), `images[0]` pasa a
-ser una URL normal y `NSMedia` renderiza `next/image` sin tocar ningún
-componente.
+real (`/admin/api/upload`, guarda en el bucket público `ns-product-images` de
+Supabase Storage), `images[0]` pasa a ser una URL normal y `NSMedia` renderiza
+`next/image` sin tocar ningún componente.
 
 ## Logo
 

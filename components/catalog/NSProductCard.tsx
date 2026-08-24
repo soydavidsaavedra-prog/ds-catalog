@@ -3,9 +3,24 @@ import type { Product } from "@/lib/types/catalog";
 import { NSMedia } from "@/components/ui/NSMedia";
 import { NSBadge } from "@/components/ui/NSBadge";
 import { NSPrice } from "@/components/ui/NSPrice";
+import { NSPaymentBadge } from "@/components/catalog/NSPaymentBadge";
 
-export function NSProductCard({ product, priority = false }: { product: Product; priority?: boolean }) {
+export interface PaymentBadgeInfo {
+  icon: string;
+  label: string;
+}
+
+export function NSProductCard({
+  product,
+  priority = false,
+  paymentBadge,
+}: {
+  product: Product;
+  priority?: boolean;
+  paymentBadge?: PaymentBadgeInfo;
+}) {
   const outOfStock = product.availability === "out_of_stock";
+  const showPaymentBadge = !product.hidePaymentBadge && paymentBadge?.icon;
 
   return (
     <Link
@@ -27,6 +42,12 @@ export function NSProductCard({ product, priority = false }: { product: Product;
           {product.isNew ? <NSBadge tone="gold">Nuevo</NSBadge> : null}
           {product.onSale ? <NSBadge tone="danger">Oferta</NSBadge> : null}
         </div>
+
+        {showPaymentBadge ? (
+          <div className="absolute right-2.5 top-2.5">
+            <NSPaymentBadge icon={paymentBadge!.icon} label={paymentBadge!.label} />
+          </div>
+        ) : null}
 
         {outOfStock ? (
           <div className="absolute inset-0 flex items-center justify-center bg-ink-950/60">

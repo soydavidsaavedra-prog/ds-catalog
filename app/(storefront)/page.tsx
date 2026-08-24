@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { listCategories } from "@/lib/repositories/category-repository";
 import { listProducts } from "@/lib/repositories/product-repository";
+import { getSettings } from "@/lib/repositories/settings-repository";
 import { siteConfig } from "@/lib/config/site";
 import { NSHero } from "@/components/home/NSHero";
 import { NSFactoryStory } from "@/components/home/NSFactoryStory";
@@ -15,22 +16,58 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const [categories, products] = await Promise.all([
+  const [categories, products, settings] = await Promise.all([
     listCategories({ activeOnly: true }),
     listProducts({ activeOnly: true }),
+    getSettings(),
   ]);
 
   const nuevos = products.filter((p) => p.isNew);
   const destacados = products.filter((p) => p.featured);
   const ofertas = products.filter((p) => p.onSale);
 
+  const topLevelCategories = categories.filter((c) => c.parentId === null && c.featured);
+  const subcategories = categories.filter((c) => c.parentId !== null);
+
   return (
     <>
-      <NSHero />
-      <NSFactoryStory />
-      <NSCollections categories={categories} />
-      <NSFeaturedProducts nuevos={nuevos} destacados={destacados} ofertas={ofertas} />
-      <NSBrandStatement />
+      <NSHero
+        eyebrow={settings.heroEyebrow}
+        titleLine1={settings.heroTitleLine1}
+        titleLine2={settings.heroTitleLine2}
+        subtitle={settings.heroSubtitle}
+        tagline={settings.heroTagline}
+        ctaLabel={settings.heroCtaLabel}
+        ctaHref={settings.heroCtaHref}
+        image={settings.heroImage}
+        imagePositionX={settings.heroImagePositionX}
+        imagePositionY={settings.heroImagePositionY}
+      />
+      <NSFactoryStory
+        eyebrow={settings.storyEyebrow}
+        title={settings.storyTitle}
+        description={settings.storyDescription}
+        stepImages={[
+          settings.storyStepImage1,
+          settings.storyStepImage2,
+          settings.storyStepImage3,
+          settings.storyStepImage4,
+          settings.storyStepImage5,
+        ]}
+      />
+      <NSCollections topLevelCategories={topLevelCategories} subcategories={subcategories} />
+      <NSFeaturedProducts
+        nuevos={nuevos}
+        destacados={destacados}
+        ofertas={ofertas}
+        paymentBadge={{ icon: settings.paymentBadgeIcon, label: settings.paymentBadgeLabel }}
+      />
+      <NSBrandStatement
+        titleLine1={settings.statementTitleLine1}
+        titleLine2={settings.statementTitleLine2}
+        description={settings.statementDescription}
+        image={settings.statementImage}
+      />
     </>
   );
 }

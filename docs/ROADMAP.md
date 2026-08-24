@@ -9,8 +9,25 @@ Ver `docs/ARCHITECTURE.md` para decisiones técnicas y pendientes detallados.
 ## Hecho
 
 - [x] Design system de marca (negro, dorado #F8C909, denim) — `config/theme/*`, `app/globals.css`
-- [x] Capa de datos: tipos, seed (~36 productos demo / 9 categorías / banners / settings),
-      repositorios CRUD sobre `.data/*.json` (preparado para migrar a Supabase)
+- [x] Capa de datos: tipos, seed (~36 productos demo / categorías jerárquicas / banners / settings),
+      repositorios CRUD sobre Supabase (Postgres) — persiste en Vercel
+- [x] Subida de imágenes de admin a Supabase Storage (bucket público `ns-product-images`)
+- [x] Categorías en 2 niveles (Dama/Caballero/Niño → Skinny/Cargo/Jogger/...), con selector de
+      categoría padre en el admin y páginas `/[categoria]` que agregan productos de subcategorías
+- [x] Referencia de producto autogenerada (`NS-XXX` consecutivo) al crear, editable manualmente
+- [x] Editor visual de portada del home (`/admin/inicio`): imagen subida desde el computador,
+      posición ajustable, textos y botón editables, con vista previa en vivo del componente real
+- [x] Orden de categorías/subcategorías reordenable (flechas ↑/↓) desde `/admin/categorias`
+- [x] Logo de marca real subible desde `/admin/configuracion` (reemplaza la recreación en SVG en
+      header/footer/admin cuando se sube uno)
+- [x] Sello de método de pago (ej. Cashea) configurable: ícono + texto subibles desde
+      `/admin/configuracion`, visible en tarjetas de producto y ficha de producto, con opción de
+      ocultarlo por producto
+- [x] Sección "Nuestra fábrica" del home (título, descripción, 5 fotos del proceso) editable desde
+      `/admin/inicio` con vista previa en vivo
+- [x] Foto real subible por categoría desde `/admin/categorias` (antes solo placeholder generado)
+- [x] Footer/contacto completamente conectado a `/admin/configuracion`: redes sociales (antes
+      hardcodeadas y sin efecto), correo, dirección con enlace a Google Maps, descripción de marca
 - [x] Carrito (Zustand + localStorage) y motor de pedido por WhatsApp
 - [x] Componentes base: NSLogo, NSButton, NSBadge, NSPrice, NSInput, NSMedia (+ placeholders)
 - [x] Header/nav/menú móvil/búsqueda, footer, cart drawer, botón flotante de WhatsApp
@@ -24,12 +41,14 @@ Ver `docs/ARCHITECTURE.md` para decisiones técnicas y pendientes detallados.
 
 ## Pendiente (ver "Lo que falta para producción" en ARCHITECTURE.md)
 
-- [ ] Logo oficial real (hoy: recreación fiel en SVG, documentada)
-- [ ] Migración de datos a Postgres/Supabase (requiere cuenta del usuario)
+- [ ] Volver a ejecutar `supabase/schema.sql` una vez más (agrega `brand_description`,
+      `whatsapp_display`, `contact_*` y `story_*` en settings — idempotente, seguro de re-correr)
+      (pendiente de que el usuario lo haga, ver ARCHITECTURE.md)
 - [ ] Fotografía real de producto
 - [ ] Importación masiva vía CSV (arquitectura lista, falta el endpoint)
 - [ ] Variables de entorno de producción (`ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`,
-      `NEXT_PUBLIC_WHATSAPP_NUMBER`, `NEXT_PUBLIC_SITE_URL`)
+      `NEXT_PUBLIC_WHATSAPP_NUMBER`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_SUPABASE_URL`,
+      `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`)
 - [ ] Escena 3D real en el Hero (punto de extensión ya aislado)
 
 ## MVP (cumplido)

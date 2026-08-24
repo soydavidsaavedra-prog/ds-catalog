@@ -1,15 +1,17 @@
 import type { Product } from "@/lib/types/catalog";
-import { NSProductCard } from "@/components/catalog/NSProductCard";
+import { NSProductCard, type PaymentBadgeInfo } from "@/components/catalog/NSProductCard";
 import { NSButton } from "@/components/ui/NSButton";
 
 export function NSProductGrid({
   products,
   emptyTitle = "No encontramos productos",
   emptyDescription = "Prueba ajustando los filtros o la búsqueda.",
+  paymentBadge,
 }: {
   products: Product[];
   emptyTitle?: string;
   emptyDescription?: string;
+  paymentBadge?: PaymentBadgeInfo;
 }) {
   if (products.length === 0) {
     return (
@@ -26,7 +28,7 @@ export function NSProductGrid({
   return (
     <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
       {products.map((product, index) => (
-        <NSProductCard key={product.id} product={product} priority={index < 4} />
+        <NSProductCard key={product.id} product={product} priority={index < 4} paymentBadge={paymentBadge} />
       ))}
     </div>
   );

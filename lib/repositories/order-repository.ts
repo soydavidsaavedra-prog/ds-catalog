@@ -1,9 +1,7 @@
 import "server-only";
-import { randomUUID } from "node:crypto";
-import { createJsonStore } from "@/lib/db/jsonStore";
+import { getSupabaseClient } from "@/lib/db/supabaseClient";
+import type { OrderRow } from "@/lib/db/supabase-types";
 import type { Order, OrderItem, OrderStatus } from "@/lib/types/order";
-
-const store = createJsonStore<Order[]>("orders", []);
 
 export interface OrderInput {
   items: OrderItem[];
@@ -12,39 +10,59 @@ export interface OrderInput {
   customerPhone?: string | null;
 }
 
+function fromRow(row: OrderRow): Order {
+  return {
+    id: row.id,
+    createdAt: row.created_at,
+    items: row.items,
+    total: Number(row.total),
+    customerName: row.customer_name,
+    customerPhone: row.customer_phone,
+    status: row.status,
+  };
+}
+
 export async function listOrders(): Promise<Order[]> {
-  const orders = await store.read();
-  return [...orders].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.from("ns_orders").select("*").order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data as OrderRow[]).map(fromRow);
 }
 
 export async function getOrderById(id: string): Promise<Order | null> {
-  const orders = await store.read();
-  return orders.find((o) => o.id === id) ?? null;
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.from("ns_orders").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data ? fromRow(data as OrderRow) : null;
 }
 
 export async function createOrder(input: OrderInput): Promise<Order> {
-  const orders = await store.read();
-  const order: Order = {
-    id: randomUUID(),
-    createdAt: new Date().toISOString(),
-    items: input.items,
-    total: input.total,
-    customerName: input.customerName ?? null,
-    customerPhone: input.customerPhone ?? null,
-    status: "new",
-  };
-  await store.write([order, ...orders]);
-  return order;
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("ns_orders")
+    .insert({
+      items: input.items,
+      total: input.total,
+      customer_name: input.customerName ?? null,
+      customer_phone: input.customerPhone ?? null,
+      status: "new",
+    })
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return fromRow(data as OrderRow);
 }
 
 export async function updateOrderStatus(id: string, status: OrderStatus): Promise<Order | null> {
-  const orders = await store.read();
-  const index = orders.findIndex((o) => o.id === id);
-  if (index === -1) return null;
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("ns_orders")
+    .update({ status })
+    .eq("id", id)
+    .select("*")
+    .maybeSingle();
 
-  const updated = { ...orders[index], status };
-  const next = [...orders];
-  next[index] = updated;
-  await store.write(next);
-  return updated;
+  if (error) throw error;
+  return data ? fromRow(data as OrderRow) : null;
 }

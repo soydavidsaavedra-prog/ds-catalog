@@ -14,11 +14,13 @@ export function NSProductForm({
   action,
   categories,
   product,
+  nextReference,
   submitLabel = "Guardar producto",
 }: {
   action: (prevState: ActionState, formData: FormData) => Promise<ActionState>;
   categories: Category[];
   product?: Product;
+  nextReference?: string;
   submitLabel?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
@@ -38,7 +40,16 @@ export function NSProductForm({
         </div>
         <div>
           <NSLabel htmlFor="reference">Referencia</NSLabel>
-          <NSInput id="reference" name="reference" defaultValue={product?.reference} placeholder="NS-001" required />
+          <NSInput
+            id="reference"
+            name="reference"
+            defaultValue={product?.reference ?? nextReference}
+            placeholder="NS-001"
+            required
+          />
+          {!product ? (
+            <p className="mt-1 text-xs text-muted-foreground">Generada automáticamente — puedes cambiarla.</p>
+          ) : null}
         </div>
         <div>
           <NSLabel htmlFor="slug">Slug (URL)</NSLabel>
@@ -48,9 +59,27 @@ export function NSProductForm({
           <NSLabel htmlFor="categorySlug">Categoría</NSLabel>
           <NSSelect id="categorySlug" name="categorySlug" defaultValue={product?.categorySlug} required>
             <option value="" disabled>Selecciona una categoría</option>
-            {categories.map((c) => (
-              <option key={c.slug} value={c.slug}>{c.name}</option>
-            ))}
+            {categories
+              .filter((c) => c.parentId === null)
+              .map((parent) => {
+                const children = categories.filter((c) => c.parentId === parent.id);
+                if (children.length === 0) {
+                  return (
+                    <option key={parent.slug} value={parent.slug}>
+                      {parent.name}
+                    </option>
+                  );
+                }
+                return (
+                  <optgroup key={parent.id} label={parent.name}>
+                    {children.map((child) => (
+                      <option key={child.slug} value={child.slug}>
+                        {child.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
           </NSSelect>
         </div>
         <div>
@@ -60,15 +89,6 @@ export function NSProductForm({
         <div>
           <NSLabel htmlFor="wholesalePrice">Precio mayorista (USD, interno)</NSLabel>
           <NSInput id="wholesalePrice" name="wholesalePrice" type="number" min="0" step="0.01" defaultValue={product?.wholesalePrice ?? ""} />
-        </div>
-        <div>
-          <NSLabel htmlFor="audience">Audiencia</NSLabel>
-          <NSSelect id="audience" name="audience" defaultValue={product?.audience ?? "unisex"}>
-            <option value="dama">Dama</option>
-            <option value="caballero">Caballero</option>
-            <option value="nino">Niños</option>
-            <option value="unisex">Unisex</option>
-          </NSSelect>
         </div>
         <div>
           <NSLabel htmlFor="availability">Disponibilidad</NSLabel>
@@ -106,6 +126,11 @@ export function NSProductForm({
           { name: "isNew", label: "Nuevo", defaultChecked: product?.isNew },
           { name: "onSale", label: "En oferta", defaultChecked: product?.onSale },
           { name: "active", label: "Activo (visible en la tienda)", defaultChecked: product?.active ?? true },
+          {
+            name: "hidePaymentBadge",
+            label: "Ocultar ícono de método de pago (ej. Cashea) en este producto",
+            defaultChecked: product?.hidePaymentBadge,
+          },
         ].map((flag) => (
           <label key={flag.name} className="flex items-center gap-2 text-sm font-medium">
             <input type="checkbox" name={flag.name} defaultChecked={flag.defaultChecked} className="h-4 w-4 rounded border-border-strong accent-[var(--color-gold-400)]" />

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getCategoryBySlug, listCategories } from "@/lib/repositories/category-repository";
+import { getCategoryBySlug, getDescendantSlugs, listCategories } from "@/lib/repositories/category-repository";
 import { NSCatalogView } from "@/components/catalog/NSCatalogView";
 import { NSCategoryHero } from "@/components/catalog/NSCategoryHero";
 import { parseCatalogSearchParams, type SearchParams } from "@/lib/search/catalog-params";
@@ -37,15 +37,18 @@ export default async function CategoryPage({
   const category = await getCategoryBySlug(slug);
   if (!category || !category.active) notFound();
 
-  const resolvedParams = await searchParams;
-  const filters = parseCatalogSearchParams(resolvedParams, { category: category.slug });
+  const [resolvedParams, forcedCategorySlugs] = await Promise.all([
+    searchParams,
+    getDescendantSlugs(category.slug),
+  ]);
+  const filters = parseCatalogSearchParams(resolvedParams);
 
   return (
     <div>
       <NSCategoryHero category={category} />
       <NSCatalogView
         filters={filters}
-        forcedCategorySlug={category.slug}
+        forcedCategorySlugs={forcedCategorySlugs}
         eyebrow="Colección"
         title={category.name}
         description={category.description}

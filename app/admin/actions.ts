@@ -18,6 +18,9 @@ import {
 import {
   createCategory,
   deleteCategory,
+  getCategoryById,
+  getCategoryBySlug,
+  listCategories,
   updateCategory,
 } from "@/lib/repositories/category-repository";
 import { createBanner, deleteBanner, updateBanner } from "@/lib/repositories/banner-repository";
@@ -64,7 +67,23 @@ function slugify(value: string): string {
 
 // ---------- Products ----------
 
-function parseProductInput(formData: FormData): ProductInput {
+const AUDIENCE_VALUES: Audience[] = ["dama", "caballero", "nino", "unisex"];
+
+/**
+ * Audience is no longer a separate form field — it's derived from the
+ * product's category so there's a single source of truth (the category
+ * tree already has Dama/Caballero/Niño/Unisex at the top level). Falls
+ * back to "unisex" for a category outside that structure.
+ */
+async function resolveAudienceForCategory(categorySlug: string): Promise<Audience> {
+  const category = await getCategoryBySlug(categorySlug);
+  if (!category) return "unisex";
+  const topLevel = category.parentId ? await getCategoryById(category.parentId) : category;
+  const slug = topLevel?.slug;
+  return AUDIENCE_VALUES.includes(slug as Audience) ? (slug as Audience) : "unisex";
+}
+
+async function parseProductInput(formData: FormData): Promise<ProductInput> {
   const images = JSON.parse(String(formData.get("images") ?? "[]")) as string[];
   const colors = JSON.parse(String(formData.get("colors") ?? "[]")) as ProductColor[];
   const sizes = String(formData.get("sizes") ?? "")
@@ -74,6 +93,7 @@ function parseProductInput(formData: FormData): ProductInput {
   const name = String(formData.get("name") ?? "").trim();
   const reference = String(formData.get("reference") ?? "").trim();
   const slugInput = String(formData.get("slug") ?? "").trim();
+  const categorySlug = String(formData.get("categorySlug") ?? "");
 
   return {
     slug: slugify(slugInput || `${reference}-${name}`),
@@ -82,9 +102,9 @@ function parseProductInput(formData: FormData): ProductInput {
     price: Number(formData.get("price") ?? 0),
     wholesalePrice: formData.get("wholesalePrice") ? Number(formData.get("wholesalePrice")) : null,
     description: String(formData.get("description") ?? "").trim(),
-    categorySlug: String(formData.get("categorySlug") ?? ""),
-    audience: (String(formData.get("audience") ?? "unisex") as Audience),
-    images: images.length > 0 ? images : [`placeholder:${formData.get("categorySlug")}:new`],
+    categorySlug,
+    audience: await resolveAudienceForCategory(categorySlug),
+    images: images.length > 0 ? images : [`placeholder:${categorySlug}:new`],
     sizes,
     colors,
     availability: String(formData.get("availability") ?? "in_stock") as Availability,
@@ -92,11 +112,12 @@ function parseProductInput(formData: FormData): ProductInput {
     isNew: formData.get("isNew") === "on",
     onSale: formData.get("onSale") === "on",
     active: formData.get("active") === "on",
+    hidePaymentBadge: formData.get("hidePaymentBadge") === "on",
   };
 }
 
 export async function createProductAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const input = parseProductInput(formData);
+  const input = await parseProductInput(formData);
   if (!input.name || !input.reference || !input.categorySlug) {
     return { error: "Nombre, referencia y categoría son obligatorios." };
   }
@@ -114,7 +135,7 @@ export async function updateProductAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const input = parseProductInput(formData);
+  const input = await parseProductInput(formData);
   if (!input.name || !input.reference || !input.categorySlug) {
     return { error: "Nombre, referencia y categoría son obligatorios." };
   }
@@ -150,18 +171,36 @@ export async function toggleProductFlagAction(
 
 // ---------- Categories ----------
 
+/**
+ * Subcategory slugs are namespaced under their parent's slug (e.g.
+ * "dama-joggers", "caballero-joggers") so the same subcategory name can be
+ * reused under multiple parents without colliding on the global unique
+ * slug column. A slug the admin already typed with that prefix is left
+ * alone; only a bare slug gets prefixed.
+ */
+async function namespaceSlugUnderParent(slug: string, parentId: string | null): Promise<string> {
+  if (!parentId) return slug;
+  const parent = await getCategoryById(parentId);
+  if (!parent) return slug;
+  return slug.startsWith(`${parent.slug}-`) ? slug : `${parent.slug}-${slug}`;
+}
+
 export async function createCategoryAction(formData: FormData): Promise<void> {
   const name = String(formData.get("name") ?? "").trim();
-  const slug = slugify(String(formData.get("slug") ?? "").trim() || name);
-  if (!name || !slug) return;
+  const baseSlug = slugify(String(formData.get("slug") ?? "").trim() || name);
+  if (!name || !baseSlug) return;
+  const parentId = String(formData.get("parentId") ?? "").trim() || null;
+  const slug = await namespaceSlugUnderParent(baseSlug, parentId);
+  const image = String(formData.get("image") ?? "").trim();
 
   await createCategory({
     name,
     slug,
     description: String(formData.get("description") ?? "").trim(),
-    image: `placeholder:${slug}:1`,
+    image: image || `placeholder:${slug}:1`,
     active: true,
     featured: false,
+    parentId,
   });
   revalidatePath("/");
   revalidatePath("/admin/categorias");
@@ -169,12 +208,17 @@ export async function createCategoryAction(formData: FormData): Promise<void> {
 
 export async function updateCategoryAction(id: string, formData: FormData): Promise<void> {
   const name = String(formData.get("name") ?? "").trim();
-  const slug = slugify(String(formData.get("slug") ?? "").trim() || name);
+  const baseSlug = slugify(String(formData.get("slug") ?? "").trim() || name);
+  const parentId = String(formData.get("parentId") ?? "").trim() || null;
+  const slug = await namespaceSlugUnderParent(baseSlug, parentId);
+  const image = String(formData.get("image") ?? "").trim();
 
   await updateCategory(id, {
     name,
     slug,
     description: String(formData.get("description") ?? "").trim(),
+    parentId,
+    ...(image ? { image } : {}),
   });
   revalidatePath("/");
   revalidatePath("/catalogo");
@@ -189,6 +233,30 @@ export async function toggleCategoryActiveAction(id: string, active: boolean): P
 
 export async function deleteCategoryAction(id: string): Promise<void> {
   await deleteCategory(id);
+  revalidatePath("/");
+  revalidatePath("/admin/categorias");
+}
+
+/**
+ * Moves a category up/down among its siblings (same parent) by swapping
+ * `order` with the adjacent sibling — this is what controls the display
+ * order on the home page and in nav menus.
+ */
+export async function moveCategoryAction(id: string, direction: "up" | "down"): Promise<void> {
+  const all = await listCategories();
+  const target = all.find((c) => c.id === id);
+  if (!target) return;
+
+  const siblings = all
+    .filter((c) => c.parentId === target.parentId)
+    .sort((a, b) => a.order - b.order);
+  const index = siblings.findIndex((c) => c.id === id);
+  const swapIndex = direction === "up" ? index - 1 : index + 1;
+  if (swapIndex < 0 || swapIndex >= siblings.length) return;
+
+  const other = siblings[swapIndex];
+  await updateCategory(target.id, { order: other.order });
+  await updateCategory(other.id, { order: target.order });
   revalidatePath("/");
   revalidatePath("/admin/categorias");
 }
@@ -235,16 +303,106 @@ export async function updateOrderStatusAction(id: string, status: OrderStatus): 
 
 // ---------- Settings ----------
 
+/** Friendlier message for the common "you haven't re-run schema.sql yet" failure mode. */
+function settingsErrorMessage(err: unknown): string {
+  // Supabase errors (PostgrestError) are plain objects with a `.message`
+  // string, not real Error instances — String(err) on those yields the
+  // useless "[object Object]" instead of the actual reason.
+  let message: string;
+  if (err instanceof Error) {
+    message = err.message;
+  } else if (typeof err === "object" && err !== null && "message" in err && typeof (err as { message: unknown }).message === "string") {
+    message = (err as { message: string }).message;
+  } else {
+    message = String(err);
+  }
+
+  if (/column .* does not exist/i.test(message)) {
+    return "No se pudo guardar: falta actualizar la base de datos. Vuelve a correr supabase/schema.sql en el SQL Editor de Supabase y reintenta.";
+  }
+  return `No se pudo guardar: ${message}`;
+}
+
 export async function updateSettingsAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await updateSettings({
-    brandName: String(formData.get("brandName") ?? "").trim(),
-    slogan: String(formData.get("slogan") ?? "").trim(),
-    whatsappNumber: String(formData.get("whatsappNumber") ?? "").replace(/[^0-9]/g, ""),
-    currency: String(formData.get("currency") ?? "USD").trim(),
-    instagram: String(formData.get("instagram") ?? "").trim(),
-    facebook: String(formData.get("facebook") ?? "").trim(),
-    tiktok: String(formData.get("tiktok") ?? "").trim(),
-  });
+  try {
+    await updateSettings({
+      brandName: String(formData.get("brandName") ?? "").trim(),
+      slogan: String(formData.get("slogan") ?? "").trim(),
+      brandDescription: String(formData.get("brandDescription") ?? "").trim(),
+      whatsappNumber: String(formData.get("whatsappNumber") ?? "").replace(/[^0-9]/g, ""),
+      whatsappDisplay: String(formData.get("whatsappDisplay") ?? "").trim(),
+      contactEmail: String(formData.get("contactEmail") ?? "").trim(),
+      contactAddress: String(formData.get("contactAddress") ?? "").trim(),
+      contactMapsUrl: String(formData.get("contactMapsUrl") ?? "").trim(),
+      currency: String(formData.get("currency") ?? "USD").trim(),
+      instagram: String(formData.get("instagram") ?? "").trim(),
+      facebook: String(formData.get("facebook") ?? "").trim(),
+      tiktok: String(formData.get("tiktok") ?? "").trim(),
+      brandLogo: String(formData.get("brandLogo") ?? "").trim(),
+      paymentBadgeIcon: String(formData.get("paymentBadgeIcon") ?? "").trim(),
+      paymentBadgeLabel: String(formData.get("paymentBadgeLabel") ?? "").trim(),
+    });
+  } catch (err) {
+    return { error: settingsErrorMessage(err) };
+  }
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
+export async function updateHeroSettingsAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    await updateSettings({
+      heroEyebrow: String(formData.get("heroEyebrow") ?? "").trim(),
+      heroTitleLine1: String(formData.get("heroTitleLine1") ?? "").trim(),
+      heroTitleLine2: String(formData.get("heroTitleLine2") ?? "").trim(),
+      heroSubtitle: String(formData.get("heroSubtitle") ?? "").trim(),
+      heroTagline: String(formData.get("heroTagline") ?? "").trim(),
+      heroCtaLabel: String(formData.get("heroCtaLabel") ?? "").trim(),
+      heroCtaHref: String(formData.get("heroCtaHref") ?? "").trim(),
+      heroImage: String(formData.get("heroImage") ?? "").trim(),
+      heroImagePositionX: Number(formData.get("heroImagePositionX") ?? 50),
+      heroImagePositionY: Number(formData.get("heroImagePositionY") ?? 50),
+    });
+  } catch (err) {
+    return { error: settingsErrorMessage(err) };
+  }
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
+export async function updateStorySettingsAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    await updateSettings({
+      storyEyebrow: String(formData.get("storyEyebrow") ?? "").trim(),
+      storyTitle: String(formData.get("storyTitle") ?? "").trim(),
+      storyDescription: String(formData.get("storyDescription") ?? "").trim(),
+      storyStepImage1: String(formData.get("storyStepImage1") ?? "").trim(),
+      storyStepImage2: String(formData.get("storyStepImage2") ?? "").trim(),
+      storyStepImage3: String(formData.get("storyStepImage3") ?? "").trim(),
+      storyStepImage4: String(formData.get("storyStepImage4") ?? "").trim(),
+      storyStepImage5: String(formData.get("storyStepImage5") ?? "").trim(),
+    });
+  } catch (err) {
+    return { error: settingsErrorMessage(err) };
+  }
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
+export async function updateStatementSettingsAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await updateSettings({
+      statementTitleLine1: String(formData.get("statementTitleLine1") ?? "").trim(),
+      statementTitleLine2: String(formData.get("statementTitleLine2") ?? "").trim(),
+      statementDescription: String(formData.get("statementDescription") ?? "").trim(),
+      statementImage: String(formData.get("statementImage") ?? "").trim(),
+    });
+  } catch (err) {
+    return { error: settingsErrorMessage(err) };
+  }
   revalidatePath("/", "layout");
   return { success: true };
 }
