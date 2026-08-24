@@ -1,4 +1,4 @@
-import { NSPlaceholderArt } from "@/components/ui/NSPlaceholderArt";
+import { NSMedia } from "@/components/ui/NSMedia";
 import { NSReveal } from "@/components/ui/NSReveal";
 
 const TRUST_ITEMS = [
@@ -9,24 +9,47 @@ const TRUST_ITEMS = [
   { title: "Atención personalizada", description: "Estamos para ayudarte" },
 ];
 
-export function NSBrandStatement() {
+export interface NSBrandStatementProps {
+  titleLine1?: string;
+  titleLine2?: string;
+  description?: string;
+  image?: string;
+}
+
+const DEFAULTS: Required<NSBrandStatementProps> = {
+  titleLine1: "Denim is",
+  titleLine2: "our language",
+  description:
+    "Calidad que se siente, estilo que te define. Cada pieza sale de nuestra fábrica con un mismo propósito: vestir bien, sin intermediarios.",
+  image: "placeholder:denim:brand-statement",
+};
+
+/**
+ * "Denim is our language" section — content is admin-editable (see
+ * /admin/inicio, backed by SiteSettings.statement*), props default to the
+ * original launch copy/art so the section renders identically until an
+ * admin customizes it. The 5 trust items below stay fixed by design.
+ */
+export function NSBrandStatement({
+  titleLine1 = DEFAULTS.titleLine1,
+  titleLine2 = DEFAULTS.titleLine2,
+  description = DEFAULTS.description,
+  image = DEFAULTS.image,
+}: NSBrandStatementProps) {
   return (
     <>
       <section className="relative overflow-hidden bg-ink-950 text-ink-0">
         <div className="grid sm:grid-cols-2">
           <NSReveal className="flex flex-col justify-center px-6 py-20 sm:px-12 lg:px-20">
             <p className="font-display text-4xl uppercase leading-[0.9] tracking-wide sm:text-6xl">
-              Denim is
+              {titleLine1}
               <br />
-              <span className="text-accent">our language</span>
+              <span className="text-accent">{titleLine2}</span>
             </p>
-            <p className="mt-6 max-w-sm text-sm leading-relaxed text-ink-300">
-              Calidad que se siente, estilo que te define. Cada pieza sale de nuestra fábrica con
-              un mismo propósito: vestir bien, sin intermediarios.
-            </p>
+            <p className="mt-6 max-w-sm text-sm leading-relaxed text-ink-300">{description}</p>
           </NSReveal>
           <div className="relative aspect-square sm:aspect-auto">
-            <NSPlaceholderArt category="denim" seed="brand-statement" label="Denim is our language" className="h-full w-full" />
+            <NSMedia src={image} alt={`${titleLine1} ${titleLine2}`} className="h-full w-full" />
           </div>
         </div>
       </section>

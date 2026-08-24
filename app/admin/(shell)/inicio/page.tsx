@@ -1,6 +1,7 @@
 import { getSettings } from "@/lib/repositories/settings-repository";
 import { NSHeroEditorForm } from "@/components/admin/NSHeroEditorForm";
 import { NSStoryEditorForm } from "@/components/admin/NSStoryEditorForm";
+import { NSStatementEditorForm } from "@/components/admin/NSStatementEditorForm";
 
 export default async function AdminHomePage() {
   const settings = await getSettings();
@@ -28,6 +29,15 @@ export default async function AdminHomePage() {
         </h2>
         <div className="rounded-card border border-border bg-surface-elevated p-6">
           <NSStoryEditorForm settings={settings} />
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="font-display text-xl uppercase tracking-wide text-accent-strong">
+          &quot;Denim is our language&quot;
+        </h2>
+        <div className="rounded-card border border-border bg-surface-elevated p-6">
+          <NSStatementEditorForm settings={settings} />
         </div>
       </section>
     </div>

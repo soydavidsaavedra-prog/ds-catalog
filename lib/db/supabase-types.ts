@@ -105,6 +105,10 @@ export interface SettingsRow {
   story_step_image3: string;
   story_step_image4: string;
   story_step_image5: string;
+  statement_title_line1: string;
+  statement_title_line2: string;
+  statement_description: string;
+  statement_image: string;
 }
 
 // Each Row/Insert/Update is intersected with Record<string, unknown> so the

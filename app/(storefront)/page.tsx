@@ -62,7 +62,12 @@ export default async function Home() {
         ofertas={ofertas}
         paymentBadge={{ icon: settings.paymentBadgeIcon, label: settings.paymentBadgeLabel }}
       />
-      <NSBrandStatement />
+      <NSBrandStatement
+        titleLine1={settings.statementTitleLine1}
+        titleLine2={settings.statementTitleLine2}
+        description={settings.statementDescription}
+        image={settings.statementImage}
+      />
     </>
   );
 }

@@ -163,7 +163,12 @@ create table if not exists ns_settings (
   story_step_image2 text not null default 'placeholder:fábrica:story-corte',
   story_step_image3 text not null default 'placeholder:fábrica:story-confeccion',
   story_step_image4 text not null default 'placeholder:fábrica:story-detalle',
-  story_step_image5 text not null default 'placeholder:fábrica:story-producto'
+  story_step_image5 text not null default 'placeholder:fábrica:story-producto',
+  -- "Denim is our language" home section (see components/home/NSBrandStatement.tsx).
+  statement_title_line1 text not null default 'Denim is',
+  statement_title_line2 text not null default 'our language',
+  statement_description text not null default 'Calidad que se siente, estilo que te define. Cada pieza sale de nuestra fábrica con un mismo propósito: vestir bien, sin intermediarios.',
+  statement_image text not null default 'placeholder:denim:brand-statement'
 );
 
 -- Backfills the hero_* columns (with their defaults) on a table created by
@@ -194,6 +199,10 @@ alter table ns_settings add column if not exists story_step_image2 text not null
 alter table ns_settings add column if not exists story_step_image3 text not null default 'placeholder:fábrica:story-confeccion';
 alter table ns_settings add column if not exists story_step_image4 text not null default 'placeholder:fábrica:story-detalle';
 alter table ns_settings add column if not exists story_step_image5 text not null default 'placeholder:fábrica:story-producto';
+alter table ns_settings add column if not exists statement_title_line1 text not null default 'Denim is';
+alter table ns_settings add column if not exists statement_title_line2 text not null default 'our language';
+alter table ns_settings add column if not exists statement_description text not null default 'Calidad que se siente, estilo que te define. Cada pieza sale de nuestra fábrica con un mismo propósito: vestir bien, sin intermediarios.';
+alter table ns_settings add column if not exists statement_image text not null default 'placeholder:denim:brand-statement';
 
 alter table ns_settings enable row level security;
 

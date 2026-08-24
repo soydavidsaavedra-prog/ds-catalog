@@ -377,3 +377,21 @@ export async function updateStorySettingsAction(_prev: ActionState, formData: Fo
   revalidatePath("/", "layout");
   return { success: true };
 }
+
+export async function updateStatementSettingsAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await updateSettings({
+      statementTitleLine1: String(formData.get("statementTitleLine1") ?? "").trim(),
+      statementTitleLine2: String(formData.get("statementTitleLine2") ?? "").trim(),
+      statementDescription: String(formData.get("statementDescription") ?? "").trim(),
+      statementImage: String(formData.get("statementImage") ?? "").trim(),
+    });
+  } catch (err) {
+    return { error: settingsErrorMessage(err) };
+  }
+  revalidatePath("/", "layout");
+  return { success: true };
+}

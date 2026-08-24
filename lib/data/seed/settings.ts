@@ -41,4 +41,9 @@ export const settingsSeed: SiteSettings = {
   storyStepImage3: "placeholder:fábrica:story-confeccion",
   storyStepImage4: "placeholder:fábrica:story-detalle",
   storyStepImage5: "placeholder:fábrica:story-producto",
+  statementTitleLine1: "Denim is",
+  statementTitleLine2: "our language",
+  statementDescription:
+    "Calidad que se siente, estilo que te define. Cada pieza sale de nuestra fábrica con un mismo propósito: vestir bien, sin intermediarios.",
+  statementImage: "placeholder:denim:brand-statement",
 };

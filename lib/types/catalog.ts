@@ -115,6 +115,11 @@ export interface SiteSettings {
   storyStepImage3: string;
   storyStepImage4: string;
   storyStepImage5: string;
+  /** "Denim is our language" home section — editable from /admin/inicio. */
+  statementTitleLine1: string;
+  statementTitleLine2: string;
+  statementDescription: string;
+  statementImage: string;
 }
 
 export type SortOption =

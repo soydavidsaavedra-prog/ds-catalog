@@ -165,6 +165,10 @@ async function seedSettings() {
         story_step_image3: settingsSeed.storyStepImage3,
         story_step_image4: settingsSeed.storyStepImage4,
         story_step_image5: settingsSeed.storyStepImage5,
+        statement_title_line1: settingsSeed.statementTitleLine1,
+        statement_title_line2: settingsSeed.statementTitleLine2,
+        statement_description: settingsSeed.statementDescription,
+        statement_image: settingsSeed.statementImage,
       },
       { onConflict: "id" },
     );

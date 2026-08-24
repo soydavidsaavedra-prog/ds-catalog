@@ -48,6 +48,10 @@ function fromRow(row: SettingsRow): SiteSettings {
     storyStepImage3: row.story_step_image3 ?? "",
     storyStepImage4: row.story_step_image4 ?? "",
     storyStepImage5: row.story_step_image5 ?? "",
+    statementTitleLine1: row.statement_title_line1 ?? "",
+    statementTitleLine2: row.statement_title_line2 ?? "",
+    statementDescription: row.statement_description ?? "",
+    statementImage: row.statement_image ?? "",
   };
 }
 
@@ -86,6 +90,10 @@ function toRow(patch: Partial<SiteSettings>): Partial<SettingsRow> {
   if (patch.storyStepImage3 !== undefined) row.story_step_image3 = patch.storyStepImage3;
   if (patch.storyStepImage4 !== undefined) row.story_step_image4 = patch.storyStepImage4;
   if (patch.storyStepImage5 !== undefined) row.story_step_image5 = patch.storyStepImage5;
+  if (patch.statementTitleLine1 !== undefined) row.statement_title_line1 = patch.statementTitleLine1;
+  if (patch.statementTitleLine2 !== undefined) row.statement_title_line2 = patch.statementTitleLine2;
+  if (patch.statementDescription !== undefined) row.statement_description = patch.statementDescription;
+  if (patch.statementImage !== undefined) row.statement_image = patch.statementImage;
   return row;
 }
 
