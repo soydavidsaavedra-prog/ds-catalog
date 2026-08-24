@@ -8,7 +8,12 @@ function fromRow(row: SettingsRow): SiteSettings {
   return {
     brandName: row.brand_name,
     slogan: row.slogan,
+    brandDescription: row.brand_description,
     whatsappNumber: row.whatsapp_number,
+    whatsappDisplay: row.whatsapp_display,
+    contactEmail: row.contact_email,
+    contactAddress: row.contact_address,
+    contactMapsUrl: row.contact_maps_url,
     currency: row.currency,
     instagram: row.instagram,
     facebook: row.facebook,
@@ -26,6 +31,14 @@ function fromRow(row: SettingsRow): SiteSettings {
     brandLogo: row.brand_logo,
     paymentBadgeIcon: row.payment_badge_icon,
     paymentBadgeLabel: row.payment_badge_label,
+    storyEyebrow: row.story_eyebrow,
+    storyTitle: row.story_title,
+    storyDescription: row.story_description,
+    storyStepImage1: row.story_step_image1,
+    storyStepImage2: row.story_step_image2,
+    storyStepImage3: row.story_step_image3,
+    storyStepImage4: row.story_step_image4,
+    storyStepImage5: row.story_step_image5,
   };
 }
 
@@ -33,7 +46,12 @@ function toRow(patch: Partial<SiteSettings>): Partial<SettingsRow> {
   const row: Partial<SettingsRow> = {};
   if (patch.brandName !== undefined) row.brand_name = patch.brandName;
   if (patch.slogan !== undefined) row.slogan = patch.slogan;
+  if (patch.brandDescription !== undefined) row.brand_description = patch.brandDescription;
   if (patch.whatsappNumber !== undefined) row.whatsapp_number = patch.whatsappNumber;
+  if (patch.whatsappDisplay !== undefined) row.whatsapp_display = patch.whatsappDisplay;
+  if (patch.contactEmail !== undefined) row.contact_email = patch.contactEmail;
+  if (patch.contactAddress !== undefined) row.contact_address = patch.contactAddress;
+  if (patch.contactMapsUrl !== undefined) row.contact_maps_url = patch.contactMapsUrl;
   if (patch.currency !== undefined) row.currency = patch.currency;
   if (patch.instagram !== undefined) row.instagram = patch.instagram;
   if (patch.facebook !== undefined) row.facebook = patch.facebook;
@@ -51,6 +69,14 @@ function toRow(patch: Partial<SiteSettings>): Partial<SettingsRow> {
   if (patch.brandLogo !== undefined) row.brand_logo = patch.brandLogo;
   if (patch.paymentBadgeIcon !== undefined) row.payment_badge_icon = patch.paymentBadgeIcon;
   if (patch.paymentBadgeLabel !== undefined) row.payment_badge_label = patch.paymentBadgeLabel;
+  if (patch.storyEyebrow !== undefined) row.story_eyebrow = patch.storyEyebrow;
+  if (patch.storyTitle !== undefined) row.story_title = patch.storyTitle;
+  if (patch.storyDescription !== undefined) row.story_description = patch.storyDescription;
+  if (patch.storyStepImage1 !== undefined) row.story_step_image1 = patch.storyStepImage1;
+  if (patch.storyStepImage2 !== undefined) row.story_step_image2 = patch.storyStepImage2;
+  if (patch.storyStepImage3 !== undefined) row.story_step_image3 = patch.storyStepImage3;
+  if (patch.storyStepImage4 !== undefined) row.story_step_image4 = patch.storyStepImage4;
+  if (patch.storyStepImage5 !== undefined) row.story_step_image5 = patch.storyStepImage5;
   return row;
 }
 

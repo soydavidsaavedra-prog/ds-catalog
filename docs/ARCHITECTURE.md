@@ -141,6 +141,37 @@ el campo `order` con el hermano (misma `parentId`) adyacente — es lo que
 `/admin/categorias` usa en los botones ↑/↓, y lo que determina el orden en el
 header, footer, y las secciones del home.
 
+## Foto real por categoría
+
+`/admin/categorias` ahora tiene `NSSingleImageUploader` en el campo `image`
+de cada categoría (antes solo se auto-asignaba `placeholder:<slug>:1`, sin
+forma de subir una foto real). Sube al mismo bucket que todo lo demás; si
+queda vacío, sigue cayendo al arte de placeholder generado.
+
+## Sección "Nuestra fábrica" editable
+
+`NSFactoryStory` (home) sigue el mismo patrón que `NSHero`: recibe
+`eyebrow`/`title`/`description`/`stepImages` por props con la copy original
+como default. Las 5 etiquetas de paso (Tela/Corte/Confección/Detalle/
+Producto) se mantienen fijas a propósito — solo el texto del encabezado y
+las 5 fotos son editables, vía `/admin/inicio` (`NSStoryEditorForm`, mismo
+patrón de vista previa en vivo con `transform: scale()` que el editor del
+Hero). `NSSingleImageUploader` ahora acepta un `onChange` opcional para que
+un formulario padre pueda reflejar la nueva URL en su propio estado (así la
+vista previa se actualiza al subir, no solo al guardar).
+
+## Contacto/footer conectado a SiteSettings
+
+El footer usaba `siteConfig` (constantes del código) para redes sociales,
+correo y ubicación — el formulario de `/admin/configuracion` ya permitía
+editar instagram/facebook/tiktok, pero esos cambios nunca se reflejaban en
+el sitio. `SiteSettings` ganó `brandDescription`, `whatsappDisplay`,
+`contactEmail`, `contactAddress`, `contactMapsUrl`; `NSFooter` y `NSHeader`
+ahora leen todo desde `getSettings()`. La dirección se muestra como link a
+`contactMapsUrl` (un enlace de "Compartir" de Google Maps) cuando está
+configurado, texto plano si no. `siteConfig` sigue existiendo solo como
+fallback de build-time/env (ver `lib/data/seed/settings.ts`).
+
 ## Autenticación de administrador
 
 Sin proveedor externo, sin cuentas de comprador. Una sola contraseña

@@ -128,7 +128,12 @@ create table if not exists ns_settings (
   id smallint primary key default 1 check (id = 1),
   brand_name text not null default 'El Nuevo Sánchez',
   slogan text not null default 'De la fábrica a tus manos',
+  brand_description text not null default '',
   whatsapp_number text not null default '',
+  whatsapp_display text not null default '',
+  contact_email text not null default '',
+  contact_address text not null default '',
+  contact_maps_url text not null default '',
   currency text not null default 'USD',
   instagram text not null default '',
   facebook text not null default '',
@@ -149,7 +154,16 @@ create table if not exists ns_settings (
   -- / hide the badge everywhere.
   brand_logo text not null default '',
   payment_badge_icon text not null default '',
-  payment_badge_label text not null default 'Disponible con Cashea'
+  payment_badge_label text not null default 'Disponible con Cashea',
+  -- "De la fábrica a tus manos" home section (see components/home/NSFactoryStory.tsx).
+  story_eyebrow text not null default 'Nuestro proceso',
+  story_title text not null default 'De la fábrica a tus manos',
+  story_description text not null default 'Cada jean nace en nuestra fábrica: tela seleccionada, corte preciso, confección artesanal y un control de detalle que no se negocia.',
+  story_step_image1 text not null default 'placeholder:fábrica:story-tela',
+  story_step_image2 text not null default 'placeholder:fábrica:story-corte',
+  story_step_image3 text not null default 'placeholder:fábrica:story-confeccion',
+  story_step_image4 text not null default 'placeholder:fábrica:story-detalle',
+  story_step_image5 text not null default 'placeholder:fábrica:story-producto'
 );
 
 -- Backfills the hero_* columns (with their defaults) on a table created by
@@ -167,6 +181,19 @@ alter table ns_settings add column if not exists hero_image_position_y numeric(5
 alter table ns_settings add column if not exists brand_logo text not null default '';
 alter table ns_settings add column if not exists payment_badge_icon text not null default '';
 alter table ns_settings add column if not exists payment_badge_label text not null default 'Disponible con Cashea';
+alter table ns_settings add column if not exists brand_description text not null default '';
+alter table ns_settings add column if not exists whatsapp_display text not null default '';
+alter table ns_settings add column if not exists contact_email text not null default '';
+alter table ns_settings add column if not exists contact_address text not null default '';
+alter table ns_settings add column if not exists contact_maps_url text not null default '';
+alter table ns_settings add column if not exists story_eyebrow text not null default 'Nuestro proceso';
+alter table ns_settings add column if not exists story_title text not null default 'De la fábrica a tus manos';
+alter table ns_settings add column if not exists story_description text not null default 'Cada jean nace en nuestra fábrica: tela seleccionada, corte preciso, confección artesanal y un control de detalle que no se negocia.';
+alter table ns_settings add column if not exists story_step_image1 text not null default 'placeholder:fábrica:story-tela';
+alter table ns_settings add column if not exists story_step_image2 text not null default 'placeholder:fábrica:story-corte';
+alter table ns_settings add column if not exists story_step_image3 text not null default 'placeholder:fábrica:story-confeccion';
+alter table ns_settings add column if not exists story_step_image4 text not null default 'placeholder:fábrica:story-detalle';
+alter table ns_settings add column if not exists story_step_image5 text not null default 'placeholder:fábrica:story-producto';
 
 alter table ns_settings enable row level security;
 

@@ -191,12 +191,13 @@ export async function createCategoryAction(formData: FormData): Promise<void> {
   if (!name || !baseSlug) return;
   const parentId = String(formData.get("parentId") ?? "").trim() || null;
   const slug = await namespaceSlugUnderParent(baseSlug, parentId);
+  const image = String(formData.get("image") ?? "").trim();
 
   await createCategory({
     name,
     slug,
     description: String(formData.get("description") ?? "").trim(),
-    image: `placeholder:${slug}:1`,
+    image: image || `placeholder:${slug}:1`,
     active: true,
     featured: false,
     parentId,
@@ -210,12 +211,14 @@ export async function updateCategoryAction(id: string, formData: FormData): Prom
   const baseSlug = slugify(String(formData.get("slug") ?? "").trim() || name);
   const parentId = String(formData.get("parentId") ?? "").trim() || null;
   const slug = await namespaceSlugUnderParent(baseSlug, parentId);
+  const image = String(formData.get("image") ?? "").trim();
 
   await updateCategory(id, {
     name,
     slug,
     description: String(formData.get("description") ?? "").trim(),
     parentId,
+    ...(image ? { image } : {}),
   });
   revalidatePath("/");
   revalidatePath("/catalogo");
@@ -300,36 +303,77 @@ export async function updateOrderStatusAction(id: string, status: OrderStatus): 
 
 // ---------- Settings ----------
 
+/** Friendlier message for the common "you haven't re-run schema.sql yet" failure mode. */
+function settingsErrorMessage(err: unknown): string {
+  const message = err instanceof Error ? err.message : String(err);
+  if (/column .* does not exist/i.test(message)) {
+    return "No se pudo guardar: falta actualizar la base de datos. Vuelve a correr supabase/schema.sql en el SQL Editor de Supabase y reintenta.";
+  }
+  return `No se pudo guardar: ${message}`;
+}
+
 export async function updateSettingsAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await updateSettings({
-    brandName: String(formData.get("brandName") ?? "").trim(),
-    slogan: String(formData.get("slogan") ?? "").trim(),
-    whatsappNumber: String(formData.get("whatsappNumber") ?? "").replace(/[^0-9]/g, ""),
-    currency: String(formData.get("currency") ?? "USD").trim(),
-    instagram: String(formData.get("instagram") ?? "").trim(),
-    facebook: String(formData.get("facebook") ?? "").trim(),
-    tiktok: String(formData.get("tiktok") ?? "").trim(),
-    brandLogo: String(formData.get("brandLogo") ?? "").trim(),
-    paymentBadgeIcon: String(formData.get("paymentBadgeIcon") ?? "").trim(),
-    paymentBadgeLabel: String(formData.get("paymentBadgeLabel") ?? "").trim(),
-  });
+  try {
+    await updateSettings({
+      brandName: String(formData.get("brandName") ?? "").trim(),
+      slogan: String(formData.get("slogan") ?? "").trim(),
+      brandDescription: String(formData.get("brandDescription") ?? "").trim(),
+      whatsappNumber: String(formData.get("whatsappNumber") ?? "").replace(/[^0-9]/g, ""),
+      whatsappDisplay: String(formData.get("whatsappDisplay") ?? "").trim(),
+      contactEmail: String(formData.get("contactEmail") ?? "").trim(),
+      contactAddress: String(formData.get("contactAddress") ?? "").trim(),
+      contactMapsUrl: String(formData.get("contactMapsUrl") ?? "").trim(),
+      currency: String(formData.get("currency") ?? "USD").trim(),
+      instagram: String(formData.get("instagram") ?? "").trim(),
+      facebook: String(formData.get("facebook") ?? "").trim(),
+      tiktok: String(formData.get("tiktok") ?? "").trim(),
+      brandLogo: String(formData.get("brandLogo") ?? "").trim(),
+      paymentBadgeIcon: String(formData.get("paymentBadgeIcon") ?? "").trim(),
+      paymentBadgeLabel: String(formData.get("paymentBadgeLabel") ?? "").trim(),
+    });
+  } catch (err) {
+    return { error: settingsErrorMessage(err) };
+  }
   revalidatePath("/", "layout");
   return { success: true };
 }
 
 export async function updateHeroSettingsAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await updateSettings({
-    heroEyebrow: String(formData.get("heroEyebrow") ?? "").trim(),
-    heroTitleLine1: String(formData.get("heroTitleLine1") ?? "").trim(),
-    heroTitleLine2: String(formData.get("heroTitleLine2") ?? "").trim(),
-    heroSubtitle: String(formData.get("heroSubtitle") ?? "").trim(),
-    heroTagline: String(formData.get("heroTagline") ?? "").trim(),
-    heroCtaLabel: String(formData.get("heroCtaLabel") ?? "").trim(),
-    heroCtaHref: String(formData.get("heroCtaHref") ?? "").trim(),
-    heroImage: String(formData.get("heroImage") ?? "").trim(),
-    heroImagePositionX: Number(formData.get("heroImagePositionX") ?? 50),
-    heroImagePositionY: Number(formData.get("heroImagePositionY") ?? 50),
-  });
+  try {
+    await updateSettings({
+      heroEyebrow: String(formData.get("heroEyebrow") ?? "").trim(),
+      heroTitleLine1: String(formData.get("heroTitleLine1") ?? "").trim(),
+      heroTitleLine2: String(formData.get("heroTitleLine2") ?? "").trim(),
+      heroSubtitle: String(formData.get("heroSubtitle") ?? "").trim(),
+      heroTagline: String(formData.get("heroTagline") ?? "").trim(),
+      heroCtaLabel: String(formData.get("heroCtaLabel") ?? "").trim(),
+      heroCtaHref: String(formData.get("heroCtaHref") ?? "").trim(),
+      heroImage: String(formData.get("heroImage") ?? "").trim(),
+      heroImagePositionX: Number(formData.get("heroImagePositionX") ?? 50),
+      heroImagePositionY: Number(formData.get("heroImagePositionY") ?? 50),
+    });
+  } catch (err) {
+    return { error: settingsErrorMessage(err) };
+  }
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
+export async function updateStorySettingsAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    await updateSettings({
+      storyEyebrow: String(formData.get("storyEyebrow") ?? "").trim(),
+      storyTitle: String(formData.get("storyTitle") ?? "").trim(),
+      storyDescription: String(formData.get("storyDescription") ?? "").trim(),
+      storyStepImage1: String(formData.get("storyStepImage1") ?? "").trim(),
+      storyStepImage2: String(formData.get("storyStepImage2") ?? "").trim(),
+      storyStepImage3: String(formData.get("storyStepImage3") ?? "").trim(),
+      storyStepImage4: String(formData.get("storyStepImage4") ?? "").trim(),
+      storyStepImage5: String(formData.get("storyStepImage5") ?? "").trim(),
+    });
+  } catch (err) {
+    return { error: settingsErrorMessage(err) };
+  }
   revalidatePath("/", "layout");
   return { success: true };
 }

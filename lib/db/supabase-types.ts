@@ -74,7 +74,12 @@ export interface SettingsRow {
   id: number;
   brand_name: string;
   slogan: string;
+  brand_description: string;
   whatsapp_number: string;
+  whatsapp_display: string;
+  contact_email: string;
+  contact_address: string;
+  contact_maps_url: string;
   currency: string;
   instagram: string;
   facebook: string;
@@ -92,6 +97,14 @@ export interface SettingsRow {
   brand_logo: string;
   payment_badge_icon: string;
   payment_badge_label: string;
+  story_eyebrow: string;
+  story_title: string;
+  story_description: string;
+  story_step_image1: string;
+  story_step_image2: string;
+  story_step_image3: string;
+  story_step_image4: string;
+  story_step_image5: string;
 }
 
 // Each Row/Insert/Update is intersected with Record<string, unknown> so the

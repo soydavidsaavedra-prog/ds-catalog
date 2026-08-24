@@ -43,7 +43,18 @@ export default async function Home() {
         imagePositionX={settings.heroImagePositionX}
         imagePositionY={settings.heroImagePositionY}
       />
-      <NSFactoryStory />
+      <NSFactoryStory
+        eyebrow={settings.storyEyebrow}
+        title={settings.storyTitle}
+        description={settings.storyDescription}
+        stepImages={[
+          settings.storyStepImage1,
+          settings.storyStepImage2,
+          settings.storyStepImage3,
+          settings.storyStepImage4,
+          settings.storyStepImage5,
+        ]}
+      />
       <NSCollections topLevelCategories={topLevelCategories} subcategories={subcategories} />
       <NSFeaturedProducts
         nuevos={nuevos}

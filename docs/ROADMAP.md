@@ -23,6 +23,11 @@ Ver `docs/ARCHITECTURE.md` para decisiones técnicas y pendientes detallados.
 - [x] Sello de método de pago (ej. Cashea) configurable: ícono + texto subibles desde
       `/admin/configuracion`, visible en tarjetas de producto y ficha de producto, con opción de
       ocultarlo por producto
+- [x] Sección "Nuestra fábrica" del home (título, descripción, 5 fotos del proceso) editable desde
+      `/admin/inicio` con vista previa en vivo
+- [x] Foto real subible por categoría desde `/admin/categorias` (antes solo placeholder generado)
+- [x] Footer/contacto completamente conectado a `/admin/configuracion`: redes sociales (antes
+      hardcodeadas y sin efecto), correo, dirección con enlace a Google Maps, descripción de marca
 - [x] Carrito (Zustand + localStorage) y motor de pedido por WhatsApp
 - [x] Componentes base: NSLogo, NSButton, NSBadge, NSPrice, NSInput, NSMedia (+ placeholders)
 - [x] Header/nav/menú móvil/búsqueda, footer, cart drawer, botón flotante de WhatsApp
@@ -36,8 +41,8 @@ Ver `docs/ARCHITECTURE.md` para decisiones técnicas y pendientes detallados.
 
 ## Pendiente (ver "Lo que falta para producción" en ARCHITECTURE.md)
 
-- [ ] Volver a ejecutar `supabase/schema.sql` (agrega `hide_payment_badge` en productos y los
-      campos `brand_logo`/`payment_badge_*` en settings — idempotente, seguro de re-correr)
+- [ ] Volver a ejecutar `supabase/schema.sql` una vez más (agrega `brand_description`,
+      `whatsapp_display`, `contact_*` y `story_*` en settings — idempotente, seguro de re-correr)
       (pendiente de que el usuario lo haga, ver ARCHITECTURE.md)
 - [ ] Fotografía real de producto
 - [ ] Importación masiva vía CSV (arquitectura lista, falta el endpoint)

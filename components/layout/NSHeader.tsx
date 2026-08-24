@@ -1,6 +1,5 @@
 import { listCategories, buildCategoryTree } from "@/lib/repositories/category-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
-import { siteConfig } from "@/lib/config/site";
 import { NSHeaderClient } from "@/components/layout/NSHeaderClient";
 
 export async function NSHeader() {
@@ -17,7 +16,7 @@ export async function NSHeader() {
         name: parent.name,
         children: parent.children.map((c) => ({ slug: c.slug, name: c.name })),
       }))}
-      whatsappNumber={siteConfig.contact.whatsappNumber}
+      whatsappNumber={settings.whatsappNumber}
       logoSrc={settings.brandLogo}
     />
   );

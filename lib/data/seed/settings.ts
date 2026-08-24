@@ -9,7 +9,12 @@ import { siteConfig } from "@/lib/config/site";
 export const settingsSeed: SiteSettings = {
   brandName: siteConfig.brand.name,
   slogan: siteConfig.brand.slogan,
+  brandDescription: siteConfig.brand.description,
   whatsappNumber: siteConfig.contact.whatsappNumber,
+  whatsappDisplay: siteConfig.contact.whatsappDisplay,
+  contactEmail: siteConfig.contact.email,
+  contactAddress: siteConfig.contact.location,
+  contactMapsUrl: "",
   currency: siteConfig.commerce.currency,
   instagram: siteConfig.socials.instagram,
   facebook: siteConfig.socials.facebook,
@@ -27,4 +32,13 @@ export const settingsSeed: SiteSettings = {
   brandLogo: "",
   paymentBadgeIcon: "",
   paymentBadgeLabel: "Disponible con Cashea",
+  storyEyebrow: "Nuestro proceso",
+  storyTitle: "De la fábrica a tus manos",
+  storyDescription:
+    "Cada jean nace en nuestra fábrica: tela seleccionada, corte preciso, confección artesanal y un control de detalle que no se negocia.",
+  storyStepImage1: "placeholder:fábrica:story-tela",
+  storyStepImage2: "placeholder:fábrica:story-corte",
+  storyStepImage3: "placeholder:fábrica:story-confeccion",
+  storyStepImage4: "placeholder:fábrica:story-detalle",
+  storyStepImage5: "placeholder:fábrica:story-producto",
 };

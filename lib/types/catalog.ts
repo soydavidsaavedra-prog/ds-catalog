@@ -76,7 +76,15 @@ export interface Banner {
 export interface SiteSettings {
   brandName: string;
   slogan: string;
+  /** Long-form description shown in the footer. */
+  brandDescription: string;
   whatsappNumber: string;
+  /** Formatted phone shown as text in the footer (e.g. "+58 412 123 4567"); whatsappNumber (digits only) drives the wa.me link. */
+  whatsappDisplay: string;
+  contactEmail: string;
+  contactAddress: string;
+  /** Full Google Maps URL — footer address links here when set. */
+  contactMapsUrl: string;
   currency: string;
   instagram: string;
   facebook: string;
@@ -98,6 +106,15 @@ export interface SiteSettings {
   /** Payment-method badge shown on product cards (e.g. Cashea). Empty = badge hidden everywhere. */
   paymentBadgeIcon: string;
   paymentBadgeLabel: string;
+  /** "De la fábrica a tus manos" home section — editable from /admin/inicio. Step labels (Tela/Corte/...) stay fixed; only copy + photos are editable. */
+  storyEyebrow: string;
+  storyTitle: string;
+  storyDescription: string;
+  storyStepImage1: string;
+  storyStepImage2: string;
+  storyStepImage3: string;
+  storyStepImage4: string;
+  storyStepImage5: string;
 }
 
 export type SortOption =

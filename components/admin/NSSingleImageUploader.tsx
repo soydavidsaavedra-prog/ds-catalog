@@ -12,15 +12,23 @@ export function NSSingleImageUploader({
   name,
   initialValue,
   label = "Subir imagen",
+  onChange,
 }: {
   name: string;
   initialValue?: string;
   label?: string;
+  /** Called with the new URL on upload, and with "" on remove — for a parent that wants to mirror the value (e.g. a live preview). */
+  onChange?: (url: string) => void;
 }) {
-  const [value, setValue] = useState(initialValue ?? "");
+  const [value, setValueState] = useState(initialValue ?? "");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function setValue(url: string) {
+    setValueState(url);
+    onChange?.(url);
+  }
 
   async function handleFile(files: FileList | null) {
     const file = files?.[0];

@@ -2,6 +2,7 @@ import { listCategories, buildCategoryTree } from "@/lib/repositories/category-r
 import { NSInput, NSLabel, NSSelect, NSTextarea } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSAdminDeleteButton } from "@/components/admin/NSAdminDeleteButton";
+import { NSSingleImageUploader } from "@/components/admin/NSSingleImageUploader";
 import {
   createCategoryAction,
   deleteCategoryAction,
@@ -49,30 +50,36 @@ function CategoryRow({
           Orden de visualización
         </span>
       </div>
-      <form action={updateCategoryAction.bind(null, category.id)} className="grid gap-4 sm:grid-cols-[1fr_1fr_1fr_2fr_auto]">
-        <div>
-          <NSLabel htmlFor={`name-${category.id}`}>Nombre</NSLabel>
-          <NSInput id={`name-${category.id}`} name="name" defaultValue={category.name} required />
+      <form action={updateCategoryAction.bind(null, category.id)} className="flex flex-col gap-4">
+        <div className="grid gap-4 sm:grid-cols-[1fr_1fr_1fr_2fr_auto]">
+          <div>
+            <NSLabel htmlFor={`name-${category.id}`}>Nombre</NSLabel>
+            <NSInput id={`name-${category.id}`} name="name" defaultValue={category.name} required />
+          </div>
+          <div>
+            <NSLabel htmlFor={`slug-${category.id}`}>Slug</NSLabel>
+            <NSInput id={`slug-${category.id}`} name="slug" defaultValue={category.slug} required />
+          </div>
+          <div>
+            <NSLabel htmlFor={`parent-${category.id}`}>Categoría padre</NSLabel>
+            <NSSelect id={`parent-${category.id}`} name="parentId" defaultValue={category.parentId ?? ""}>
+              <option value="">Ninguna (categoría principal)</option>
+              {parents.filter((p) => p.id !== category.id).map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </NSSelect>
+          </div>
+          <div>
+            <NSLabel htmlFor={`desc-${category.id}`}>Descripción</NSLabel>
+            <NSInput id={`desc-${category.id}`} name="description" defaultValue={category.description} />
+          </div>
+          <div className="flex items-end">
+            <NSButton type="submit" variant="outline" size="sm">Guardar</NSButton>
+          </div>
         </div>
         <div>
-          <NSLabel htmlFor={`slug-${category.id}`}>Slug</NSLabel>
-          <NSInput id={`slug-${category.id}`} name="slug" defaultValue={category.slug} required />
-        </div>
-        <div>
-          <NSLabel htmlFor={`parent-${category.id}`}>Categoría padre</NSLabel>
-          <NSSelect id={`parent-${category.id}`} name="parentId" defaultValue={category.parentId ?? ""}>
-            <option value="">Ninguna (categoría principal)</option>
-            {parents.filter((p) => p.id !== category.id).map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </NSSelect>
-        </div>
-        <div>
-          <NSLabel htmlFor={`desc-${category.id}`}>Descripción</NSLabel>
-          <NSInput id={`desc-${category.id}`} name="description" defaultValue={category.description} />
-        </div>
-        <div className="flex items-end">
-          <NSButton type="submit" variant="outline" size="sm">Guardar</NSButton>
+          <NSLabel>Foto de la categoría</NSLabel>
+          <NSSingleImageUploader name="image" initialValue={category.image} label="Subir foto" />
         </div>
       </form>
       <div className="mt-3 flex items-center gap-4 border-t border-border pt-3">
@@ -136,6 +143,10 @@ export default async function AdminCategoriesPage() {
           <div>
             <NSLabel htmlFor="new-description">Descripción</NSLabel>
             <NSTextarea id="new-description" name="description" rows={2} />
+          </div>
+          <div>
+            <NSLabel>Foto (opcional, se puede subir después)</NSLabel>
+            <NSSingleImageUploader name="image" label="Subir foto" />
           </div>
           <NSButton type="submit" size="sm" className="self-start">Crear categoría</NSButton>
         </form>
