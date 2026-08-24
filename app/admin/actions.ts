@@ -18,6 +18,8 @@ import {
 import {
   createCategory,
   deleteCategory,
+  getCategoryById,
+  getCategoryBySlug,
   updateCategory,
 } from "@/lib/repositories/category-repository";
 import { createBanner, deleteBanner, updateBanner } from "@/lib/repositories/banner-repository";
@@ -64,7 +66,23 @@ function slugify(value: string): string {
 
 // ---------- Products ----------
 
-function parseProductInput(formData: FormData): ProductInput {
+const AUDIENCE_VALUES: Audience[] = ["dama", "caballero", "nino", "unisex"];
+
+/**
+ * Audience is no longer a separate form field — it's derived from the
+ * product's category so there's a single source of truth (the category
+ * tree already has Dama/Caballero/Niño/Unisex at the top level). Falls
+ * back to "unisex" for a category outside that structure.
+ */
+async function resolveAudienceForCategory(categorySlug: string): Promise<Audience> {
+  const category = await getCategoryBySlug(categorySlug);
+  if (!category) return "unisex";
+  const topLevel = category.parentId ? await getCategoryById(category.parentId) : category;
+  const slug = topLevel?.slug;
+  return AUDIENCE_VALUES.includes(slug as Audience) ? (slug as Audience) : "unisex";
+}
+
+async function parseProductInput(formData: FormData): Promise<ProductInput> {
   const images = JSON.parse(String(formData.get("images") ?? "[]")) as string[];
   const colors = JSON.parse(String(formData.get("colors") ?? "[]")) as ProductColor[];
   const sizes = String(formData.get("sizes") ?? "")
@@ -74,6 +92,7 @@ function parseProductInput(formData: FormData): ProductInput {
   const name = String(formData.get("name") ?? "").trim();
   const reference = String(formData.get("reference") ?? "").trim();
   const slugInput = String(formData.get("slug") ?? "").trim();
+  const categorySlug = String(formData.get("categorySlug") ?? "");
 
   return {
     slug: slugify(slugInput || `${reference}-${name}`),
@@ -82,9 +101,9 @@ function parseProductInput(formData: FormData): ProductInput {
     price: Number(formData.get("price") ?? 0),
     wholesalePrice: formData.get("wholesalePrice") ? Number(formData.get("wholesalePrice")) : null,
     description: String(formData.get("description") ?? "").trim(),
-    categorySlug: String(formData.get("categorySlug") ?? ""),
-    audience: (String(formData.get("audience") ?? "unisex") as Audience),
-    images: images.length > 0 ? images : [`placeholder:${formData.get("categorySlug")}:new`],
+    categorySlug,
+    audience: await resolveAudienceForCategory(categorySlug),
+    images: images.length > 0 ? images : [`placeholder:${categorySlug}:new`],
     sizes,
     colors,
     availability: String(formData.get("availability") ?? "in_stock") as Availability,
@@ -96,7 +115,7 @@ function parseProductInput(formData: FormData): ProductInput {
 }
 
 export async function createProductAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const input = parseProductInput(formData);
+  const input = await parseProductInput(formData);
   if (!input.name || !input.reference || !input.categorySlug) {
     return { error: "Nombre, referencia y categoría son obligatorios." };
   }
@@ -114,7 +133,7 @@ export async function updateProductAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const input = parseProductInput(formData);
+  const input = await parseProductInput(formData);
   if (!input.name || !input.reference || !input.categorySlug) {
     return { error: "Nombre, referencia y categoría son obligatorios." };
   }
@@ -150,11 +169,26 @@ export async function toggleProductFlagAction(
 
 // ---------- Categories ----------
 
+/**
+ * Subcategory slugs are namespaced under their parent's slug (e.g.
+ * "dama-joggers", "caballero-joggers") so the same subcategory name can be
+ * reused under multiple parents without colliding on the global unique
+ * slug column. A slug the admin already typed with that prefix is left
+ * alone; only a bare slug gets prefixed.
+ */
+async function namespaceSlugUnderParent(slug: string, parentId: string | null): Promise<string> {
+  if (!parentId) return slug;
+  const parent = await getCategoryById(parentId);
+  if (!parent) return slug;
+  return slug.startsWith(`${parent.slug}-`) ? slug : `${parent.slug}-${slug}`;
+}
+
 export async function createCategoryAction(formData: FormData): Promise<void> {
   const name = String(formData.get("name") ?? "").trim();
-  const slug = slugify(String(formData.get("slug") ?? "").trim() || name);
-  if (!name || !slug) return;
+  const baseSlug = slugify(String(formData.get("slug") ?? "").trim() || name);
+  if (!name || !baseSlug) return;
   const parentId = String(formData.get("parentId") ?? "").trim() || null;
+  const slug = await namespaceSlugUnderParent(baseSlug, parentId);
 
   await createCategory({
     name,
@@ -171,8 +205,9 @@ export async function createCategoryAction(formData: FormData): Promise<void> {
 
 export async function updateCategoryAction(id: string, formData: FormData): Promise<void> {
   const name = String(formData.get("name") ?? "").trim();
-  const slug = slugify(String(formData.get("slug") ?? "").trim() || name);
+  const baseSlug = slugify(String(formData.get("slug") ?? "").trim() || name);
   const parentId = String(formData.get("parentId") ?? "").trim() || null;
+  const slug = await namespaceSlugUnderParent(baseSlug, parentId);
 
   await updateCategory(id, {
     name,

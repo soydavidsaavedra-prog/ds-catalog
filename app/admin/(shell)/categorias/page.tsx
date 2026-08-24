@@ -83,6 +83,10 @@ export default async function AdminCategoriesPage() {
           <div>
             <NSLabel htmlFor="new-slug">Slug (opcional, se genera del nombre)</NSLabel>
             <NSInput id="new-slug" name="slug" placeholder="recto" />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Si eliges una categoría padre abajo, se le antepone automáticamente (ej. &quot;dama-recto&quot;) para
+              poder repetir el mismo nombre bajo distintas categorías principales.
+            </p>
           </div>
           <div>
             <NSLabel htmlFor="new-parent">Categoría padre</NSLabel>
