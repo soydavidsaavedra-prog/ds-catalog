@@ -95,11 +95,11 @@ type TableDef<Row> = {
 export interface Database {
   public: {
     Tables: {
-      categories: TableDef<CategoryRow>;
-      products: TableDef<ProductRow>;
-      banners: TableDef<BannerRow>;
-      orders: TableDef<OrderRow>;
-      settings: TableDef<SettingsRow>;
+      ns_categories: TableDef<CategoryRow>;
+      ns_products: TableDef<ProductRow>;
+      ns_banners: TableDef<BannerRow>;
+      ns_orders: TableDef<OrderRow>;
+      ns_settings: TableDef<SettingsRow>;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

@@ -100,7 +100,7 @@ de demo usa el esquema `placeholder:<categoria>:<seed>`. `NSMedia` detecta
 ese esquema y dibuja `NSPlaceholderArt` (SVG generado: degradado denim,
 líneas de costura, monograma NS) en vez de una foto rota — es un estado de
 diseño intencional, no un placeholder roto. En cuanto el admin sube una foto
-real (`/admin/api/upload`, guarda en el bucket público `product-images` de
+real (`/admin/api/upload`, guarda en el bucket público `ns-product-images` de
 Supabase Storage), `images[0]` pasa a ser una URL normal y `NSMedia` renderiza
 `next/image` sin tocar ningún componente.
 

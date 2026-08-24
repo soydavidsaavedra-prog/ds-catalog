@@ -8,8 +8,10 @@ decisiones técnicas y `docs/ROADMAP.md` para el estado del proyecto.
 
 1. Crea un proyecto en [supabase.com](https://supabase.com) (o usa uno existente).
 2. Abre **SQL Editor → New query**, pega el contenido de `supabase/schema.sql`
-   y ejecútalo una vez. Crea las tablas (`categories`, `products`, `banners`,
-   `orders`, `settings`) y el bucket público `product-images`.
+   y ejecútalo una vez. Crea las tablas (`ns_categories`, `ns_products`,
+   `ns_banners`, `ns_orders`, `ns_settings` — prefijo `ns_` para no chocar con
+   tablas de otros proyectos en el mismo Supabase) y el bucket público
+   `ns-product-images`.
 3. En **Project Settings → API**, copia `Project URL`, `anon public key` y
    `service_role key` a un `.env.local` en la raíz (ver `.env.example`).
 4. Instala dependencias, siembra el catálogo de demo y arranca:
@@ -63,6 +65,6 @@ desde `/admin/configuracion`, sin redeploy.
 - Los datos (productos, categorías, banners, pedidos, configuración) se
   persisten en Supabase (Postgres) — ver "Capa de datos" en
   `docs/ARCHITECTURE.md`. Las imágenes subidas desde el admin van al bucket
-  público `product-images` de Supabase Storage.
+  público `ns-product-images` de Supabase Storage.
 - El logo actual es una recreación fiel en SVG (`components/brand/NSLogo.tsx`),
   documentada como temporal hasta contar con el archivo oficial.

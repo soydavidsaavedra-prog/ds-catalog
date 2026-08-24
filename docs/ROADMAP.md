@@ -11,7 +11,7 @@ Ver `docs/ARCHITECTURE.md` para decisiones técnicas y pendientes detallados.
 - [x] Design system de marca (negro, dorado #F8C909, denim) — `config/theme/*`, `app/globals.css`
 - [x] Capa de datos: tipos, seed (~36 productos demo / 9 categorías / banners / settings),
       repositorios CRUD sobre Supabase (Postgres) — persiste en Vercel
-- [x] Subida de imágenes de admin a Supabase Storage (bucket público `product-images`)
+- [x] Subida de imágenes de admin a Supabase Storage (bucket público `ns-product-images`)
 - [x] Carrito (Zustand + localStorage) y motor de pedido por WhatsApp
 - [x] Componentes base: NSLogo, NSButton, NSBadge, NSPrice, NSInput, NSMedia (+ placeholders)
 - [x] Header/nav/menú móvil/búsqueda, footer, cart drawer, botón flotante de WhatsApp

@@ -9,6 +9,11 @@
 -- enabled with NO policies below, so if the anon/public key is ever used
 -- from the browser it can read or write nothing; only service_role
 -- (which bypasses RLS) can touch these tables.
+--
+-- Tables are prefixed with ns_ (El Nuevo Sánchez) so this never collides
+-- with tables from any other project sharing the same Supabase project
+-- (e.g. an old, unrelated "products" table) — this schema never reads,
+-- writes, or drops anything it didn't create itself.
 
 create extension if not exists "pgcrypto";
 
@@ -20,9 +25,9 @@ begin
 end;
 $$ language plpgsql;
 
--- ---------- categories ----------
+-- ---------- ns_categories ----------
 
-create table if not exists categories (
+create table if not exists ns_categories (
   id uuid primary key default gen_random_uuid(),
   slug text unique not null,
   name text not null,
@@ -35,15 +40,15 @@ create table if not exists categories (
   updated_at timestamptz not null default now()
 );
 
-create trigger categories_set_updated_at
-  before update on categories
+create trigger ns_categories_set_updated_at
+  before update on ns_categories
   for each row execute function set_updated_at();
 
-alter table categories enable row level security;
+alter table ns_categories enable row level security;
 
--- ---------- products ----------
+-- ---------- ns_products ----------
 
-create table if not exists products (
+create table if not exists ns_products (
   id uuid primary key default gen_random_uuid(),
   slug text unique not null,
   reference text not null,
@@ -51,7 +56,7 @@ create table if not exists products (
   price numeric(10, 2) not null default 0,
   wholesale_price numeric(10, 2),
   description text not null default '',
-  category_slug text not null references categories (slug) on update cascade,
+  category_slug text not null references ns_categories (slug) on update cascade,
   audience text not null default 'unisex'
     check (audience in ('dama', 'caballero', 'nino', 'unisex')),
   images text[] not null default '{}',
@@ -67,17 +72,17 @@ create table if not exists products (
   updated_at timestamptz not null default now()
 );
 
-create index if not exists products_category_slug_idx on products (category_slug);
+create index if not exists ns_products_category_slug_idx on ns_products (category_slug);
 
-create trigger products_set_updated_at
-  before update on products
+create trigger ns_products_set_updated_at
+  before update on ns_products
   for each row execute function set_updated_at();
 
-alter table products enable row level security;
+alter table ns_products enable row level security;
 
--- ---------- banners ----------
+-- ---------- ns_banners ----------
 
-create table if not exists banners (
+create table if not exists ns_banners (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   subtitle text not null default '',
@@ -88,11 +93,11 @@ create table if not exists banners (
   "order" integer not null default 0
 );
 
-alter table banners enable row level security;
+alter table ns_banners enable row level security;
 
--- ---------- orders ----------
+-- ---------- ns_orders ----------
 
-create table if not exists orders (
+create table if not exists ns_orders (
   id uuid primary key default gen_random_uuid(),
   created_at timestamptz not null default now(),
   items jsonb not null default '[]', -- OrderItem[]
@@ -103,11 +108,11 @@ create table if not exists orders (
     check (status in ('new', 'contacted', 'confirmed', 'completed', 'cancelled'))
 );
 
-alter table orders enable row level security;
+alter table ns_orders enable row level security;
 
--- ---------- settings (singleton row) ----------
+-- ---------- ns_settings (singleton row) ----------
 
-create table if not exists settings (
+create table if not exists ns_settings (
   id smallint primary key default 1 check (id = 1),
   brand_name text not null default 'El Nuevo Sánchez',
   slogan text not null default 'De la fábrica a tus manos',
@@ -118,12 +123,12 @@ create table if not exists settings (
   tiktok text not null default ''
 );
 
-alter table settings enable row level security;
+alter table ns_settings enable row level security;
 
 -- Bootstrap the single settings row so getSettings() always finds one, even
 -- before the seed script runs. Real values (WhatsApp number, etc.) can be
 -- edited any time from /admin/configuracion.
-insert into settings (id, brand_name, slogan, whatsapp_number, currency)
+insert into ns_settings (id, brand_name, slogan, whatsapp_number, currency)
 values (1, 'El Nuevo Sánchez', 'De la fábrica a tus manos', '584121234567', 'USD')
 on conflict (id) do nothing;
 
@@ -131,10 +136,12 @@ on conflict (id) do nothing;
 -- Public bucket: product photos need to be viewable by any visitor via a
 -- plain URL, same as the local /public/uploads/ files were. Uploads only
 -- ever happen through /admin/api/upload (service_role, server-side), so a
--- public *read* policy is safe — there is no public write access.
+-- public *read* policy is safe — there is no public write access. Named
+-- ns-product-images (not just "product-images") for the same collision-
+-- avoidance reason as the ns_ table prefix above.
 
 insert into storage.buckets (id, name, public)
-values ('product-images', 'product-images', true)
+values ('ns-product-images', 'ns-product-images', true)
 on conflict (id) do nothing;
 
 do $$
@@ -143,10 +150,10 @@ begin
     select 1 from pg_policies
     where schemaname = 'storage'
       and tablename = 'objects'
-      and policyname = 'Public read access to product images'
+      and policyname = 'Public read access to ns-product-images'
   ) then
-    create policy "Public read access to product images"
+    create policy "Public read access to ns-product-images"
       on storage.objects for select
-      using (bucket_id = 'product-images');
+      using (bucket_id = 'ns-product-images');
   end if;
 end $$;

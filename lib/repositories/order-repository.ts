@@ -24,14 +24,14 @@ function fromRow(row: OrderRow): Order {
 
 export async function listOrders(): Promise<Order[]> {
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
+  const { data, error } = await supabase.from("ns_orders").select("*").order("created_at", { ascending: false });
   if (error) throw error;
   return (data as OrderRow[]).map(fromRow);
 }
 
 export async function getOrderById(id: string): Promise<Order | null> {
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("orders").select("*").eq("id", id).maybeSingle();
+  const { data, error } = await supabase.from("ns_orders").select("*").eq("id", id).maybeSingle();
   if (error) throw error;
   return data ? fromRow(data as OrderRow) : null;
 }
@@ -39,7 +39,7 @@ export async function getOrderById(id: string): Promise<Order | null> {
 export async function createOrder(input: OrderInput): Promise<Order> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
-    .from("orders")
+    .from("ns_orders")
     .insert({
       items: input.items,
       total: input.total,
@@ -57,7 +57,7 @@ export async function createOrder(input: OrderInput): Promise<Order> {
 export async function updateOrderStatus(id: string, status: OrderStatus): Promise<Order | null> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
-    .from("orders")
+    .from("ns_orders")
     .update({ status })
     .eq("id", id)
     .select("*")

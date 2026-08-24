@@ -29,7 +29,7 @@ function toRow(patch: Partial<SiteSettings>): Partial<SettingsRow> {
 
 export async function getSettings(): Promise<SiteSettings> {
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("settings").select("*").eq("id", 1).single();
+  const { data, error } = await supabase.from("ns_settings").select("*").eq("id", 1).single();
   if (error) throw error;
   return fromRow(data as SettingsRow);
 }
@@ -37,7 +37,7 @@ export async function getSettings(): Promise<SiteSettings> {
 export async function updateSettings(patch: Partial<SiteSettings>): Promise<SiteSettings> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
-    .from("settings")
+    .from("ns_settings")
     .update(toRow(patch))
     .eq("id", 1)
     .select("*")

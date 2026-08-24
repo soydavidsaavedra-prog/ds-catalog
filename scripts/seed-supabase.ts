@@ -45,7 +45,7 @@ async function seedCategories() {
     featured: c.featured,
   }));
 
-  const { error } = await supabase.from("categories").upsert(rows, { onConflict: "slug" });
+  const { error } = await supabase.from("ns_categories").upsert(rows, { onConflict: "slug" });
   if (error) throw error;
   console.log(`✓ ${rows.length} categorías`);
 }
@@ -70,7 +70,7 @@ async function seedProducts() {
     active: p.active,
   }));
 
-  const { error } = await supabase.from("products").upsert(rows, { onConflict: "slug" });
+  const { error } = await supabase.from("ns_products").upsert(rows, { onConflict: "slug" });
   if (error) throw error;
   console.log(`✓ ${rows.length} productos`);
 }
@@ -86,14 +86,14 @@ async function seedBanners() {
     order: b.order,
   }));
 
-  const { error } = await supabase.from("banners").insert(rows);
+  const { error } = await supabase.from("ns_banners").insert(rows);
   if (error && error.code !== "23505") throw error; // ignore duplicate-key on re-run
   console.log(`✓ ${rows.length} banners (o ya existían)`);
 }
 
 async function seedSettings() {
   const { error } = await supabase
-    .from("settings")
+    .from("ns_settings")
     .upsert(
       {
         id: 1,

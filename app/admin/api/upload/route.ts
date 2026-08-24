@@ -5,7 +5,7 @@ import { getSupabaseClient } from "@/lib/db/supabaseClient";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
 const MAX_SIZE = 8 * 1024 * 1024;
-const BUCKET = "product-images";
+const BUCKET = "ns-product-images";
 
 export async function POST(request: Request) {
   if (!(await isAdminAuthenticated())) {

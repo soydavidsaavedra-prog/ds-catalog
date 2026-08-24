@@ -32,7 +32,7 @@ function toRow(input: Partial<BannerInput>): Partial<BannerRow> {
 
 export async function listBanners(opts?: { activeOnly?: boolean }): Promise<Banner[]> {
   const supabase = getSupabaseClient();
-  let query = supabase.from("banners").select("*").order("order", { ascending: true });
+  let query = supabase.from("ns_banners").select("*").order("order", { ascending: true });
   if (opts?.activeOnly) query = query.eq("active", true);
 
   const { data, error } = await query;
@@ -42,14 +42,14 @@ export async function listBanners(opts?: { activeOnly?: boolean }): Promise<Bann
 
 export async function getBannerById(id: string): Promise<Banner | null> {
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("banners").select("*").eq("id", id).maybeSingle();
+  const { data, error } = await supabase.from("ns_banners").select("*").eq("id", id).maybeSingle();
   if (error) throw error;
   return data ? fromRow(data as BannerRow) : null;
 }
 
 export async function createBanner(input: BannerInput): Promise<Banner> {
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("banners").insert(toRow(input)).select("*").single();
+  const { data, error } = await supabase.from("ns_banners").insert(toRow(input)).select("*").single();
   if (error) throw error;
   return fromRow(data as BannerRow);
 }
@@ -60,7 +60,7 @@ export async function updateBanner(
 ): Promise<Banner | null> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
-    .from("banners")
+    .from("ns_banners")
     .update(toRow(patch))
     .eq("id", id)
     .select("*")
@@ -72,6 +72,6 @@ export async function updateBanner(
 
 export async function deleteBanner(id: string): Promise<void> {
   const supabase = getSupabaseClient();
-  const { error } = await supabase.from("banners").delete().eq("id", id);
+  const { error } = await supabase.from("ns_banners").delete().eq("id", id);
   if (error) throw error;
 }
