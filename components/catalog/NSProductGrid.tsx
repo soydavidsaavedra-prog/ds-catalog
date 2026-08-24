@@ -8,12 +8,14 @@ export function NSProductGrid({
   emptyTitle = "No encontramos productos",
   emptyDescription = "Prueba ajustando los filtros o la búsqueda.",
   paymentBadge,
+  brandName,
 }: {
   tenantSlug: string;
   products: Product[];
   emptyTitle?: string;
   emptyDescription?: string;
   paymentBadge?: PaymentBadgeInfo;
+  brandName?: string;
 }) {
   if (products.length === 0) {
     return (
@@ -36,6 +38,7 @@ export function NSProductGrid({
           product={product}
           priority={index < 4}
           paymentBadge={paymentBadge}
+          brandName={brandName}
         />
       ))}
     </div>

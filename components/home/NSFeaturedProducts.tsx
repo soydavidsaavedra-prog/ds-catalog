@@ -22,12 +22,14 @@ export function NSFeaturedProducts({
   destacados,
   ofertas,
   paymentBadge,
+  brandName,
 }: {
   tenantSlug: string;
   nuevos: Product[];
   destacados: Product[];
   ofertas: Product[];
   paymentBadge?: PaymentBadgeInfo;
+  brandName?: string;
 }) {
   const [tab, setTab] = useState<TabKey>("nuevos");
   const byTab: Record<TabKey, Product[]> = { nuevos, destacados, ofertas };
@@ -72,6 +74,7 @@ export function NSFeaturedProducts({
             emptyTitle="Muy pronto"
             emptyDescription="Estamos preparando esta selección."
             paymentBadge={paymentBadge}
+            brandName={brandName}
           />
         </div>
       </div>

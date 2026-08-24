@@ -7,10 +7,12 @@ export function NSRelatedProducts({
   tenantSlug,
   products,
   paymentBadge,
+  brandName,
 }: {
   tenantSlug: string;
   products: Product[];
   paymentBadge?: PaymentBadgeInfo;
+  brandName?: string;
 }) {
   if (products.length === 0) return null;
 
@@ -19,7 +21,12 @@ export function NSRelatedProducts({
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <NSSectionHeading eyebrow="Combina con" title="También te puede interesar" />
         <div className="mt-8">
-          <NSProductGrid tenantSlug={tenantSlug} products={products} paymentBadge={paymentBadge} />
+          <NSProductGrid
+            tenantSlug={tenantSlug}
+            products={products}
+            paymentBadge={paymentBadge}
+            brandName={brandName}
+          />
         </div>
       </div>
     </section>

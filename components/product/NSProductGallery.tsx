@@ -8,10 +8,12 @@ export function NSProductGallery({
   images,
   reference,
   name,
+  brandName,
 }: {
   images: string[];
   reference: string;
   name: string;
+  brandName?: string;
 }) {
   const [active, setActive] = useState(0);
   const gallery = images.length > 0 ? images : [`placeholder:producto:${reference}`];
@@ -31,7 +33,7 @@ export function NSProductGallery({
                 active === index ? "border-accent-strong" : "border-border hover:border-border-strong",
               )}
             >
-              <NSMedia src={image} alt={`${name} — vista ${index + 1}`} reference={reference} sizes="56px" />
+              <NSMedia src={image} alt={`${name} — vista ${index + 1}`} reference={reference} sizes="56px" brandName={brandName} />
             </button>
           ))}
         </div>
@@ -39,7 +41,7 @@ export function NSProductGallery({
 
       <div className="relative flex-1 overflow-hidden rounded-card bg-ink-900">
         <div className="aspect-[4/5]">
-          <NSMedia src={gallery[active]} alt={name} reference={reference} priority sizes="(min-width: 1024px) 45vw, 100vw" />
+          <NSMedia src={gallery[active]} alt={name} reference={reference} priority sizes="(min-width: 1024px) 45vw, 100vw" brandName={brandName} />
         </div>
       </div>
     </div>

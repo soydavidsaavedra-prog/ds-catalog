@@ -8,12 +8,14 @@ export function NSCollections({
   tenantSlug,
   topLevelCategories,
   subcategories,
+  brandName,
 }: {
   tenantSlug: string;
   /** Top-level categories (Dama, Caballero, Niño...) shown as the big entry tiles. */
   topLevelCategories: Category[];
   /** Subcategories (Skinny, Cargo, Jogger...) shown as the smaller chip list below. */
   subcategories: Category[];
+  brandName: string;
 }) {
   return (
     <section className="bg-background py-20 sm:py-28">
@@ -28,7 +30,7 @@ export function NSCollections({
                 className="group relative block aspect-[3/4] overflow-hidden rounded-card"
               >
                 <div className="absolute inset-0 transition-transform duration-slower ease-out-ns group-hover:scale-105">
-                  <NSMedia src={category.image} alt={category.name} className="h-full w-full" />
+                  <NSMedia src={category.image} alt={category.name} className="h-full w-full" brandName={brandName} />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-ink-950/80 via-transparent to-transparent" />
                 <div className="absolute bottom-0 left-0 p-6">
@@ -50,7 +52,7 @@ export function NSCollections({
               className="flex flex-col items-center gap-2 rounded-control px-1 text-center"
             >
               <span className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-pill border border-border-strong transition-colors hover:border-accent-strong sm:h-20 sm:w-20">
-                <NSMedia src={category.image} alt={category.name} className="h-full w-full" />
+                <NSMedia src={category.image} alt={category.name} className="h-full w-full" brandName={brandName} />
               </span>
               <span className="text-[11px] font-semibold uppercase tracking-wide text-foreground">
                 {category.name}

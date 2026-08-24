@@ -98,12 +98,22 @@ export default async function ProductPage({
         </nav>
 
         <div className="mt-6 grid gap-10 lg:grid-cols-2 lg:gap-16">
-          <NSProductGallery images={product.images} reference={product.reference} name={product.name} />
+          <NSProductGallery
+            images={product.images}
+            reference={product.reference}
+            name={product.name}
+            brandName={settings.brandName}
+          />
           <NSProductPurchasePanel tenantSlug={tenantSlug} product={product} paymentBadge={paymentBadge} />
         </div>
       </div>
 
-      <NSRelatedProducts tenantSlug={tenantSlug} products={related} paymentBadge={paymentBadge} />
+      <NSRelatedProducts
+        tenantSlug={tenantSlug}
+        products={related}
+        paymentBadge={paymentBadge}
+        brandName={settings.brandName}
+      />
     </div>
   );
 }

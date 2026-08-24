@@ -1,10 +1,10 @@
 import type { Category } from "@/lib/types/catalog";
 import { NSMedia } from "@/components/ui/NSMedia";
 
-export function NSCategoryHero({ category }: { category: Category }) {
+export function NSCategoryHero({ category, brandName }: { category: Category; brandName?: string }) {
   return (
     <div className="relative flex h-64 items-end overflow-hidden bg-ink-950 text-ink-0 sm:h-80">
-      <NSMedia src={category.image} alt={category.name} className="absolute inset-0" priority />
+      <NSMedia src={category.image} alt={category.name} className="absolute inset-0" priority brandName={brandName} />
       <div className="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/50 to-transparent" />
       <div className="relative z-10 mx-auto w-full max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">Colección</p>

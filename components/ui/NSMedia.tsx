@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { parsePlaceholder } from "@/lib/media/placeholder";
 import { NSPlaceholderArt } from "@/components/ui/NSPlaceholderArt";
+import { brandInitials } from "@/lib/utils/brand";
 import { cn } from "@/lib/utils/cn";
 
 interface NSMediaProps {
@@ -14,6 +15,8 @@ interface NSMediaProps {
   fill?: boolean;
   /** CSS object-position (e.g. "50% 30%") for a real photo — ignored for placeholder art. */
   objectPosition?: string;
+  /** Tenant's SiteSettings.brandName — feeds the placeholder plate's watermark initials (default "NS" — El Nuevo Sánchez's own). */
+  brandName?: string;
 }
 
 /**
@@ -31,6 +34,7 @@ export function NSMedia({
   priority,
   fill = true,
   objectPosition,
+  brandName,
 }: NSMediaProps) {
   const placeholder = parsePlaceholder(src) ?? (src ? null : { category: "otros", seed: "0" });
 
@@ -43,6 +47,7 @@ export function NSMedia({
           label={alt}
           reference={reference}
           className="absolute inset-0"
+          monogram={brandName ? brandInitials(brandName) : undefined}
         />
       </div>
     );

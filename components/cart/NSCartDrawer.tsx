@@ -9,7 +9,15 @@ import { NSButton } from "@/components/ui/NSButton";
 import { formatPrice } from "@/lib/utils/format";
 import { buildWhatsAppOrderUrl } from "@/lib/whatsapp/order-message";
 
-export function NSCartDrawer({ tenantSlug, whatsappNumber }: { tenantSlug: string; whatsappNumber: string }) {
+export function NSCartDrawer({
+  tenantSlug,
+  whatsappNumber,
+  brandName,
+}: {
+  tenantSlug: string;
+  whatsappNumber: string;
+  brandName?: string;
+}) {
   const isOpen = useCartStore((s) => s.isOpen);
   const items = useCartStore((s) => s.items);
   const closeCart = useCartStore((s) => s.closeCart);
@@ -74,7 +82,7 @@ export function NSCartDrawer({ tenantSlug, whatsappNumber }: { tenantSlug: strin
                   </NSButton>
                 </div>
               ) : (
-                items.map((item) => <NSCartItemRow key={cartItemKey(item)} item={item} />)
+                items.map((item) => <NSCartItemRow key={cartItemKey(item)} item={item} brandName={brandName} />)
               )}
             </div>
 

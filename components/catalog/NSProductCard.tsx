@@ -15,11 +15,13 @@ export function NSProductCard({
   product,
   priority = false,
   paymentBadge,
+  brandName,
 }: {
   tenantSlug: string;
   product: Product;
   priority?: boolean;
   paymentBadge?: PaymentBadgeInfo;
+  brandName?: string;
 }) {
   const outOfStock = product.availability === "out_of_stock";
   const showPaymentBadge = !product.hidePaymentBadge && paymentBadge?.icon;
@@ -37,6 +39,7 @@ export function NSProductCard({
             reference={product.reference}
             sizes="(min-width: 1024px) 23vw, (min-width: 640px) 45vw, 90vw"
             priority={priority}
+            brandName={brandName}
           />
         </div>
 

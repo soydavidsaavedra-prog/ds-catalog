@@ -7,7 +7,7 @@ import { formatPrice } from "@/lib/utils/format";
 import { cartItemKey, type CartItem } from "@/lib/types/cart";
 import { useCartStore } from "@/lib/cart/cart-store";
 
-export function NSCartItemRow({ item }: { item: CartItem }) {
+export function NSCartItemRow({ item, brandName }: { item: CartItem; brandName?: string }) {
   const key = cartItemKey(item);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
@@ -15,7 +15,7 @@ export function NSCartItemRow({ item }: { item: CartItem }) {
   return (
     <div className="flex gap-3 border-b border-border py-4">
       <Link href={`/producto/${item.slug}`} className="h-20 w-16 shrink-0 overflow-hidden rounded-control">
-        <NSMedia src={item.image} alt={item.name} className="h-full w-full" sizes="80px" />
+        <NSMedia src={item.image} alt={item.name} className="h-full w-full" sizes="80px" brandName={brandName} />
       </Link>
       <div className="flex flex-1 flex-col gap-1">
         <div className="flex items-start justify-between gap-2">

@@ -9,6 +9,7 @@ export interface NSFactoryStoryProps {
   title?: string;
   description?: string;
   stepImages?: [string, string, string, string, string];
+  brandName?: string;
 }
 
 const DEFAULTS: Required<Pick<NSFactoryStoryProps, "eyebrow" | "title" | "description">> = {
@@ -38,6 +39,7 @@ export function NSFactoryStory({
   title = DEFAULTS.title,
   description = DEFAULTS.description,
   stepImages = DEFAULT_STEP_IMAGES,
+  brandName,
 }: NSFactoryStoryProps) {
   return (
     <section className="bg-ink-950 py-20 text-ink-0 sm:py-28">
@@ -55,7 +57,7 @@ export function NSFactoryStory({
           {STEP_LABELS.map((label, index) => (
             <NSReveal key={label} delay={index * 0.08} className="flex flex-col gap-3">
               <div className="relative aspect-[4/5] overflow-hidden rounded-card">
-                <NSMedia src={stepImages[index]} alt={label} className="h-full w-full" />
+                <NSMedia src={stepImages[index]} alt={label} className="h-full w-full" brandName={brandName} />
                 <span className="absolute left-2.5 top-2.5 font-display text-3xl text-accent opacity-90">
                   {String(index + 1).padStart(2, "0")}
                 </span>

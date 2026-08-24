@@ -61,6 +61,7 @@ export default async function Home({
         image={settings.heroImage}
         imagePositionX={settings.heroImagePositionX}
         imagePositionY={settings.heroImagePositionY}
+        brandName={settings.brandName}
       />
       <NSFactoryStory
         eyebrow={settings.storyEyebrow}
@@ -73,20 +74,28 @@ export default async function Home({
           settings.storyStepImage4,
           settings.storyStepImage5,
         ]}
+        brandName={settings.brandName}
       />
-      <NSCollections tenantSlug={tenantSlug} topLevelCategories={topLevelCategories} subcategories={subcategories} />
+      <NSCollections
+        tenantSlug={tenantSlug}
+        topLevelCategories={topLevelCategories}
+        subcategories={subcategories}
+        brandName={settings.brandName}
+      />
       <NSFeaturedProducts
         tenantSlug={tenantSlug}
         nuevos={nuevos}
         destacados={destacados}
         ofertas={ofertas}
         paymentBadge={{ icon: settings.paymentBadgeIcon, label: settings.paymentBadgeLabel }}
+        brandName={settings.brandName}
       />
       <NSBrandStatement
         titleLine1={settings.statementTitleLine1}
         titleLine2={settings.statementTitleLine2}
         description={settings.statementDescription}
         image={settings.statementImage}
+        brandName={settings.brandName}
       />
     </>
   );

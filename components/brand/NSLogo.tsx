@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils/cn";
 import { parsePlaceholder } from "@/lib/media/placeholder";
+import { brandInitials } from "@/lib/utils/brand";
 
 /**
  * NSLogo — a generic circular monogram badge, tenant-aware.
@@ -35,18 +36,6 @@ interface NSLogoProps {
 
 const DEFAULT_BRAND_NAME = "El Nuevo Sánchez";
 const DEFAULT_TAGLINE = "Especialista en Jeans";
-
-/** "El Nuevo Sánchez" -> "NS", "Demo Store" -> "DS", "Acme" -> "AC". */
-function brandInitials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return "";
-  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-  return words
-    .slice(-2)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase();
-}
 
 export function NSLogo({
   className,

@@ -83,6 +83,7 @@ export async function NSCatalogView({
           tenantSlug={tenantSlug}
           products={results}
           paymentBadge={{ icon: settings.paymentBadgeIcon, label: settings.paymentBadgeLabel }}
+          brandName={settings.brandName}
         />
       </div>
     </div>
