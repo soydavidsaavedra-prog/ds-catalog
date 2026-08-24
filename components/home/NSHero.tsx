@@ -55,7 +55,7 @@ export function NSHero({
       <div className="absolute inset-0">
         <NSMedia
           src={image}
-          alt="El Nuevo Sánchez"
+          alt={`${titleLine1} ${titleLine2}`}
           priority
           className="h-full w-full"
           objectPosition={`${imagePositionX}% ${imagePositionY}%`}

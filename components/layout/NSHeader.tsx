@@ -21,6 +21,8 @@ export async function NSHeader({ tenantSlug }: { tenantSlug: string }) {
       }))}
       whatsappNumber={settings.whatsappNumber}
       logoSrc={settings.brandLogo}
+      brandName={settings.brandName}
+      tagline={settings.heroSubtitle}
     />
   );
 }

@@ -6,7 +6,17 @@ import { NSLogo } from "@/components/brand/NSLogo";
 import { logoutAction } from "@/app/[tenant]/admin/actions";
 import { cn } from "@/lib/utils/cn";
 
-export function NSAdminSidebar({ tenantSlug, logoSrc }: { tenantSlug: string; logoSrc?: string }) {
+export function NSAdminSidebar({
+  tenantSlug,
+  logoSrc,
+  brandName,
+  tagline,
+}: {
+  tenantSlug: string;
+  logoSrc?: string;
+  brandName: string;
+  tagline: string;
+}) {
   const pathname = usePathname();
   const base = `/${tenantSlug}/admin`;
   const LINKS = [
@@ -22,7 +32,14 @@ export function NSAdminSidebar({ tenantSlug, logoSrc }: { tenantSlug: string; lo
   return (
     <aside className="flex h-full w-60 shrink-0 flex-col border-r border-ink-800 bg-ink-950 text-ink-0">
       <div className="flex h-16 items-center gap-2 border-b border-ink-800 px-5">
-        <NSLogo id="ns-admin" variant="mark" className="h-8 w-8" src={logoSrc} />
+        <NSLogo
+          id="ns-admin"
+          variant="mark"
+          className="h-8 w-8"
+          src={logoSrc}
+          brandName={brandName}
+          tagline={tagline}
+        />
         <span className="text-xs font-semibold uppercase tracking-widest">Panel administrativo</span>
       </div>
 

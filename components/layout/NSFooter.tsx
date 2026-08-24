@@ -18,7 +18,14 @@ export async function NSFooter({ tenantSlug }: { tenantSlug: string }) {
     <footer id="contacto" className="border-t border-ink-800 bg-ink-950 text-ink-200">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr] lg:px-8">
         <div>
-          <NSLogo id="ns-footer" variant="full" className="text-ink-0" src={settings.brandLogo} />
+          <NSLogo
+            id="ns-footer"
+            variant="full"
+            className="text-ink-0"
+            src={settings.brandLogo}
+            brandName={settings.brandName}
+            tagline={settings.heroSubtitle}
+          />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink-400">
             {settings.brandDescription}
           </p>

@@ -21,7 +21,12 @@ export default async function AdminShellLayout({
 
   return (
     <div className="flex min-h-dvh bg-surface">
-      <NSAdminSidebar tenantSlug={tenantSlug} logoSrc={settings.brandLogo} />
+      <NSAdminSidebar
+        tenantSlug={tenantSlug}
+        logoSrc={settings.brandLogo}
+        brandName={settings.brandName}
+        tagline={settings.heroSubtitle}
+      />
       <div className="min-w-0 flex-1 overflow-x-hidden">
         <main className="mx-auto max-w-6xl px-6 py-8 sm:px-10">{children}</main>
       </div>

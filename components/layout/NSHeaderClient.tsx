@@ -22,11 +22,15 @@ export function NSHeaderClient({
   parents,
   whatsappNumber,
   logoSrc,
+  brandName,
+  tagline,
 }: {
   tenantSlug: string;
   parents: NavParentCategory[];
   whatsappNumber: string;
   logoSrc?: string;
+  brandName: string;
+  tagline: string;
 }) {
   const base = `/${tenantSlug}`;
   const NAV_LINKS = [
@@ -70,9 +74,16 @@ export function NSHeaderClient({
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-20 sm:px-6 lg:px-8">
           <Link href={base} className="flex items-center gap-3 text-ink-0" aria-label="Inicio">
-            <NSLogo id="ns-header" variant="mark" className="h-10 w-10 sm:h-12 sm:w-12" src={logoSrc} />
+            <NSLogo
+              id="ns-header"
+              variant="mark"
+              className="h-10 w-10 sm:h-12 sm:w-12"
+              src={logoSrc}
+              brandName={brandName}
+              tagline={tagline}
+            />
             <span className="hidden font-display text-lg uppercase tracking-wide sm:block">
-              El Nuevo Sánchez
+              {brandName}
             </span>
           </Link>
 
@@ -182,7 +193,14 @@ export function NSHeaderClient({
             className="fixed inset-0 z-50 flex flex-col bg-ink-950 text-ink-0 lg:hidden"
           >
             <div className="flex h-16 items-center justify-between px-4">
-              <NSLogo id="ns-mobile" variant="mark" className="h-10 w-10" src={logoSrc} />
+              <NSLogo
+                id="ns-mobile"
+                variant="mark"
+                className="h-10 w-10"
+                src={logoSrc}
+                brandName={brandName}
+                tagline={tagline}
+              />
               <button
                 type="button"
                 aria-label="Cerrar menú"
