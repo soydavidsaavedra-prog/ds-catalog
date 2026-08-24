@@ -305,7 +305,18 @@ export async function updateOrderStatusAction(id: string, status: OrderStatus): 
 
 /** Friendlier message for the common "you haven't re-run schema.sql yet" failure mode. */
 function settingsErrorMessage(err: unknown): string {
-  const message = err instanceof Error ? err.message : String(err);
+  // Supabase errors (PostgrestError) are plain objects with a `.message`
+  // string, not real Error instances — String(err) on those yields the
+  // useless "[object Object]" instead of the actual reason.
+  let message: string;
+  if (err instanceof Error) {
+    message = err.message;
+  } else if (typeof err === "object" && err !== null && "message" in err && typeof (err as { message: unknown }).message === "string") {
+    message = (err as { message: string }).message;
+  } else {
+    message = String(err);
+  }
+
   if (/column .* does not exist/i.test(message)) {
     return "No se pudo guardar: falta actualizar la base de datos. Vuelve a correr supabase/schema.sql en el SQL Editor de Supabase y reintenta.";
   }
