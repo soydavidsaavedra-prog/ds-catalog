@@ -29,7 +29,7 @@ export default async function AdminBannersPage() {
           </div>
           <div>
             <NSLabel htmlFor="new-image">Imagen (URL)</NSLabel>
-            <NSInput id="new-image" name="image" placeholder="/uploads/... o https://..." />
+            <NSInput id="new-image" name="image" placeholder="https://... o placeholder:banner:1" />
           </div>
           <div>
             <NSLabel htmlFor="new-cta">Texto del botón</NSLabel>

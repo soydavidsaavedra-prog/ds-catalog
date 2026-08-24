@@ -45,7 +45,8 @@ lib/
   config/site.ts        — configuración central de marca (nunca hardcodear)
   types/                 — contratos de datos (Product, Category, Order...)
   data/seed/             — datos de demostración
-  db/jsonStore.ts        — "base de datos" actual (ver abajo)
+  db/supabaseClient.ts    — cliente Supabase server-only (service_role)
+  db/supabase-types.ts    — tipos Row/Insert/Update hechos a mano (ver abajo)
   repositories/           — CRUD por entidad, la única puerta a los datos
   search/catalog-engine.ts — filtrado/orden/búsqueda, compartido por todas las rutas de catálogo
   cart/cart-store.ts       — estado del carrito
@@ -54,29 +55,31 @@ lib/
   media/placeholder.ts     — arte de reemplazo mientras no hay fotos reales
 ```
 
-## Capa de datos: por qué JSON en archivo, no Postgres/Supabase todavía
+## Capa de datos: Supabase (Postgres)
 
-El brief pide evaluar Supabase/Postgres, pero crear una cuenta externa y
-generar credenciales es una decisión que requiere que el usuario las
-proporcione — está explícitamente fuera de lo que se puede decidir de forma
-autónoma. En su lugar:
+El admin persiste sobre un proyecto Supabase propio del usuario (tablas
+nuevas, sin tocar datos de proyectos anteriores). El esquema completo vive en
+`supabase/schema.sql` — se ejecuta una sola vez en el SQL Editor de Supabase.
 
-- `lib/db/jsonStore.ts` persiste cada entidad en `.data/<entidad>.json`
-  (ignorado por git). Es real: el panel admin escribe y lee de ahí, sobrevive
-  reinicios del servidor de desarrollo.
+- `lib/db/supabaseClient.ts` crea un cliente **server-only**, autenticado con
+  `SUPABASE_SERVICE_ROLE_KEY`, que evita RLS por completo. Las tablas tienen
+  RLS activado sin policies: solo el service_role (usado exclusivamente en el
+  servidor) puede leer/escribir. La anon key nunca se usa desde el cliente.
+- `lib/db/supabase-types.ts` define el tipo `Database` a mano (Row/Insert/Update
+  por tabla) para que `@supabase/supabase-js` infiera tipos correctos en
+  `.select()/.insert()/.update()`.
 - Cada `lib/repositories/*.ts` expone solo funciones async (`listX`, `getXBySlug`,
-  `createX`, `updateX`, `deleteX`) — ningún componente toca `jsonStore` ni el
-  filesystem directamente.
+  `createX`, `updateX`, `deleteX`) que traducen entre las filas de Postgres
+  (snake_case) y los tipos de la app (camelCase) — ningún componente toca
+  Supabase directamente.
+- `npm run seed:supabase` (`scripts/seed-supabase.ts`) puebla el catálogo de
+  demo (upsert por slug/id, seguro de re-ejecutar).
 
-**Migrar a Supabase/Postgres más adelante es reemplazar el contenido de estos
-archivos de repositorio (mismas firmas de función) por queries SQL** — los
-componentes y Server Actions no cambian. Cuando el usuario tenga un proyecto
-Supabase, ese es el único trabajo real de migración.
-
-Limitación importante: en una plataforma serverless (Vercel, etc.) el
-filesystem es de solo lectura en producción, así que las escrituras del admin
-no persistirán ahí. Esto es aceptable para desarrollo/demo; es la señal de
-que toca migrar a una base de datos real antes de operar en producción.
+Variables de entorno requeridas (ver `.env.example`): `NEXT_PUBLIC_SUPABASE_URL`,
+`NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` — deben
+configurarse tanto en `.env.local` (desarrollo) como en Vercel → Project
+Settings → Environment Variables (producción); sin ellas el build falla en
+`generateStaticParams`.
 
 ## Autenticación de administrador
 
@@ -97,9 +100,9 @@ de demo usa el esquema `placeholder:<categoria>:<seed>`. `NSMedia` detecta
 ese esquema y dibuja `NSPlaceholderArt` (SVG generado: degradado denim,
 líneas de costura, monograma NS) en vez de una foto rota — es un estado de
 diseño intencional, no un placeholder roto. En cuanto el admin sube una foto
-real (`/admin/api/upload`, guarda en `public/uploads/`), `images[0]` pasa a
-ser una URL normal y `NSMedia` renderiza `next/image` sin tocar ningún
-componente.
+real (`/admin/api/upload`, guarda en el bucket público `product-images` de
+Supabase Storage), `images[0]` pasa a ser una URL normal y `NSMedia` renderiza
+`next/image` sin tocar ningún componente.
 
 ## Logo
 

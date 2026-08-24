@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { isAdminAuthenticated } from "@/lib/auth/admin-auth";
+import { getSupabaseClient } from "@/lib/db/supabaseClient";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
 const MAX_SIZE = 8 * 1024 * 1024;
+const BUCKET = "product-images";
 
 export async function POST(request: Request) {
   if (!(await isAdminAuthenticated())) {
@@ -27,11 +27,18 @@ export async function POST(request: Request) {
 
   const extension = file.type.split("/")[1];
   const filename = `${randomUUID()}.${extension}`;
-  const uploadsDir = path.join(process.cwd(), "public", "uploads");
-  await mkdir(uploadsDir, { recursive: true });
-
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(uploadsDir, filename), buffer);
 
-  return NextResponse.json({ url: `/uploads/${filename}` });
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.storage.from(BUCKET).upload(filename, buffer, {
+    contentType: file.type,
+    cacheControl: "31536000",
+  });
+
+  if (error) {
+    return NextResponse.json({ error: "No se pudo subir la imagen" }, { status: 500 });
+  }
+
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(filename);
+  return NextResponse.json({ url: data.publicUrl });
 }

@@ -10,7 +10,8 @@ Ver `docs/ARCHITECTURE.md` para decisiones técnicas y pendientes detallados.
 
 - [x] Design system de marca (negro, dorado #F8C909, denim) — `config/theme/*`, `app/globals.css`
 - [x] Capa de datos: tipos, seed (~36 productos demo / 9 categorías / banners / settings),
-      repositorios CRUD sobre `.data/*.json` (preparado para migrar a Supabase)
+      repositorios CRUD sobre Supabase (Postgres) — persiste en Vercel
+- [x] Subida de imágenes de admin a Supabase Storage (bucket público `product-images`)
 - [x] Carrito (Zustand + localStorage) y motor de pedido por WhatsApp
 - [x] Componentes base: NSLogo, NSButton, NSBadge, NSPrice, NSInput, NSMedia (+ placeholders)
 - [x] Header/nav/menú móvil/búsqueda, footer, cart drawer, botón flotante de WhatsApp
@@ -25,11 +26,14 @@ Ver `docs/ARCHITECTURE.md` para decisiones técnicas y pendientes detallados.
 ## Pendiente (ver "Lo que falta para producción" en ARCHITECTURE.md)
 
 - [ ] Logo oficial real (hoy: recreación fiel en SVG, documentada)
-- [ ] Migración de datos a Postgres/Supabase (requiere cuenta del usuario)
+- [ ] Ejecutar `supabase/schema.sql` en el proyecto Supabase del usuario y correr
+      `npm run seed:supabase` (pendiente de que el usuario lo haga localmente,
+      ver ARCHITECTURE.md)
 - [ ] Fotografía real de producto
 - [ ] Importación masiva vía CSV (arquitectura lista, falta el endpoint)
 - [ ] Variables de entorno de producción (`ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`,
-      `NEXT_PUBLIC_WHATSAPP_NUMBER`, `NEXT_PUBLIC_SITE_URL`)
+      `NEXT_PUBLIC_WHATSAPP_NUMBER`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_SUPABASE_URL`,
+      `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`)
 - [ ] Escena 3D real en el Hero (punto de extensión ya aislado)
 
 ## MVP (cumplido)

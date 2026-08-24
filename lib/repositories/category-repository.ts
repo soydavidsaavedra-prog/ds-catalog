@@ -1,10 +1,7 @@
 import "server-only";
-import { randomUUID } from "node:crypto";
-import { createJsonStore } from "@/lib/db/jsonStore";
-import { categoriesSeed } from "@/lib/data/seed/categories";
+import { getSupabaseClient } from "@/lib/db/supabaseClient";
+import type { CategoryRow } from "@/lib/db/supabase-types";
 import type { Category } from "@/lib/types/catalog";
-
-const store = createJsonStore<Category[]>("categories", categoriesSeed);
 
 export interface CategoryInput {
   slug: string;
@@ -16,70 +13,94 @@ export interface CategoryInput {
   featured?: boolean;
 }
 
+function fromRow(row: CategoryRow): Category {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    description: row.description,
+    image: row.image,
+    order: row.order,
+    active: row.active,
+    featured: row.featured,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 export async function listCategories(opts?: { activeOnly?: boolean }): Promise<Category[]> {
-  const categories = await store.read();
-  const sorted = [...categories].sort((a, b) => a.order - b.order);
-  return opts?.activeOnly ? sorted.filter((c) => c.active) : sorted;
+  const supabase = getSupabaseClient();
+  let query = supabase.from("categories").select("*").order("order", { ascending: true });
+  if (opts?.activeOnly) query = query.eq("active", true);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data as CategoryRow[]).map(fromRow);
 }
 
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
-  const categories = await store.read();
-  return categories.find((c) => c.slug === slug) ?? null;
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.from("categories").select("*").eq("slug", slug).maybeSingle();
+  if (error) throw error;
+  return data ? fromRow(data as CategoryRow) : null;
 }
 
 export async function getCategoryById(id: string): Promise<Category | null> {
-  const categories = await store.read();
-  return categories.find((c) => c.id === id) ?? null;
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.from("categories").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data ? fromRow(data as CategoryRow) : null;
 }
 
 export async function createCategory(input: CategoryInput): Promise<Category> {
-  const categories = await store.read();
-  const now = new Date().toISOString();
-  const category: Category = {
-    id: randomUUID(),
-    slug: input.slug,
-    name: input.name,
-    description: input.description,
-    image: input.image,
-    order: input.order ?? categories.length + 1,
-    active: input.active ?? true,
-    featured: input.featured ?? false,
-    createdAt: now,
-    updatedAt: now,
-  };
-  await store.write([...categories, category]);
-  return category;
+  const supabase = getSupabaseClient();
+  const nextOrder = input.order ?? (await listCategories()).length + 1;
+
+  const { data, error } = await supabase
+    .from("categories")
+    .insert({
+      slug: input.slug,
+      name: input.name,
+      description: input.description,
+      image: input.image,
+      order: nextOrder,
+      active: input.active ?? true,
+      featured: input.featured ?? false,
+    } satisfies Partial<CategoryRow>)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return fromRow(data as CategoryRow);
 }
 
 export async function updateCategory(
   id: string,
   patch: Partial<CategoryInput>,
 ): Promise<Category | null> {
-  const categories = await store.read();
-  const index = categories.findIndex((c) => c.id === id);
-  if (index === -1) return null;
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("categories")
+    .update(patch)
+    .eq("id", id)
+    .select("*")
+    .maybeSingle();
 
-  const updated: Category = {
-    ...categories[index],
-    ...patch,
-    updatedAt: new Date().toISOString(),
-  };
-  const next = [...categories];
-  next[index] = updated;
-  await store.write(next);
-  return updated;
+  if (error) throw error;
+  return data ? fromRow(data as CategoryRow) : null;
 }
 
 export async function deleteCategory(id: string): Promise<void> {
-  const categories = await store.read();
-  await store.write(categories.filter((c) => c.id !== id));
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from("categories").delete().eq("id", id);
+  if (error) throw error;
 }
 
 export async function reorderCategories(orderedIds: string[]): Promise<void> {
-  const categories = await store.read();
-  const next = categories.map((c) => {
-    const position = orderedIds.indexOf(c.id);
-    return position === -1 ? c : { ...c, order: position + 1 };
-  });
-  await store.write(next);
+  const supabase = getSupabaseClient();
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      supabase.from("categories").update({ order: index + 1 }).eq("id", id),
+    ),
+  );
 }
