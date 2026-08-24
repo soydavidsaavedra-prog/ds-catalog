@@ -238,3 +238,268 @@ begin
       using (bucket_id = 'ns-product-images');
   end if;
 end $$;
+
+-- =====================================================================
+-- DS Catalog — multi-tenant migration
+-- =====================================================================
+-- Everything below turns this single-tenant "El Nuevo Sánchez" schema
+-- into a shared, multi-tenant one: one engine (this schema, these
+-- tables) serving many independent catalogs, each scoped by tenant_id.
+--
+-- Design:
+--   - ds_tenants is the new tenant registry (id, slug, name, status).
+--   - Every ns_* table gets a tenant_id column (FK to ds_tenants).
+--   - Slugs (ns_categories.slug, ns_products.slug) were globally unique;
+--     they become unique PER TENANT instead (composite unique on
+--     (tenant_id, slug)), so two tenants can each have their own
+--     "skinny-azul" without colliding.
+--   - ns_products.category_slug's foreign key becomes a composite FK
+--     (tenant_id, category_slug) -> ns_categories(tenant_id, slug), so a
+--     product can never reference another tenant's category.
+--   - ns_settings stops being a single global singleton row (id smallint
+--     primary key check (id = 1)) and becomes one row per tenant, keyed
+--     by tenant_id.
+--
+-- Safety: this block only ever ADDS columns/constraints and BACKFILLS
+-- existing rows — it never deletes or truncates anything. All existing
+-- data (the current single tenant's categories/products/banners/orders/
+-- settings) is assigned to the "elnuevosanchez" tenant automatically.
+-- The whole block runs in one transaction with a row-count check before
+-- it commits: if anything doesn't add up, the transaction rolls back
+-- and the RAISE EXCEPTION message explains what to look at — nothing
+-- partial is ever left committed.
+--
+-- Safe to re-run: every step is idempotent (add column if not exists,
+-- backfill only where tenant_id is still null, drop constraint if
+-- exists before re-adding it under its new shape).
+--
+-- Security model (unchanged from the single-tenant schema, see the note
+-- at the top of this file): RLS stays enabled with NO public policies
+-- below. The app never uses the anon/public key from the browser — only
+-- the server, via the service_role key (which bypasses RLS), talks to
+-- Supabase, and every repository query now filters by tenant_id. If a
+-- future phase ever calls Supabase directly from the browser (e.g. with
+-- Supabase Auth), real per-tenant RLS policies keyed off an
+-- authenticated user's tenant claim must be added at that time — do not
+-- reuse the client-supplied tenant slug/id as the sole isolation
+-- mechanism for that use case.
+
+begin;
+
+-- ---------- ds_tenants ----------
+
+create table if not exists ds_tenants (
+  id uuid primary key default gen_random_uuid(),
+  slug text unique not null,
+  name text not null,
+  status text not null default 'active' check (status in ('active', 'disabled')),
+  -- Hook for real per-tenant admin credentials (Tenant Admin), unused for
+  -- now — today's admin login still checks the shared ADMIN_PASSWORD env
+  -- var (see lib/auth/admin-token.ts); this column is the extension point
+  -- for the next phase, not yet wired into the login flow.
+  admin_password_hash text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists ds_tenants_set_updated_at on ds_tenants;
+create trigger ds_tenants_set_updated_at
+  before update on ds_tenants
+  for each row execute function set_updated_at();
+
+alter table ds_tenants enable row level security;
+
+insert into ds_tenants (slug, name, status)
+values ('elnuevosanchez', 'El Nuevo Sánchez', 'active')
+on conflict (slug) do nothing;
+
+-- Small helper used below to drop a single-column unique constraint
+-- regardless of its actual name (Postgres auto-names inline `unique`
+-- column constraints as "<table>_<column>_key", but this looks it up via
+-- pg_constraint instead of assuming that, so it can't silently no-op).
+create or replace function ds_drop_single_column_unique(tbl text, col text)
+returns void as $$
+declare
+  conname text;
+begin
+  select con.conname into conname
+  from pg_constraint con
+  join pg_class rel on rel.oid = con.conrelid
+  join pg_attribute att on att.attrelid = con.conrelid and att.attnum = any (con.conkey)
+  where rel.relname = tbl
+    and con.contype = 'u'
+    and array_length(con.conkey, 1) = 1
+    and att.attname = col;
+
+  if conname is not null then
+    execute format('alter table %I drop constraint %I', tbl, conname);
+  end if;
+end;
+$$ language plpgsql;
+
+-- ---------- ns_categories: tenant_id + per-tenant unique slug ----------
+
+alter table ns_categories add column if not exists tenant_id uuid references ds_tenants (id);
+
+update ns_categories set tenant_id = (select id from ds_tenants where slug = 'elnuevosanchez')
+where tenant_id is null;
+
+alter table ns_categories alter column tenant_id set not null;
+create index if not exists ns_categories_tenant_id_idx on ns_categories (tenant_id);
+
+select ds_drop_single_column_unique('ns_categories', 'slug');
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'ns_categories_tenant_id_slug_key'
+  ) then
+    alter table ns_categories add constraint ns_categories_tenant_id_slug_key unique (tenant_id, slug);
+  end if;
+end $$;
+
+-- ---------- ns_products: tenant_id + per-tenant unique slug + composite FK to category ----------
+
+alter table ns_products add column if not exists tenant_id uuid references ds_tenants (id);
+
+update ns_products set tenant_id = (select id from ds_tenants where slug = 'elnuevosanchez')
+where tenant_id is null;
+
+alter table ns_products alter column tenant_id set not null;
+create index if not exists ns_products_tenant_id_idx on ns_products (tenant_id);
+
+select ds_drop_single_column_unique('ns_products', 'slug');
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'ns_products_tenant_id_slug_key'
+  ) then
+    alter table ns_products add constraint ns_products_tenant_id_slug_key unique (tenant_id, slug);
+  end if;
+end $$;
+
+-- The old FK was a single-column (category_slug -> ns_categories.slug),
+-- which relied on ns_categories.slug being globally unique. Now that
+-- slugs are only unique per tenant, it must become a composite FK so a
+-- product can never point at a category belonging to a different tenant.
+alter table ns_products drop constraint if exists ns_products_category_slug_fkey;
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'ns_products_tenant_category_fkey'
+  ) then
+    alter table ns_products
+      add constraint ns_products_tenant_category_fkey
+      foreign key (tenant_id, category_slug) references ns_categories (tenant_id, slug) on update cascade;
+  end if;
+end $$;
+
+-- ---------- ns_banners: tenant_id ----------
+
+alter table ns_banners add column if not exists tenant_id uuid references ds_tenants (id);
+
+update ns_banners set tenant_id = (select id from ds_tenants where slug = 'elnuevosanchez')
+where tenant_id is null;
+
+alter table ns_banners alter column tenant_id set not null;
+create index if not exists ns_banners_tenant_id_idx on ns_banners (tenant_id);
+
+-- ---------- ns_orders: tenant_id ----------
+
+alter table ns_orders add column if not exists tenant_id uuid references ds_tenants (id);
+
+update ns_orders set tenant_id = (select id from ds_tenants where slug = 'elnuevosanchez')
+where tenant_id is null;
+
+alter table ns_orders alter column tenant_id set not null;
+create index if not exists ns_orders_tenant_id_idx on ns_orders (tenant_id);
+
+-- ---------- ns_settings: singleton row -> one row per tenant ----------
+
+alter table ns_settings add column if not exists tenant_id uuid references ds_tenants (id);
+
+update ns_settings set tenant_id = (select id from ds_tenants where slug = 'elnuevosanchez')
+where tenant_id is null;
+
+-- Drop the "id = 1" singleton check (whatever it's actually named) so
+-- more than one settings row can exist. id is kept around (harmless,
+-- just no longer meaningful as a key) rather than dropped outright — the
+-- app looks rows up by tenant_id from here on, never by id.
+do $$
+declare
+  conname text;
+begin
+  select con.conname into conname
+  from pg_constraint con
+  join pg_class rel on rel.oid = con.conrelid
+  where rel.relname = 'ns_settings' and con.contype = 'c' and pg_get_constraintdef(con.oid) ilike '%id = 1%';
+  if conname is not null then
+    execute format('alter table ns_settings drop constraint %I', conname);
+  end if;
+end $$;
+
+-- Replace the fixed "default 1" with a real sequence so every future
+-- tenant's settings row (seeded or created by hand) gets its id
+-- automatically — nothing that inserts into ns_settings needs to know or
+-- pick an unused id itself.
+create sequence if not exists ns_settings_id_seq owned by ns_settings.id;
+select setval('ns_settings_id_seq', (select coalesce(max(id), 1) from ns_settings));
+alter table ns_settings alter column id set default nextval('ns_settings_id_seq');
+
+alter table ns_settings alter column tenant_id set not null;
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'ns_settings_tenant_id_key'
+  ) then
+    alter table ns_settings add constraint ns_settings_tenant_id_key unique (tenant_id);
+  end if;
+end $$;
+
+drop function if exists ds_drop_single_column_unique(text, text);
+
+-- ---------- self-verification: no row lost, every row tenant-scoped ----------
+
+do $$
+declare
+  ns_categories_missing int;
+  ns_products_missing int;
+  ns_banners_missing int;
+  ns_orders_missing int;
+  ns_settings_missing int;
+  ns_settings_count int;
+  ds_tenants_count int;
+begin
+  select count(*) into ns_categories_missing from ns_categories where tenant_id is null;
+  select count(*) into ns_products_missing from ns_products where tenant_id is null;
+  select count(*) into ns_banners_missing from ns_banners where tenant_id is null;
+  select count(*) into ns_orders_missing from ns_orders where tenant_id is null;
+  select count(*) into ns_settings_missing from ns_settings where tenant_id is null;
+  select count(*) into ns_settings_count from ns_settings;
+  select count(*) into ds_tenants_count from ds_tenants where slug = 'elnuevosanchez';
+
+  if ds_tenants_count <> 1 then
+    raise exception 'DS Catalog migration aborted: expected exactly 1 "elnuevosanchez" tenant row, found %', ds_tenants_count;
+  end if;
+  if ns_categories_missing > 0 then
+    raise exception 'DS Catalog migration aborted: % ns_categories row(s) still have no tenant_id', ns_categories_missing;
+  end if;
+  if ns_products_missing > 0 then
+    raise exception 'DS Catalog migration aborted: % ns_products row(s) still have no tenant_id', ns_products_missing;
+  end if;
+  if ns_banners_missing > 0 then
+    raise exception 'DS Catalog migration aborted: % ns_banners row(s) still have no tenant_id', ns_banners_missing;
+  end if;
+  if ns_orders_missing > 0 then
+    raise exception 'DS Catalog migration aborted: % ns_orders row(s) still have no tenant_id', ns_orders_missing;
+  end if;
+  if ns_settings_missing > 0 then
+    raise exception 'DS Catalog migration aborted: % ns_settings row(s) still have no tenant_id', ns_settings_missing;
+  end if;
+  if ns_settings_count < 1 then
+    raise exception 'DS Catalog migration aborted: ns_settings has no rows at all — the elnuevosanchez settings row is missing';
+  end if;
+
+  raise notice 'DS Catalog migration OK — every existing row is tenant-scoped, elnuevosanchez tenant present.';
+end $$;
+
+commit;

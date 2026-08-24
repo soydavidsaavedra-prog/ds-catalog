@@ -40,11 +40,14 @@ export const siteConfig = {
     locale: "es-VE",
   },
   seo: {
-    domain: process.env.NEXT_PUBLIC_SITE_URL ?? "https://elnuevosanchez.com",
-    defaultTitle: "El Nuevo Sánchez — Especialista en Jeans",
-    titleTemplate: "%s | El Nuevo Sánchez",
+    // Platform base domain — each tenant's real URL is /{domain}/{tenantSlug}/...,
+    // never a domain of its own (yet; see docs/ARCHITECTURE.md for the
+    // custom-domain-per-tenant upgrade path).
+    domain: process.env.NEXT_PUBLIC_SITE_URL ?? "https://ds-catalog.vercel.app",
+    defaultTitle: "DS Catalog",
+    titleTemplate: "%s | DS Catalog",
     defaultDescription:
-      "Jeans y ropa de fábrica directo a tus manos. Skinny, cargo, jogger, clásicos y más. Calidad premium, precios de fábrica.",
+      "DS Catalog aloja catálogos y tiendas conversacionales independientes bajo un solo motor.",
   },
 } as const;
 

@@ -4,9 +4,11 @@ import { NSProductGrid } from "@/components/catalog/NSProductGrid";
 import type { PaymentBadgeInfo } from "@/components/catalog/NSProductCard";
 
 export function NSRelatedProducts({
+  tenantSlug,
   products,
   paymentBadge,
 }: {
+  tenantSlug: string;
   products: Product[];
   paymentBadge?: PaymentBadgeInfo;
 }) {
@@ -17,7 +19,7 @@ export function NSRelatedProducts({
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <NSSectionHeading eyebrow="Combina con" title="También te puede interesar" />
         <div className="mt-8">
-          <NSProductGrid products={products} paymentBadge={paymentBadge} />
+          <NSProductGrid tenantSlug={tenantSlug} products={products} paymentBadge={paymentBadge} />
         </div>
       </div>
     </section>

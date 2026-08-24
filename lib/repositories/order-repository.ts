@@ -22,25 +22,35 @@ function fromRow(row: OrderRow): Order {
   };
 }
 
-export async function listOrders(): Promise<Order[]> {
+export async function listOrders(tenantId: string): Promise<Order[]> {
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("ns_orders").select("*").order("created_at", { ascending: false });
+  const { data, error } = await supabase
+    .from("ns_orders")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .order("created_at", { ascending: false });
   if (error) throw error;
   return (data as OrderRow[]).map(fromRow);
 }
 
-export async function getOrderById(id: string): Promise<Order | null> {
+export async function getOrderById(tenantId: string, id: string): Promise<Order | null> {
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("ns_orders").select("*").eq("id", id).maybeSingle();
+  const { data, error } = await supabase
+    .from("ns_orders")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .eq("id", id)
+    .maybeSingle();
   if (error) throw error;
   return data ? fromRow(data as OrderRow) : null;
 }
 
-export async function createOrder(input: OrderInput): Promise<Order> {
+export async function createOrder(tenantId: string, input: OrderInput): Promise<Order> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from("ns_orders")
     .insert({
+      tenant_id: tenantId,
       items: input.items,
       total: input.total,
       customer_name: input.customerName ?? null,
@@ -54,11 +64,12 @@ export async function createOrder(input: OrderInput): Promise<Order> {
   return fromRow(data as OrderRow);
 }
 
-export async function updateOrderStatus(id: string, status: OrderStatus): Promise<Order | null> {
+export async function updateOrderStatus(tenantId: string, id: string, status: OrderStatus): Promise<Order | null> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from("ns_orders")
     .update({ status })
+    .eq("tenant_id", tenantId)
     .eq("id", id)
     .select("*")
     .maybeSingle();

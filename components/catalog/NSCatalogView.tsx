@@ -13,6 +13,8 @@ import { NSProductGrid } from "@/components/catalog/NSProductGrid";
 import { NSSectionHeading } from "@/components/ui/NSSectionHeading";
 
 interface NSCatalogViewProps {
+  tenantId: string;
+  tenantSlug: string;
   filters: CatalogFilters;
   /**
    * When set (a /[category] page), the category picker is hidden and facets
@@ -33,6 +35,8 @@ interface NSCatalogViewProps {
  * forced category differ.
  */
 export async function NSCatalogView({
+  tenantId,
+  tenantSlug,
   filters,
   forcedCategorySlugs,
   eyebrow,
@@ -40,9 +44,9 @@ export async function NSCatalogView({
   description,
 }: NSCatalogViewProps) {
   const [categories, allProducts, settings] = await Promise.all([
-    listCategories({ activeOnly: true }),
-    listProducts({ activeOnly: true }),
-    getSettings(),
+    listCategories(tenantId, { activeOnly: true }),
+    listProducts(tenantId, { activeOnly: true }),
+    getSettings(tenantId),
   ]);
 
   const scopeProducts = forcedCategorySlugs
@@ -76,6 +80,7 @@ export async function NSCatalogView({
 
       <div className="mt-8">
         <NSProductGrid
+          tenantSlug={tenantSlug}
           products={results}
           paymentBadge={{ icon: settings.paymentBadgeIcon, label: settings.paymentBadgeLabel }}
         />

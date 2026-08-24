@@ -11,10 +11,12 @@ export interface PaymentBadgeInfo {
 }
 
 export function NSProductCard({
+  tenantSlug,
   product,
   priority = false,
   paymentBadge,
 }: {
+  tenantSlug: string;
   product: Product;
   priority?: boolean;
   paymentBadge?: PaymentBadgeInfo;
@@ -24,7 +26,7 @@ export function NSProductCard({
 
   return (
     <Link
-      href={`/producto/${product.slug}`}
+      href={`/${tenantSlug}/producto/${product.slug}`}
       className="group flex flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-strong"
     >
       <div className="relative aspect-[4/5] overflow-hidden rounded-card bg-ink-900">

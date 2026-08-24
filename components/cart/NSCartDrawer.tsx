@@ -9,7 +9,7 @@ import { NSButton } from "@/components/ui/NSButton";
 import { formatPrice } from "@/lib/utils/format";
 import { buildWhatsAppOrderUrl } from "@/lib/whatsapp/order-message";
 
-export function NSCartDrawer({ whatsappNumber }: { whatsappNumber: string }) {
+export function NSCartDrawer({ tenantSlug, whatsappNumber }: { tenantSlug: string; whatsappNumber: string }) {
   const isOpen = useCartStore((s) => s.isOpen);
   const items = useCartStore((s) => s.items);
   const closeCart = useCartStore((s) => s.closeCart);
@@ -69,7 +69,7 @@ export function NSCartDrawer({ whatsappNumber }: { whatsappNumber: string }) {
               {items.length === 0 ? (
                 <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
                   <p className="text-sm text-muted-foreground">Tu carrito está vacío.</p>
-                  <NSButton href="/catalogo" variant="outline" size="sm" onClick={closeCart}>
+                  <NSButton href={`/${tenantSlug}/catalogo`} variant="outline" size="sm" onClick={closeCart}>
                     Ver catálogo
                   </NSButton>
                 </div>
@@ -87,7 +87,7 @@ export function NSCartDrawer({ whatsappNumber }: { whatsappNumber: string }) {
                   <span className="text-xl font-bold">{formatPrice(total)}</span>
                 </div>
                 <a
-                  href={buildWhatsAppOrderUrl(items, whatsappNumber)}
+                  href={buildWhatsAppOrderUrl(items, whatsappNumber, tenantSlug)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex h-12 w-full items-center justify-center gap-2 rounded-control bg-accent text-sm font-semibold uppercase tracking-wide text-accent-foreground transition-colors hover:bg-accent-strong"

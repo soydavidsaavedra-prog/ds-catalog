@@ -52,9 +52,13 @@ function toRow(input: Partial<ProductInput>): Partial<ProductRow> {
   return row;
 }
 
-export async function listProducts(opts?: { activeOnly?: boolean }): Promise<Product[]> {
+export async function listProducts(tenantId: string, opts?: { activeOnly?: boolean }): Promise<Product[]> {
   const supabase = getSupabaseClient();
-  let query = supabase.from("ns_products").select("*").order("created_at", { ascending: false });
+  let query = supabase
+    .from("ns_products")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .order("created_at", { ascending: false });
   if (opts?.activeOnly) query = query.eq("active", true);
 
   const { data, error } = await query;
@@ -62,33 +66,45 @@ export async function listProducts(opts?: { activeOnly?: boolean }): Promise<Pro
   return (data as ProductRow[]).map(fromRow);
 }
 
-export async function getProductBySlug(slug: string): Promise<Product | null> {
+export async function getProductBySlug(tenantId: string, slug: string): Promise<Product | null> {
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("ns_products").select("*").eq("slug", slug).maybeSingle();
+  const { data, error } = await supabase
+    .from("ns_products")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .eq("slug", slug)
+    .maybeSingle();
   if (error) throw error;
   return data ? fromRow(data as ProductRow) : null;
 }
 
-export async function getProductById(id: string): Promise<Product | null> {
+export async function getProductById(tenantId: string, id: string): Promise<Product | null> {
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("ns_products").select("*").eq("id", id).maybeSingle();
+  const { data, error } = await supabase
+    .from("ns_products")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .eq("id", id)
+    .maybeSingle();
   if (error) throw error;
   return data ? fromRow(data as ProductRow) : null;
 }
 
 export async function getProductsByCategory(
+  tenantId: string,
   categorySlug: string,
   opts?: { activeOnly?: boolean },
 ): Promise<Product[]> {
-  const products = await listProducts(opts);
+  const products = await listProducts(tenantId, opts);
   return products.filter((p) => p.categorySlug === categorySlug);
 }
 
-export async function getRelatedProducts(product: Product, limit = 4): Promise<Product[]> {
+export async function getRelatedProducts(tenantId: string, product: Product, limit = 4): Promise<Product[]> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from("ns_products")
     .select("*")
+    .eq("tenant_id", tenantId)
     .eq("category_slug", product.categorySlug)
     .eq("active", true)
     .neq("id", product.id)
@@ -98,14 +114,19 @@ export async function getRelatedProducts(product: Product, limit = 4): Promise<P
   return (data as ProductRow[]).map(fromRow);
 }
 
-export async function createProduct(input: ProductInput): Promise<Product> {
+export async function createProduct(tenantId: string, input: ProductInput): Promise<Product> {
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("ns_products").insert(toRow(input)).select("*").single();
+  const { data, error } = await supabase
+    .from("ns_products")
+    .insert({ ...toRow(input), tenant_id: tenantId })
+    .select("*")
+    .single();
   if (error) throw error;
   return fromRow(data as ProductRow);
 }
 
 export async function updateProduct(
+  tenantId: string,
   id: string,
   patch: Partial<ProductInput>,
 ): Promise<Product | null> {
@@ -113,6 +134,7 @@ export async function updateProduct(
   const { data, error } = await supabase
     .from("ns_products")
     .update(toRow(patch))
+    .eq("tenant_id", tenantId)
     .eq("id", id)
     .select("*")
     .maybeSingle();
@@ -121,15 +143,15 @@ export async function updateProduct(
   return data ? fromRow(data as ProductRow) : null;
 }
 
-export async function deleteProduct(id: string): Promise<void> {
+export async function deleteProduct(tenantId: string, id: string): Promise<void> {
   const supabase = getSupabaseClient();
-  const { error } = await supabase.from("ns_products").delete().eq("id", id);
+  const { error } = await supabase.from("ns_products").delete().eq("tenant_id", tenantId).eq("id", id);
   if (error) throw error;
 }
 
-export async function getNextReference(): Promise<string> {
+export async function getNextReference(tenantId: string): Promise<string> {
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("ns_products").select("reference");
+  const { data, error } = await supabase.from("ns_products").select("reference").eq("tenant_id", tenantId);
   if (error) throw error;
 
   const max = (data as { reference: string }[]).reduce((highest, { reference }) => {
@@ -141,9 +163,13 @@ export async function getNextReference(): Promise<string> {
   return `NS-${String(max + 1).padStart(3, "0")}`;
 }
 
-export async function isSlugTaken(slug: string, excludeId?: string): Promise<boolean> {
+export async function isSlugTaken(tenantId: string, slug: string, excludeId?: string): Promise<boolean> {
   const supabase = getSupabaseClient();
-  let query = supabase.from("ns_products").select("id", { count: "exact", head: true }).eq("slug", slug);
+  let query = supabase
+    .from("ns_products")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenantId)
+    .eq("slug", slug);
   if (excludeId) query = query.neq("id", excludeId);
 
   const { count, error } = await query;

@@ -1,5 +1,6 @@
 import type { Audience, Availability, ProductColor } from "@/lib/types/catalog";
 import type { OrderItem, OrderStatus } from "@/lib/types/order";
+import type { TenantStatus } from "@/lib/types/tenant";
 
 /**
  * Minimal hand-written Database type (row shapes only — see
@@ -12,8 +13,19 @@ import type { OrderItem, OrderStatus } from "@/lib/types/order";
  * Postgres column defaults/constraints.
  */
 
+export interface TenantRow {
+  id: string;
+  slug: string;
+  name: string;
+  status: TenantStatus;
+  admin_password_hash: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CategoryRow {
   id: string;
+  tenant_id: string;
   slug: string;
   name: string;
   description: string;
@@ -28,6 +40,7 @@ export interface CategoryRow {
 
 export interface ProductRow {
   id: string;
+  tenant_id: string;
   slug: string;
   reference: string;
   name: string;
@@ -51,6 +64,7 @@ export interface ProductRow {
 
 export interface BannerRow {
   id: string;
+  tenant_id: string;
   title: string;
   subtitle: string;
   image: string;
@@ -62,6 +76,7 @@ export interface BannerRow {
 
 export interface OrderRow {
   id: string;
+  tenant_id: string;
   created_at: string;
   items: OrderItem[];
   total: number;
@@ -72,6 +87,7 @@ export interface OrderRow {
 
 export interface SettingsRow {
   id: number;
+  tenant_id: string;
   brand_name: string;
   slogan: string;
   brand_description: string;
@@ -127,6 +143,7 @@ type TableDef<Row> = {
 export interface Database {
   public: {
     Tables: {
+      ds_tenants: TableDef<TenantRow>;
       ns_categories: TableDef<CategoryRow>;
       ns_products: TableDef<ProductRow>;
       ns_banners: TableDef<BannerRow>;

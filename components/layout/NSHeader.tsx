@@ -1,16 +1,19 @@
+import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { listCategories, buildCategoryTree } from "@/lib/repositories/category-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
 import { NSHeaderClient } from "@/components/layout/NSHeaderClient";
 
-export async function NSHeader() {
+export async function NSHeader({ tenantSlug }: { tenantSlug: string }) {
+  const tenant = await resolveTenant(tenantSlug);
   const [categories, settings] = await Promise.all([
-    listCategories({ activeOnly: true }),
-    getSettings(),
+    listCategories(tenant.id, { activeOnly: true }),
+    getSettings(tenant.id),
   ]);
   const tree = buildCategoryTree(categories);
 
   return (
     <NSHeaderClient
+      tenantSlug={tenantSlug}
       parents={tree.map((parent) => ({
         slug: parent.slug,
         name: parent.name,

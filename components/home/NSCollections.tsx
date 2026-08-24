@@ -5,9 +5,11 @@ import { NSMedia } from "@/components/ui/NSMedia";
 import { NSReveal } from "@/components/ui/NSReveal";
 
 export function NSCollections({
+  tenantSlug,
   topLevelCategories,
   subcategories,
 }: {
+  tenantSlug: string;
   /** Top-level categories (Dama, Caballero, Niño...) shown as the big entry tiles. */
   topLevelCategories: Category[];
   /** Subcategories (Skinny, Cargo, Jogger...) shown as the smaller chip list below. */
@@ -22,7 +24,7 @@ export function NSCollections({
           {topLevelCategories.map((category, index) => (
             <NSReveal key={category.slug} delay={index * 0.1}>
               <Link
-                href={`/${category.slug}`}
+                href={`/${tenantSlug}/${category.slug}`}
                 className="group relative block aspect-[3/4] overflow-hidden rounded-card"
               >
                 <div className="absolute inset-0 transition-transform duration-slower ease-out-ns group-hover:scale-105">
@@ -44,7 +46,7 @@ export function NSCollections({
           {subcategories.map((category) => (
             <Link
               key={category.slug}
-              href={`/${category.slug}`}
+              href={`/${tenantSlug}/${category.slug}`}
               className="flex flex-col items-center gap-2 rounded-control px-1 text-center"
             >
               <span className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-pill border border-border-strong transition-colors hover:border-accent-strong sm:h-20 sm:w-20">

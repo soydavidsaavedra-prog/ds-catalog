@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Bebas_Neue } from "next/font/google";
 import { MotionConfig } from "motion/react";
-import { siteConfig } from "@/lib/config/site";
 import "./globals.css";
 
 const bodyFont = Geist({
@@ -20,25 +19,19 @@ const monoFont = Geist_Mono({
   subsets: ["latin"],
 });
 
+/**
+ * Root-level metadata is intentionally generic (DS Catalog, not any one
+ * tenant's brand) — every tenant route overrides title/description/OG via
+ * its own generateMetadata (see app/[tenant]/(storefront)/page.tsx and
+ * friends), scoped to that tenant's own settings.
+ */
 export const metadata: Metadata = {
-  metadataBase: new URL(siteConfig.seo.domain),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://ds-catalog.vercel.app"),
   title: {
-    default: siteConfig.seo.defaultTitle,
-    template: siteConfig.seo.titleTemplate,
+    default: "DS Catalog",
+    template: "%s | DS Catalog",
   },
-  description: siteConfig.seo.defaultDescription,
-  openGraph: {
-    type: "website",
-    locale: "es_VE",
-    siteName: siteConfig.brand.name,
-    title: siteConfig.seo.defaultTitle,
-    description: siteConfig.seo.defaultDescription,
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: siteConfig.seo.defaultTitle,
-    description: siteConfig.seo.defaultDescription,
-  },
+  description: "DS Catalog aloja catálogos y tiendas conversacionales independientes bajo un solo motor.",
 };
 
 export const viewport: Viewport = {
@@ -49,9 +42,11 @@ export const viewport: Viewport = {
 };
 
 /**
- * True root layout — shared by the storefront and /admin. Deliberately
- * minimal: storefront chrome (header/footer/cart/WhatsApp) lives in
- * app/(storefront)/layout.tsx so the admin panel never renders it.
+ * True root layout — shared by the DS Catalog landing page, every
+ * tenant's storefront, and every tenant's /admin. Deliberately minimal:
+ * storefront chrome (header/footer/cart/WhatsApp) lives in
+ * app/[tenant]/(storefront)/layout.tsx so neither the root landing page
+ * nor any admin panel renders it.
  */
 export default function RootLayout({
   children,

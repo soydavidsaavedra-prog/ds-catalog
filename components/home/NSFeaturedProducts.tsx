@@ -17,11 +17,13 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 export function NSFeaturedProducts({
+  tenantSlug,
   nuevos,
   destacados,
   ofertas,
   paymentBadge,
 }: {
+  tenantSlug: string;
   nuevos: Product[];
   destacados: Product[];
   ofertas: Product[];
@@ -38,7 +40,7 @@ export function NSFeaturedProducts({
           eyebrow="Selección"
           title="Productos destacados"
           action={
-            <NSButton href="/catalogo" variant="outline" size="sm">
+            <NSButton href={`/${tenantSlug}/catalogo`} variant="outline" size="sm">
               Ver catálogo completo
             </NSButton>
           }
@@ -65,6 +67,7 @@ export function NSFeaturedProducts({
 
         <div className="mt-8">
           <NSProductGrid
+            tenantSlug={tenantSlug}
             products={active}
             emptyTitle="Muy pronto"
             emptyDescription="Estamos preparando esta selección."

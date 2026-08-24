@@ -3,21 +3,21 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NSLogo } from "@/components/brand/NSLogo";
-import { logoutAction } from "@/app/admin/actions";
+import { logoutAction } from "@/app/[tenant]/admin/actions";
 import { cn } from "@/lib/utils/cn";
 
-const LINKS = [
-  { href: "/admin", label: "Dashboard", icon: DashboardIcon },
-  { href: "/admin/inicio", label: "Inicio", icon: HomeIcon },
-  { href: "/admin/productos", label: "Productos", icon: ProductIcon },
-  { href: "/admin/categorias", label: "Categorías", icon: CategoryIcon },
-  { href: "/admin/pedidos", label: "Pedidos", icon: OrderIcon },
-  { href: "/admin/banners", label: "Banners", icon: BannerIcon },
-  { href: "/admin/configuracion", label: "Configuración", icon: SettingsIcon },
-];
-
-export function NSAdminSidebar({ logoSrc }: { logoSrc?: string }) {
+export function NSAdminSidebar({ tenantSlug, logoSrc }: { tenantSlug: string; logoSrc?: string }) {
   const pathname = usePathname();
+  const base = `/${tenantSlug}/admin`;
+  const LINKS = [
+    { href: base, label: "Dashboard", icon: DashboardIcon },
+    { href: `${base}/inicio`, label: "Inicio", icon: HomeIcon },
+    { href: `${base}/productos`, label: "Productos", icon: ProductIcon },
+    { href: `${base}/categorias`, label: "Categorías", icon: CategoryIcon },
+    { href: `${base}/pedidos`, label: "Pedidos", icon: OrderIcon },
+    { href: `${base}/banners`, label: "Banners", icon: BannerIcon },
+    { href: `${base}/configuracion`, label: "Configuración", icon: SettingsIcon },
+  ];
 
   return (
     <aside className="flex h-full w-60 shrink-0 flex-col border-r border-ink-800 bg-ink-950 text-ink-0">
@@ -28,7 +28,7 @@ export function NSAdminSidebar({ logoSrc }: { logoSrc?: string }) {
 
       <nav className="flex-1 space-y-1 px-3 py-4">
         {LINKS.map((link) => {
-          const active = link.href === "/admin" ? pathname === "/admin" : pathname.startsWith(link.href);
+          const active = link.href === base ? pathname === base : pathname.startsWith(link.href);
           const Icon = link.icon;
           return (
             <Link
@@ -47,10 +47,10 @@ export function NSAdminSidebar({ logoSrc }: { logoSrc?: string }) {
       </nav>
 
       <div className="border-t border-ink-800 p-3">
-        <Link href="/" className="block rounded-control px-3 py-2 text-xs font-medium text-ink-400 hover:text-ink-0">
+        <Link href={`/${tenantSlug}`} className="block rounded-control px-3 py-2 text-xs font-medium text-ink-400 hover:text-ink-0">
           ← Ver sitio
         </Link>
-        <form action={logoutAction}>
+        <form action={logoutAction.bind(null, tenantSlug)}>
           <button type="submit" className="w-full rounded-control px-3 py-2 text-left text-xs font-medium text-ink-400 hover:text-danger">
             Cerrar sesión
           </button>
