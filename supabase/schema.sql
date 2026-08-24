@@ -379,6 +379,15 @@ where tenant_id is null;
 alter table ns_categories alter column tenant_id set not null;
 create index if not exists ns_categories_tenant_id_idx on ns_categories (tenant_id);
 
+-- ns_products.category_slug's old FK depends on the unique index behind
+-- ns_categories.slug — Postgres refuses to drop that index/constraint
+-- while anything still references it. So this drop has to happen here,
+-- before the "drop old slug unique" line below, even though the new
+-- composite FK it's replaced by is only (re)added later, down in the
+-- ns_products section, once ns_categories has its new (tenant_id, slug)
+-- unique constraint in place.
+select ds_drop_single_column_fk('ns_products', 'category_slug', 'ns_categories');
+
 select ds_drop_single_column_unique('ns_categories', 'slug');
 do $$
 begin
@@ -441,11 +450,11 @@ begin
   end if;
 end $$;
 
--- The old FK was a single-column (category_slug -> ns_categories.slug),
--- which relied on ns_categories.slug being globally unique. Now that
--- slugs are only unique per tenant, it must become a composite FK so a
--- product can never point at a category belonging to a different tenant.
-select ds_drop_single_column_fk('ns_products', 'category_slug', 'ns_categories');
+-- The old FK (category_slug -> ns_categories.slug) was already dropped
+-- earlier, in the ns_categories section above — it had to go before that
+-- section could drop the plain slug unique constraint it depended on.
+-- What's left here is just adding the new composite FK, now that
+-- ns_categories has its (tenant_id, slug) unique constraint to reference.
 do $$
 begin
   if not exists (
