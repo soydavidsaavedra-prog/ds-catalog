@@ -16,13 +16,13 @@ const LINKS = [
   { href: "/admin/configuracion", label: "Configuración", icon: SettingsIcon },
 ];
 
-export function NSAdminSidebar() {
+export function NSAdminSidebar({ logoSrc }: { logoSrc?: string }) {
   const pathname = usePathname();
 
   return (
     <aside className="flex h-full w-60 shrink-0 flex-col border-r border-ink-800 bg-ink-950 text-ink-0">
       <div className="flex h-16 items-center gap-2 border-b border-ink-800 px-5">
-        <NSLogo id="ns-admin" variant="mark" className="h-8 w-8" />
+        <NSLogo id="ns-admin" variant="mark" className="h-8 w-8" src={logoSrc} />
         <span className="text-xs font-semibold uppercase tracking-widest">Panel administrativo</span>
       </div>
 

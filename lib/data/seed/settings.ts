@@ -24,4 +24,7 @@ export const settingsSeed: SiteSettings = {
   heroImage: "placeholder:hero:hero-1",
   heroImagePositionX: 50,
   heroImagePositionY: 50,
+  brandLogo: "",
+  paymentBadgeIcon: "",
+  paymentBadgeLabel: "Disponible con Cashea",
 };

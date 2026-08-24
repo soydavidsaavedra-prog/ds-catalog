@@ -3,7 +3,13 @@ import { randomUUID } from "node:crypto";
 import { isAdminAuthenticated } from "@/lib/auth/admin-auth";
 import { getSupabaseClient } from "@/lib/db/supabaseClient";
 
-const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
+const ALLOWED_EXTENSIONS: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/avif": "avif",
+  "image/svg+xml": "svg",
+};
 const MAX_SIZE = 8 * 1024 * 1024;
 const BUCKET = "ns-product-images";
 
@@ -18,14 +24,14 @@ export async function POST(request: Request) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "Archivo inválido" }, { status: 400 });
   }
-  if (!ALLOWED_TYPES.has(file.type)) {
-    return NextResponse.json({ error: "Formato no soportado (usa JPG, PNG, WEBP o AVIF)" }, { status: 400 });
+  const extension = ALLOWED_EXTENSIONS[file.type];
+  if (!extension) {
+    return NextResponse.json({ error: "Formato no soportado (usa JPG, PNG, WEBP, AVIF o SVG)" }, { status: 400 });
   }
   if (file.size > MAX_SIZE) {
     return NextResponse.json({ error: "La imagen supera 8MB" }, { status: 400 });
   }
 
-  const extension = file.type.split("/")[1];
   const filename = `${randomUUID()}.${extension}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 

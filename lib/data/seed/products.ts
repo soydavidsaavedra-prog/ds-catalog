@@ -294,6 +294,7 @@ function toProduct(seed: Seed): Product {
     isNew: seed.isNew ?? false,
     onSale: seed.onSale ?? false,
     active: seed.active ?? true,
+    hidePaymentBadge: false,
     createdAt: now,
     updatedAt: now,
   };

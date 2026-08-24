@@ -6,6 +6,7 @@ import { NSSectionHeading } from "@/components/ui/NSSectionHeading";
 import { NSProductGrid } from "@/components/catalog/NSProductGrid";
 import { NSButton } from "@/components/ui/NSButton";
 import { cn } from "@/lib/utils/cn";
+import type { PaymentBadgeInfo } from "@/components/catalog/NSProductCard";
 
 type TabKey = "nuevos" | "destacados" | "ofertas";
 
@@ -19,10 +20,12 @@ export function NSFeaturedProducts({
   nuevos,
   destacados,
   ofertas,
+  paymentBadge,
 }: {
   nuevos: Product[];
   destacados: Product[];
   ofertas: Product[];
+  paymentBadge?: PaymentBadgeInfo;
 }) {
   const [tab, setTab] = useState<TabKey>("nuevos");
   const byTab: Record<TabKey, Product[]> = { nuevos, destacados, ofertas };
@@ -65,6 +68,7 @@ export function NSFeaturedProducts({
             products={active}
             emptyTitle="Muy pronto"
             emptyDescription="Estamos preparando esta selección."
+            paymentBadge={paymentBadge}
           />
         </div>
       </div>

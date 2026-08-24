@@ -1,16 +1,18 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils/cn";
+import { parsePlaceholder } from "@/lib/media/placeholder";
 
 /**
  * NSLogo — the El Nuevo Sánchez monogram.
  *
- * IMPORTANT: this is a faithful *recreation* of the official mark (circular
- * badge, gold ring, arced "EL NUEVO SÁNCHEZ" / "ESPECIALISTA EN JEANS"
- * wordmarks, NS monogram) built in SVG because the original logo asset
- * ("LOGO EL NUEVO SANCHEZ.JPEG") was shared only as an inline chat image,
- * not as a file this project can read from disk. Drop the real file at
- * public/brand/logo.png (and, ideally, an SVG) and swap the <svg> below for
- * an <Image> pointing at it — do not keep shipping this recreation once the
- * original asset exists.
+ * When `src` is a real uploaded image (set via /admin/configuracion →
+ * SiteSettings.brandLogo), it's rendered as-is — the uploaded badge already
+ * contains the full mark + wordmark, so it's used for both "mark" and
+ * "full" variants. Without a real `src`, this falls back to a faithful SVG
+ * *recreation* of the original mark (circular badge, gold ring, arced
+ * "EL NUEVO SÁNCHEZ" / "ESPECIALISTA EN JEANS" wordmarks, NS monogram) —
+ * built because the original logo asset arrived only as an inline chat
+ * image, not a file this project could read from disk directly.
  */
 
 interface NSLogoProps {
@@ -20,6 +22,8 @@ interface NSLogoProps {
   tone?: "gold-on-black" | "black-on-transparent";
   /** Pass a unique value when rendering more than one NSLogo on the same page (e.g. header + footer) so SVG ids don't collide. */
   id?: string;
+  /** Real uploaded logo URL (SiteSettings.brandLogo). Falsy/placeholder = use the SVG recreation below. */
+  src?: string;
 }
 
 export function NSLogo({
@@ -27,7 +31,20 @@ export function NSLogo({
   variant = "mark",
   tone = "gold-on-black",
   id = "ns-logo",
+  src,
 }: NSLogoProps) {
+  if (src && !parsePlaceholder(src)) {
+    // The uploaded badge already contains the full mark + wordmark baked in,
+    // so both variants just render it — "full" only needs a larger default
+    // size since it has no separate icon+text layout to fill.
+    const defaultSize = variant === "full" ? "h-16 w-16 sm:h-20 sm:w-20" : "h-10 w-10";
+    return (
+      <span className={cn("relative block shrink-0", defaultSize, className)}>
+        <Image src={src} alt="El Nuevo Sánchez" fill className="object-contain" sizes="200px" />
+      </span>
+    );
+  }
+
   const topArcId = `${id}-top`;
   const bottomArcId = `${id}-bottom`;
 

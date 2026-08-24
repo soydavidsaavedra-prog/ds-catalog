@@ -102,6 +102,7 @@ async function seedProducts() {
     is_new: p.isNew,
     on_sale: p.onSale,
     active: p.active,
+    hide_payment_badge: p.hidePaymentBadge,
   }));
 
   const { error } = await supabase.from("ns_products").upsert(rows, { onConflict: "slug" });
@@ -148,6 +149,9 @@ async function seedSettings() {
         hero_image: settingsSeed.heroImage,
         hero_image_position_x: settingsSeed.heroImagePositionX,
         hero_image_position_y: settingsSeed.heroImagePositionY,
+        brand_logo: settingsSeed.brandLogo,
+        payment_badge_icon: settingsSeed.paymentBadgeIcon,
+        payment_badge_label: settingsSeed.paymentBadgeLabel,
       },
       { onConflict: "id" },
     );

@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { listCategories } from "@/lib/repositories/category-repository";
+import { getSettings } from "@/lib/repositories/settings-repository";
 import { siteConfig } from "@/lib/config/site";
 import { NSLogo } from "@/components/brand/NSLogo";
 
 export async function NSFooter() {
-  const categories = await listCategories({ activeOnly: true });
+  const [categories, settings] = await Promise.all([
+    listCategories({ activeOnly: true }),
+    getSettings(),
+  ]);
   const topLevelCategories = categories.filter((c) => c.parentId === null);
   const subcategories = categories.filter((c) => c.parentId !== null);
 
@@ -12,7 +16,7 @@ export async function NSFooter() {
     <footer id="contacto" className="border-t border-ink-800 bg-ink-950 text-ink-200">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr] lg:px-8">
         <div>
-          <NSLogo id="ns-footer" variant="full" className="text-ink-0" />
+          <NSLogo id="ns-footer" variant="full" className="text-ink-0" src={settings.brandLogo} />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink-400">
             {siteConfig.brand.description}
           </p>

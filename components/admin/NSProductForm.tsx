@@ -126,6 +126,11 @@ export function NSProductForm({
           { name: "isNew", label: "Nuevo", defaultChecked: product?.isNew },
           { name: "onSale", label: "En oferta", defaultChecked: product?.onSale },
           { name: "active", label: "Activo (visible en la tienda)", defaultChecked: product?.active ?? true },
+          {
+            name: "hidePaymentBadge",
+            label: "Ocultar ícono de método de pago (ej. Cashea) en este producto",
+            defaultChecked: product?.hidePaymentBadge,
+          },
         ].map((flag) => (
           <label key={flag.name} className="flex items-center gap-2 text-sm font-medium">
             <input type="checkbox" name={flag.name} defaultChecked={flag.defaultChecked} className="h-4 w-4 rounded border-border-strong accent-[var(--color-gold-400)]" />

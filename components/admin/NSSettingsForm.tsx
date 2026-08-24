@@ -5,6 +5,7 @@ import type { SiteSettings } from "@/lib/types/catalog";
 import { updateSettingsAction, type ActionState } from "@/app/admin/actions";
 import { NSInput, NSLabel } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
+import { NSSingleImageUploader } from "@/components/admin/NSSingleImageUploader";
 
 const initialState: ActionState = {};
 
@@ -46,6 +47,35 @@ export function NSSettingsForm({ settings }: { settings: SiteSettings }) {
       <div>
         <NSLabel htmlFor="tiktok">TikTok (URL)</NSLabel>
         <NSInput id="tiktok" name="tiktok" defaultValue={settings.tiktok} />
+      </div>
+
+      <div className="border-t border-border pt-5">
+        <NSLabel>Logo de marca</NSLabel>
+        <p className="mb-2 text-xs text-muted-foreground">
+          Reemplaza el logo recreado en el header, footer y panel admin. Vacío = usa el logo por defecto.
+        </p>
+        <NSSingleImageUploader name="brandLogo" initialValue={settings.brandLogo} label="Subir logo" />
+      </div>
+
+      <div className="border-t border-border pt-5">
+        <NSLabel>Ícono de método de pago (ej. Cashea)</NSLabel>
+        <p className="mb-2 text-xs text-muted-foreground">
+          Se muestra como sello en las tarjetas de producto y en la ficha de producto. Vacío = no se muestra.
+        </p>
+        <NSSingleImageUploader
+          name="paymentBadgeIcon"
+          initialValue={settings.paymentBadgeIcon}
+          label="Subir ícono"
+        />
+        <div className="mt-3">
+          <NSLabel htmlFor="paymentBadgeLabel">Texto del método de pago</NSLabel>
+          <NSInput
+            id="paymentBadgeLabel"
+            name="paymentBadgeLabel"
+            defaultValue={settings.paymentBadgeLabel}
+            placeholder="Disponible con Cashea"
+          />
+        </div>
       </div>
 
       <NSButton type="submit" loading={pending} className="self-start">

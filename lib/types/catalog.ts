@@ -56,6 +56,8 @@ export interface Product {
   isNew: boolean;
   onSale: boolean;
   active: boolean;
+  /** Opt this product out of the site-wide payment-method badge (e.g. Cashea) shown on cards/detail. */
+  hidePaymentBadge: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -91,6 +93,11 @@ export interface SiteSettings {
   /** Percent (0-100) — CSS object-position of the hero background image. */
   heroImagePositionX: number;
   heroImagePositionY: number;
+  /** Real brand logo (uploaded via /admin/configuracion). Empty = fall back to the built-in SVG recreation. */
+  brandLogo: string;
+  /** Payment-method badge shown on product cards (e.g. Cashea). Empty = badge hidden everywhere. */
+  paymentBadgeIcon: string;
+  paymentBadgeLabel: string;
 }
 
 export type SortOption =

@@ -17,6 +17,12 @@ Ver `docs/ARCHITECTURE.md` para decisiones técnicas y pendientes detallados.
 - [x] Referencia de producto autogenerada (`NS-XXX` consecutivo) al crear, editable manualmente
 - [x] Editor visual de portada del home (`/admin/inicio`): imagen subida desde el computador,
       posición ajustable, textos y botón editables, con vista previa en vivo del componente real
+- [x] Orden de categorías/subcategorías reordenable (flechas ↑/↓) desde `/admin/categorias`
+- [x] Logo de marca real subible desde `/admin/configuracion` (reemplaza la recreación en SVG en
+      header/footer/admin cuando se sube uno)
+- [x] Sello de método de pago (ej. Cashea) configurable: ícono + texto subibles desde
+      `/admin/configuracion`, visible en tarjetas de producto y ficha de producto, con opción de
+      ocultarlo por producto
 - [x] Carrito (Zustand + localStorage) y motor de pedido por WhatsApp
 - [x] Componentes base: NSLogo, NSButton, NSBadge, NSPrice, NSInput, NSMedia (+ placeholders)
 - [x] Header/nav/menú móvil/búsqueda, footer, cart drawer, botón flotante de WhatsApp
@@ -30,10 +36,9 @@ Ver `docs/ARCHITECTURE.md` para decisiones técnicas y pendientes detallados.
 
 ## Pendiente (ver "Lo que falta para producción" en ARCHITECTURE.md)
 
-- [ ] Logo oficial real (hoy: recreación fiel en SVG, documentada)
-- [ ] Volver a ejecutar `supabase/schema.sql` (agrega `parent_id` en categorías y los campos
-      `hero_*` en settings — idempotente, seguro de re-correr) y `npm run seed:supabase`
-      (pendiente de que el usuario lo haga localmente, ver ARCHITECTURE.md)
+- [ ] Volver a ejecutar `supabase/schema.sql` (agrega `hide_payment_badge` en productos y los
+      campos `brand_logo`/`payment_badge_*` en settings — idempotente, seguro de re-correr)
+      (pendiente de que el usuario lo haga, ver ARCHITECTURE.md)
 - [ ] Fotografía real de producto
 - [ ] Importación masiva vía CSV (arquitectura lista, falta el endpoint)
 - [ ] Variables de entorno de producción (`ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`,

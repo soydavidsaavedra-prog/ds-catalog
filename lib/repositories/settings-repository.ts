@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { getSupabaseClient } from "@/lib/db/supabaseClient";
 import type { SettingsRow } from "@/lib/db/supabase-types";
 import type { SiteSettings } from "@/lib/types/catalog";
@@ -22,6 +23,9 @@ function fromRow(row: SettingsRow): SiteSettings {
     heroImage: row.hero_image,
     heroImagePositionX: Number(row.hero_image_position_x),
     heroImagePositionY: Number(row.hero_image_position_y),
+    brandLogo: row.brand_logo,
+    paymentBadgeIcon: row.payment_badge_icon,
+    paymentBadgeLabel: row.payment_badge_label,
   };
 }
 
@@ -44,15 +48,23 @@ function toRow(patch: Partial<SiteSettings>): Partial<SettingsRow> {
   if (patch.heroImage !== undefined) row.hero_image = patch.heroImage;
   if (patch.heroImagePositionX !== undefined) row.hero_image_position_x = patch.heroImagePositionX;
   if (patch.heroImagePositionY !== undefined) row.hero_image_position_y = patch.heroImagePositionY;
+  if (patch.brandLogo !== undefined) row.brand_logo = patch.brandLogo;
+  if (patch.paymentBadgeIcon !== undefined) row.payment_badge_icon = patch.paymentBadgeIcon;
+  if (patch.paymentBadgeLabel !== undefined) row.payment_badge_label = patch.paymentBadgeLabel;
   return row;
 }
 
-export async function getSettings(): Promise<SiteSettings> {
+/**
+ * Wrapped in React's cache() so the many components that need settings
+ * (header, footer, hero, every product card for the payment badge, ...)
+ * share a single Supabase round-trip per request instead of one each.
+ */
+export const getSettings = cache(async (): Promise<SiteSettings> => {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.from("ns_settings").select("*").eq("id", 1).single();
   if (error) throw error;
   return fromRow(data as SettingsRow);
-}
+});
 
 export async function updateSettings(patch: Partial<SiteSettings>): Promise<SiteSettings> {
   const supabase = getSupabaseClient();

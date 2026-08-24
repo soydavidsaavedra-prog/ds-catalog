@@ -20,6 +20,7 @@ import {
   deleteCategory,
   getCategoryById,
   getCategoryBySlug,
+  listCategories,
   updateCategory,
 } from "@/lib/repositories/category-repository";
 import { createBanner, deleteBanner, updateBanner } from "@/lib/repositories/banner-repository";
@@ -111,6 +112,7 @@ async function parseProductInput(formData: FormData): Promise<ProductInput> {
     isNew: formData.get("isNew") === "on",
     onSale: formData.get("onSale") === "on",
     active: formData.get("active") === "on",
+    hidePaymentBadge: formData.get("hidePaymentBadge") === "on",
   };
 }
 
@@ -232,6 +234,30 @@ export async function deleteCategoryAction(id: string): Promise<void> {
   revalidatePath("/admin/categorias");
 }
 
+/**
+ * Moves a category up/down among its siblings (same parent) by swapping
+ * `order` with the adjacent sibling — this is what controls the display
+ * order on the home page and in nav menus.
+ */
+export async function moveCategoryAction(id: string, direction: "up" | "down"): Promise<void> {
+  const all = await listCategories();
+  const target = all.find((c) => c.id === id);
+  if (!target) return;
+
+  const siblings = all
+    .filter((c) => c.parentId === target.parentId)
+    .sort((a, b) => a.order - b.order);
+  const index = siblings.findIndex((c) => c.id === id);
+  const swapIndex = direction === "up" ? index - 1 : index + 1;
+  if (swapIndex < 0 || swapIndex >= siblings.length) return;
+
+  const other = siblings[swapIndex];
+  await updateCategory(target.id, { order: other.order });
+  await updateCategory(other.id, { order: target.order });
+  revalidatePath("/");
+  revalidatePath("/admin/categorias");
+}
+
 // ---------- Banners ----------
 
 export async function createBannerAction(formData: FormData): Promise<void> {
@@ -283,6 +309,9 @@ export async function updateSettingsAction(_prev: ActionState, formData: FormDat
     instagram: String(formData.get("instagram") ?? "").trim(),
     facebook: String(formData.get("facebook") ?? "").trim(),
     tiktok: String(formData.get("tiktok") ?? "").trim(),
+    brandLogo: String(formData.get("brandLogo") ?? "").trim(),
+    paymentBadgeIcon: String(formData.get("paymentBadgeIcon") ?? "").trim(),
+    paymentBadgeLabel: String(formData.get("paymentBadgeLabel") ?? "").trim(),
   });
   revalidatePath("/", "layout");
   return { success: true };

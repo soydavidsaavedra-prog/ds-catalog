@@ -75,9 +75,13 @@ create table if not exists ns_products (
   is_new boolean not null default false,
   on_sale boolean not null default false,
   active boolean not null default true,
+  hide_payment_badge boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Backfills hide_payment_badge on a table created by an earlier version of this schema.
+alter table ns_products add column if not exists hide_payment_badge boolean not null default false;
 
 create index if not exists ns_products_category_slug_idx on ns_products (category_slug);
 
@@ -139,7 +143,13 @@ create table if not exists ns_settings (
   hero_cta_href text not null default '/catalogo',
   hero_image text not null default 'placeholder:hero:hero-1',
   hero_image_position_x numeric(5, 2) not null default 50,
-  hero_image_position_y numeric(5, 2) not null default 50
+  hero_image_position_y numeric(5, 2) not null default 50,
+  -- Real brand logo + payment-method badge (e.g. Cashea), uploaded from
+  -- /admin/configuracion. Empty string = fall back to the built-in SVG logo
+  -- / hide the badge everywhere.
+  brand_logo text not null default '',
+  payment_badge_icon text not null default '',
+  payment_badge_label text not null default 'Disponible con Cashea'
 );
 
 -- Backfills the hero_* columns (with their defaults) on a table created by
@@ -154,6 +164,9 @@ alter table ns_settings add column if not exists hero_cta_href text not null def
 alter table ns_settings add column if not exists hero_image text not null default 'placeholder:hero:hero-1';
 alter table ns_settings add column if not exists hero_image_position_x numeric(5, 2) not null default 50;
 alter table ns_settings add column if not exists hero_image_position_y numeric(5, 2) not null default 50;
+alter table ns_settings add column if not exists brand_logo text not null default '';
+alter table ns_settings add column if not exists payment_badge_icon text not null default '';
+alter table ns_settings add column if not exists payment_badge_label text not null default 'Disponible con Cashea';
 
 alter table ns_settings enable row level security;
 

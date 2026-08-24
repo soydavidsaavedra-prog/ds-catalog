@@ -112,6 +112,35 @@ panel). La imagen se sube al bucket `ns-product-images` de Supabase Storage
 ajusta con dos sliders (0-100%) que se traducen a `object-position` vía la
 nueva prop `objectPosition` de `NSMedia`.
 
+## Logo de marca e ícono de método de pago (Cashea)
+
+Ambos son campos de `SiteSettings` (`brandLogo`, `paymentBadgeIcon`,
+`paymentBadgeLabel`), subidos por el admin desde `/admin/configuracion` vía
+`NSSingleImageUploader` (mismo endpoint `/admin/api/upload`, ahora también
+acepta SVG). `NSLogo` recibe un `src` opcional: si `SiteSettings.brandLogo`
+tiene una URL real, la renderiza directamente (el archivo subido ya trae el
+mark + wordmark completos); si está vacío, cae al recreation en SVG de
+siempre — cero riesgo de romper el branding mientras el admin no sube nada.
+
+El ícono de pago se muestra vía `NSPaymentBadge` en tarjetas de producto y en
+la ficha de producto — nada se ve si `paymentBadgeIcon` está vacío, y cada
+producto puede ocultarlo individualmente con `Product.hidePaymentBadge`.
+Importante: `NSProductCard`, `NSFeaturedProducts` y todo lo que cuelga de
+ellos se importan también desde componentes cliente (ej. la home usa
+`NSFeaturedProducts`, que es `"use client"`), así que **no** pueden llamar a
+`getSettings()` directamente (rompería con `server-only`) — el ícono/label
+se resuelven una sola vez donde ya hay un Server Component (`getSettings()`
+está envuelto en `cache()` de React para deduplicar esa consulta) y bajan
+como prop plano (`paymentBadge: {icon, label}`) a través de
+`NSProductGrid` → `NSProductCard`.
+
+## Orden de categorías
+
+`reorderCategories`/`moveCategoryAction` (`app/admin/actions.ts`) intercambian
+el campo `order` con el hermano (misma `parentId`) adyacente — es lo que
+`/admin/categorias` usa en los botones ↑/↓, y lo que determina el orden en el
+header, footer, y las secciones del home.
+
 ## Autenticación de administrador
 
 Sin proveedor externo, sin cuentas de comprador. Una sola contraseña

@@ -24,6 +24,7 @@ function fromRow(row: ProductRow): Product {
     isNew: row.is_new,
     onSale: row.on_sale,
     active: row.active,
+    hidePaymentBadge: row.hide_payment_badge,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -47,6 +48,7 @@ function toRow(input: Partial<ProductInput>): Partial<ProductRow> {
   if (input.isNew !== undefined) row.is_new = input.isNew;
   if (input.onSale !== undefined) row.on_sale = input.onSale;
   if (input.active !== undefined) row.active = input.active;
+  if (input.hidePaymentBadge !== undefined) row.hide_payment_badge = input.hidePaymentBadge;
   return row;
 }
 

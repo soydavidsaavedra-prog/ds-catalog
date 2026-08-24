@@ -7,6 +7,7 @@ import {
   listProducts,
 } from "@/lib/repositories/product-repository";
 import { getCategoryBySlug } from "@/lib/repositories/category-repository";
+import { getSettings } from "@/lib/repositories/settings-repository";
 import { siteConfig } from "@/lib/config/site";
 import { absoluteUrl, formatPrice } from "@/lib/utils/format";
 import { NSProductGallery } from "@/components/product/NSProductGallery";
@@ -59,10 +60,12 @@ export default async function ProductPage({
   const product = await getProductBySlug(slug);
   if (!product || !product.active) notFound();
 
-  const [related, category] = await Promise.all([
+  const [related, category, settings] = await Promise.all([
     getRelatedProducts(product),
     getCategoryBySlug(product.categorySlug),
+    getSettings(),
   ]);
+  const paymentBadge = { icon: settings.paymentBadgeIcon, label: settings.paymentBadgeLabel };
 
   return (
     <div>
@@ -83,11 +86,11 @@ export default async function ProductPage({
 
         <div className="mt-6 grid gap-10 lg:grid-cols-2 lg:gap-16">
           <NSProductGallery images={product.images} reference={product.reference} name={product.name} />
-          <NSProductPurchasePanel product={product} />
+          <NSProductPurchasePanel product={product} paymentBadge={paymentBadge} />
         </div>
       </div>
 
-      <NSRelatedProducts products={related} />
+      <NSRelatedProducts products={related} paymentBadge={paymentBadge} />
     </div>
   );
 }

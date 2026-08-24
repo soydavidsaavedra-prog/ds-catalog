@@ -5,14 +5,50 @@ import { NSAdminDeleteButton } from "@/components/admin/NSAdminDeleteButton";
 import {
   createCategoryAction,
   deleteCategoryAction,
+  moveCategoryAction,
   toggleCategoryActiveAction,
   updateCategoryAction,
 } from "@/app/admin/actions";
 import type { Category } from "@/lib/types/catalog";
 
-function CategoryRow({ category, parents }: { category: Category; parents: Category[] }) {
+function CategoryRow({
+  category,
+  parents,
+  isFirst,
+  isLast,
+}: {
+  category: Category;
+  parents: Category[];
+  isFirst: boolean;
+  isLast: boolean;
+}) {
   return (
     <div className="rounded-card border border-border bg-surface-elevated p-5">
+      <div className="mb-3 flex items-center gap-2">
+        <form action={moveCategoryAction.bind(null, category.id, "up")}>
+          <button
+            type="submit"
+            disabled={isFirst}
+            aria-label="Mover arriba"
+            className="flex h-7 w-7 items-center justify-center rounded-control border border-border-strong text-muted-foreground hover:border-accent-strong hover:text-accent-strong disabled:opacity-30"
+          >
+            ↑
+          </button>
+        </form>
+        <form action={moveCategoryAction.bind(null, category.id, "down")}>
+          <button
+            type="submit"
+            disabled={isLast}
+            aria-label="Mover abajo"
+            className="flex h-7 w-7 items-center justify-center rounded-control border border-border-strong text-muted-foreground hover:border-accent-strong hover:text-accent-strong disabled:opacity-30"
+          >
+            ↓
+          </button>
+        </form>
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Orden de visualización
+        </span>
+      </div>
       <form action={updateCategoryAction.bind(null, category.id)} className="grid gap-4 sm:grid-cols-[1fr_1fr_1fr_2fr_auto]">
         <div>
           <NSLabel htmlFor={`name-${category.id}`}>Nombre</NSLabel>
@@ -106,14 +142,25 @@ export default async function AdminCategoriesPage() {
       </section>
 
       <section className="flex flex-col gap-8">
-        {tree.map((parent) => (
+        {tree.map((parent, parentIndex) => (
           <div key={parent.id} className="flex flex-col gap-4">
             <h2 className="font-display text-xl uppercase tracking-wide text-accent-strong">{parent.name}</h2>
-            <CategoryRow category={parent} parents={parents} />
+            <CategoryRow
+              category={parent}
+              parents={parents}
+              isFirst={parentIndex === 0}
+              isLast={parentIndex === tree.length - 1}
+            />
             {parent.children.length > 0 ? (
               <div className="ml-4 flex flex-col gap-4 border-l border-border pl-4 sm:ml-8 sm:pl-8">
-                {parent.children.map((child) => (
-                  <CategoryRow key={child.id} category={child} parents={parents} />
+                {parent.children.map((child, childIndex) => (
+                  <CategoryRow
+                    key={child.id}
+                    category={child}
+                    parents={parents}
+                    isFirst={childIndex === 0}
+                    isLast={childIndex === parent.children.length - 1}
+                  />
                 ))}
               </div>
             ) : null}

@@ -44,6 +44,7 @@ export interface ProductRow {
   is_new: boolean;
   on_sale: boolean;
   active: boolean;
+  hide_payment_badge: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -88,6 +89,9 @@ export interface SettingsRow {
   hero_image: string;
   hero_image_position_x: number;
   hero_image_position_y: number;
+  brand_logo: string;
+  payment_badge_icon: string;
+  payment_badge_label: string;
 }
 
 // Each Row/Insert/Update is intersected with Record<string, unknown> so the

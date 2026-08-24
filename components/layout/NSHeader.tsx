@@ -1,9 +1,13 @@
 import { listCategories, buildCategoryTree } from "@/lib/repositories/category-repository";
+import { getSettings } from "@/lib/repositories/settings-repository";
 import { siteConfig } from "@/lib/config/site";
 import { NSHeaderClient } from "@/components/layout/NSHeaderClient";
 
 export async function NSHeader() {
-  const categories = await listCategories({ activeOnly: true });
+  const [categories, settings] = await Promise.all([
+    listCategories({ activeOnly: true }),
+    getSettings(),
+  ]);
   const tree = buildCategoryTree(categories);
 
   return (
@@ -14,6 +18,7 @@ export async function NSHeader() {
         children: parent.children.map((c) => ({ slug: c.slug, name: c.name })),
       }))}
       whatsappNumber={siteConfig.contact.whatsappNumber}
+      logoSrc={settings.brandLogo}
     />
   );
 }

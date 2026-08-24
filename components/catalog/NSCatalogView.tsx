@@ -1,6 +1,7 @@
 import type { CatalogFilters } from "@/lib/types/catalog";
 import { listCategories } from "@/lib/repositories/category-repository";
 import { listProducts } from "@/lib/repositories/product-repository";
+import { getSettings } from "@/lib/repositories/settings-repository";
 import {
   applyCatalogFilters,
   collectColors,
@@ -38,9 +39,10 @@ export async function NSCatalogView({
   title,
   description,
 }: NSCatalogViewProps) {
-  const [categories, allProducts] = await Promise.all([
+  const [categories, allProducts, settings] = await Promise.all([
     listCategories({ activeOnly: true }),
     listProducts({ activeOnly: true }),
+    getSettings(),
   ]);
 
   const scopeProducts = forcedCategorySlugs
@@ -73,7 +75,10 @@ export async function NSCatalogView({
       </div>
 
       <div className="mt-8">
-        <NSProductGrid products={results} />
+        <NSProductGrid
+          products={results}
+          paymentBadge={{ icon: settings.paymentBadgeIcon, label: settings.paymentBadgeLabel }}
+        />
       </div>
     </div>
   );

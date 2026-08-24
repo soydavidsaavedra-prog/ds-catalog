@@ -45,7 +45,12 @@ export default async function Home() {
       />
       <NSFactoryStory />
       <NSCollections topLevelCategories={topLevelCategories} subcategories={subcategories} />
-      <NSFeaturedProducts nuevos={nuevos} destacados={destacados} ofertas={ofertas} />
+      <NSFeaturedProducts
+        nuevos={nuevos}
+        destacados={destacados}
+        ofertas={ofertas}
+        paymentBadge={{ icon: settings.paymentBadgeIcon, label: settings.paymentBadgeLabel }}
+      />
       <NSBrandStatement />
     </>
   );

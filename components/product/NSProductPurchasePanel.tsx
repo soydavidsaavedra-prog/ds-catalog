@@ -10,8 +10,17 @@ import { useCartStore } from "@/lib/cart/cart-store";
 import { absoluteUrl } from "@/lib/utils/format";
 import { shareProduct } from "@/lib/utils/share";
 import { cn } from "@/lib/utils/cn";
+import { NSPaymentBadge } from "@/components/catalog/NSPaymentBadge";
+import type { PaymentBadgeInfo } from "@/components/catalog/NSProductCard";
 
-export function NSProductPurchasePanel({ product }: { product: Product }) {
+export function NSProductPurchasePanel({
+  product,
+  paymentBadge,
+}: {
+  product: Product;
+  paymentBadge?: PaymentBadgeInfo;
+}) {
+  const showPaymentBadge = !product.hidePaymentBadge && paymentBadge?.icon;
   const [size, setSize] = useState(product.sizes[0] ?? "");
   const [color, setColor] = useState(product.colors[0]?.name ?? "");
   const [quantity, setQuantity] = useState(1);
@@ -60,6 +69,12 @@ export function NSProductPurchasePanel({ product }: { product: Product }) {
           <NSPrice amount={product.price} size="lg" />
           <NSAvailabilityBadge availability={product.availability} />
         </div>
+        {showPaymentBadge ? (
+          <div className="mt-3 flex items-center gap-2">
+            <NSPaymentBadge icon={paymentBadge!.icon} label={paymentBadge!.label} size="md" />
+            <span className="text-xs font-medium text-muted-foreground">{paymentBadge!.label}</span>
+          </div>
+        ) : null}
       </div>
 
       <p className="max-w-lg text-sm leading-relaxed text-muted-foreground">{product.description}</p>
