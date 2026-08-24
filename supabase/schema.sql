@@ -256,6 +256,12 @@ end $$;
 --   - ns_products.category_slug's foreign key becomes a composite FK
 --     (tenant_id, category_slug) -> ns_categories(tenant_id, slug), so a
 --     product can never reference another tenant's category.
+--   - ns_categories.parent_id's foreign key becomes a composite FK
+--     (tenant_id, parent_id) -> ns_categories(tenant_id, id), so a
+--     category can never reference another tenant's category as its
+--     parent (requires a new unique (tenant_id, id) constraint too,
+--     since Postgres needs a unique index over exactly the referenced
+--     column pair).
 --   - ns_settings stops being a single global singleton row (id smallint
 --     primary key check (id = 1)) and becomes one row per tenant, keyed
 --     by tenant_id.
@@ -337,6 +343,32 @@ begin
 end;
 $$ language plpgsql;
 
+-- Same idea as above but for a single-column foreign key: looks up the
+-- real constraint name via pg_constraint instead of assuming Postgres's
+-- "<table>_<column>_fkey" naming convention, so replacing a FK with its
+-- tenant-aware composite version never depends on a name guess.
+create or replace function ds_drop_single_column_fk(tbl text, col text, reftbl text)
+returns void as $$
+declare
+  conname text;
+begin
+  select con.conname into conname
+  from pg_constraint con
+  join pg_class rel on rel.oid = con.conrelid
+  join pg_class frel on frel.oid = con.confrelid
+  join pg_attribute att on att.attrelid = con.conrelid and att.attnum = any (con.conkey)
+  where rel.relname = tbl
+    and frel.relname = reftbl
+    and con.contype = 'f'
+    and array_length(con.conkey, 1) = 1
+    and att.attname = col;
+
+  if conname is not null then
+    execute format('alter table %I drop constraint %I', tbl, conname);
+  end if;
+end;
+$$ language plpgsql;
+
 -- ---------- ns_categories: tenant_id + per-tenant unique slug ----------
 
 alter table ns_categories add column if not exists tenant_id uuid references ds_tenants (id);
@@ -354,6 +386,38 @@ begin
     select 1 from pg_constraint where conname = 'ns_categories_tenant_id_slug_key'
   ) then
     alter table ns_categories add constraint ns_categories_tenant_id_slug_key unique (tenant_id, slug);
+  end if;
+end $$;
+
+-- Postgres requires a unique constraint on exactly (tenant_id, id) before
+-- anything can hold a composite foreign key referencing that pair — id
+-- alone is already unique (uuid primary key), so this adds no new
+-- restriction on existing data, it just names the pair explicitly.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'ns_categories_tenant_id_id_key'
+  ) then
+    alter table ns_categories add constraint ns_categories_tenant_id_id_key unique (tenant_id, id);
+  end if;
+end $$;
+
+-- Closes a multi-tenant gap: the original parent_id FK only checked
+-- parent_id -> ns_categories.id, so nothing stopped a category from
+-- pointing at a parent belonging to a different tenant. This composite
+-- FK ties parent_id to a row that must share the same tenant_id.
+-- Top-level categories (parent_id is null) are unaffected — Postgres
+-- skips a MATCH SIMPLE foreign key check whenever any of its columns is
+-- null, so a null parent_id never needs a matching tenant_id.
+select ds_drop_single_column_fk('ns_categories', 'parent_id', 'ns_categories');
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'ns_categories_tenant_parent_fkey'
+  ) then
+    alter table ns_categories
+      add constraint ns_categories_tenant_parent_fkey
+      foreign key (tenant_id, parent_id) references ns_categories (tenant_id, id) on delete set null;
   end if;
 end $$;
 
@@ -381,7 +445,7 @@ end $$;
 -- which relied on ns_categories.slug being globally unique. Now that
 -- slugs are only unique per tenant, it must become a composite FK so a
 -- product can never point at a category belonging to a different tenant.
-alter table ns_products drop constraint if exists ns_products_category_slug_fkey;
+select ds_drop_single_column_fk('ns_products', 'category_slug', 'ns_categories');
 do $$
 begin
   if not exists (
@@ -456,6 +520,7 @@ begin
 end $$;
 
 drop function if exists ds_drop_single_column_unique(text, text);
+drop function if exists ds_drop_single_column_fk(text, text, text);
 
 -- ---------- self-verification: no row lost, every row tenant-scoped ----------
 
@@ -468,6 +533,7 @@ declare
   ns_settings_missing int;
   ns_settings_count int;
   ds_tenants_count int;
+  ns_categories_cross_tenant_parent int;
 begin
   select count(*) into ns_categories_missing from ns_categories where tenant_id is null;
   select count(*) into ns_products_missing from ns_products where tenant_id is null;
@@ -476,6 +542,10 @@ begin
   select count(*) into ns_settings_missing from ns_settings where tenant_id is null;
   select count(*) into ns_settings_count from ns_settings;
   select count(*) into ds_tenants_count from ds_tenants where slug = 'elnuevosanchez';
+  select count(*) into ns_categories_cross_tenant_parent
+    from ns_categories child
+    join ns_categories parent on parent.id = child.parent_id
+    where child.parent_id is not null and child.tenant_id <> parent.tenant_id;
 
   if ds_tenants_count <> 1 then
     raise exception 'DS Catalog migration aborted: expected exactly 1 "elnuevosanchez" tenant row, found %', ds_tenants_count;
@@ -498,8 +568,11 @@ begin
   if ns_settings_count < 1 then
     raise exception 'DS Catalog migration aborted: ns_settings has no rows at all — the elnuevosanchez settings row is missing';
   end if;
+  if ns_categories_cross_tenant_parent > 0 then
+    raise exception 'DS Catalog migration aborted: % ns_categories row(s) have a parent_id belonging to a different tenant', ns_categories_cross_tenant_parent;
+  end if;
 
-  raise notice 'DS Catalog migration OK — every existing row is tenant-scoped, elnuevosanchez tenant present.';
+  raise notice 'DS Catalog migration OK — every existing row is tenant-scoped, no cross-tenant category parents, elnuevosanchez tenant present.';
 end $$;
 
 commit;
