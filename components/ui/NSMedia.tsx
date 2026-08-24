@@ -4,7 +4,8 @@ import { NSPlaceholderArt } from "@/components/ui/NSPlaceholderArt";
 import { cn } from "@/lib/utils/cn";
 
 interface NSMediaProps {
-  src: string;
+  /** Falsy (e.g. a settings column not yet migrated) falls back to placeholder art, same as an explicit "placeholder:" token. */
+  src: string | null | undefined;
   alt: string;
   reference?: string;
   className?: string;
@@ -31,7 +32,7 @@ export function NSMedia({
   fill = true,
   objectPosition,
 }: NSMediaProps) {
-  const placeholder = parsePlaceholder(src);
+  const placeholder = parsePlaceholder(src) ?? (src ? null : { category: "otros", seed: "0" });
 
   if (placeholder) {
     return (
@@ -47,11 +48,15 @@ export function NSMedia({
     );
   }
 
+  // Past this point `placeholder` is null, which only happens when `src` is a truthy,
+  // non-"placeholder:" string (see the fallback above) — safe to treat as a real src.
+  const realSrc = src as string;
+
   if (fill) {
     return (
       <div className={cn("relative h-full w-full overflow-hidden bg-surface", className)}>
         <Image
-          src={src}
+          src={realSrc}
           alt={alt}
           fill
           sizes={sizes ?? "(min-width: 1024px) 25vw, 50vw"}
@@ -65,7 +70,7 @@ export function NSMedia({
 
   return (
     <Image
-      src={src}
+      src={realSrc}
       alt={alt}
       width={800}
       height={1000}

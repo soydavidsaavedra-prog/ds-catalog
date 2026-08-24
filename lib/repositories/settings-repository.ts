@@ -4,41 +4,50 @@ import { getSupabaseClient } from "@/lib/db/supabaseClient";
 import type { SettingsRow } from "@/lib/db/supabase-types";
 import type { SiteSettings } from "@/lib/types/catalog";
 
+/**
+ * Every field falls back to a safe default (matching the SQL column
+ * defaults) if the row is missing it entirely — e.g. the admin's Supabase
+ * project hasn't had the latest supabase/schema.sql re-run yet, so a new
+ * column simply isn't present on the row. Without this, an admin who is a
+ * migration behind gets a hard crash (undefined fed into next/image, NaN
+ * CSS positions, etc.) instead of the site just rendering as if that field
+ * were unset.
+ */
 function fromRow(row: SettingsRow): SiteSettings {
   return {
-    brandName: row.brand_name,
-    slogan: row.slogan,
-    brandDescription: row.brand_description,
-    whatsappNumber: row.whatsapp_number,
-    whatsappDisplay: row.whatsapp_display,
-    contactEmail: row.contact_email,
-    contactAddress: row.contact_address,
-    contactMapsUrl: row.contact_maps_url,
-    currency: row.currency,
-    instagram: row.instagram,
-    facebook: row.facebook,
-    tiktok: row.tiktok,
-    heroEyebrow: row.hero_eyebrow,
-    heroTitleLine1: row.hero_title_line1,
-    heroTitleLine2: row.hero_title_line2,
-    heroSubtitle: row.hero_subtitle,
-    heroTagline: row.hero_tagline,
-    heroCtaLabel: row.hero_cta_label,
-    heroCtaHref: row.hero_cta_href,
-    heroImage: row.hero_image,
-    heroImagePositionX: Number(row.hero_image_position_x),
-    heroImagePositionY: Number(row.hero_image_position_y),
-    brandLogo: row.brand_logo,
-    paymentBadgeIcon: row.payment_badge_icon,
-    paymentBadgeLabel: row.payment_badge_label,
-    storyEyebrow: row.story_eyebrow,
-    storyTitle: row.story_title,
-    storyDescription: row.story_description,
-    storyStepImage1: row.story_step_image1,
-    storyStepImage2: row.story_step_image2,
-    storyStepImage3: row.story_step_image3,
-    storyStepImage4: row.story_step_image4,
-    storyStepImage5: row.story_step_image5,
+    brandName: row.brand_name ?? "El Nuevo Sánchez",
+    slogan: row.slogan ?? "",
+    brandDescription: row.brand_description ?? "",
+    whatsappNumber: row.whatsapp_number ?? "",
+    whatsappDisplay: row.whatsapp_display ?? "",
+    contactEmail: row.contact_email ?? "",
+    contactAddress: row.contact_address ?? "",
+    contactMapsUrl: row.contact_maps_url ?? "",
+    currency: row.currency ?? "USD",
+    instagram: row.instagram ?? "",
+    facebook: row.facebook ?? "",
+    tiktok: row.tiktok ?? "",
+    heroEyebrow: row.hero_eyebrow ?? "",
+    heroTitleLine1: row.hero_title_line1 ?? "",
+    heroTitleLine2: row.hero_title_line2 ?? "",
+    heroSubtitle: row.hero_subtitle ?? "",
+    heroTagline: row.hero_tagline ?? "",
+    heroCtaLabel: row.hero_cta_label ?? "",
+    heroCtaHref: row.hero_cta_href ?? "/catalogo",
+    heroImage: row.hero_image ?? "",
+    heroImagePositionX: row.hero_image_position_x != null ? Number(row.hero_image_position_x) : 50,
+    heroImagePositionY: row.hero_image_position_y != null ? Number(row.hero_image_position_y) : 50,
+    brandLogo: row.brand_logo ?? "",
+    paymentBadgeIcon: row.payment_badge_icon ?? "",
+    paymentBadgeLabel: row.payment_badge_label ?? "",
+    storyEyebrow: row.story_eyebrow ?? "",
+    storyTitle: row.story_title ?? "",
+    storyDescription: row.story_description ?? "",
+    storyStepImage1: row.story_step_image1 ?? "",
+    storyStepImage2: row.story_step_image2 ?? "",
+    storyStepImage3: row.story_step_image3 ?? "",
+    storyStepImage4: row.story_step_image4 ?? "",
+    storyStepImage5: row.story_step_image5 ?? "",
   };
 }
 
