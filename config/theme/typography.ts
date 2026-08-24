@@ -3,7 +3,8 @@
  */
 
 export const fontFamily = {
-  sans: "var(--font-geist-sans), system-ui, sans-serif",
+  sans: "var(--font-body), system-ui, sans-serif",
+  display: "var(--font-display), var(--font-body), system-ui, sans-serif",
   mono: "var(--font-geist-mono), ui-monospace, monospace",
 } as const;
 
@@ -16,6 +17,10 @@ export const fontSize = {
   "2xl": "1.5rem",
   "3xl": "1.875rem",
   "4xl": "2.25rem",
+  "5xl": "3rem",
+  "6xl": "3.75rem",
+  "7xl": "4.5rem",
+  "8xl": "6rem",
 } as const;
 
 export const fontWeight = {
@@ -43,11 +48,19 @@ export const letterSpacing = {
 } as const;
 
 export const textStyles = {
-  display: {
-    fontSize: fontSize["3xl"],
-    fontWeight: fontWeight.semibold,
-    lineHeight: lineHeight.tight,
+  hero: {
+    fontFamily: fontFamily.display,
+    fontSize: fontSize["7xl"],
+    fontWeight: fontWeight.regular,
+    lineHeight: lineHeight.none,
     letterSpacing: letterSpacing.tight,
+  },
+  display: {
+    fontFamily: fontFamily.display,
+    fontSize: fontSize["3xl"],
+    fontWeight: fontWeight.regular,
+    lineHeight: lineHeight.tight,
+    letterSpacing: letterSpacing.wide,
   },
   title: {
     fontSize: fontSize["2xl"],
@@ -78,6 +91,12 @@ export const textStyles = {
     fontWeight: fontWeight.medium,
     lineHeight: lineHeight.normal,
     letterSpacing: letterSpacing.wide,
+  },
+  eyebrow: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    lineHeight: lineHeight.none,
+    letterSpacing: letterSpacing.wider,
   },
   label: {
     fontSize: fontSize.sm,

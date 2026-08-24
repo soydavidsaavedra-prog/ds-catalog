@@ -32,9 +32,16 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
+
+# local JSON-file "database" (dev/demo persistence — see docs/ARCHITECTURE.md)
+/.data/
+
+# admin-uploaded media
+/public/uploads/
 
 # typescript
 *.tsbuildinfo
