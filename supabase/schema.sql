@@ -821,3 +821,32 @@ create trigger subscriptions_set_updated_at
 alter table subscriptions enable row level security;
 
 commit;
+
+-- =====================================================================
+-- DS Catalog — database size RPC
+-- =====================================================================
+-- pg_database_size() isn't reachable through PostgREST's normal
+-- table/view surface (there's no "database" table to select from) — a
+-- function is the only way to expose it as an RPC. Real, live number,
+-- read fresh on every /superadmin/storage request — nothing cached or
+-- guessed here. Storage usage (object sizes) is computed separately, in
+-- lib/repositories/storage-repository.ts, via the Storage API rather
+-- than a raw query against the `storage` schema (which usually isn't
+-- exposed through PostgREST on a stock Supabase project). Network egress
+-- has no equivalent — it isn't queryable from inside Postgres at all —
+-- so it stays unimplemented rather than faked; a real number needs the
+-- Supabase Management API with its own access token, out of scope here.
+--
+-- Safe to re-run: create-or-replace only.
+
+begin;
+
+create or replace function get_database_size_bytes()
+returns bigint
+language sql
+stable
+as $$
+  select pg_database_size(current_database());
+$$;
+
+commit;

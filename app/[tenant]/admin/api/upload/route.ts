@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { isAdminAuthenticated } from "@/lib/auth/admin-auth";
 import { getSupabaseClient } from "@/lib/db/supabaseClient";
+import { PRODUCT_IMAGES_BUCKET } from "@/lib/media/storage-bucket";
 
 const ALLOWED_EXTENSIONS: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -11,7 +12,7 @@ const ALLOWED_EXTENSIONS: Record<string, string> = {
   "image/svg+xml": "svg",
 };
 const MAX_SIZE = 8 * 1024 * 1024;
-const BUCKET = "ns-product-images";
+const BUCKET = PRODUCT_IMAGES_BUCKET;
 
 export async function POST(request: Request, { params }: { params: Promise<{ tenant: string }> }) {
   const { tenant: tenantSlug } = await params;

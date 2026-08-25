@@ -181,19 +181,42 @@ export interface SettingsRow {
 // without touching the outer Tables object shape — intersecting *that*
 // instead breaks .select("*")'s return type.
 type IndexableRow<T> = T & Record<string, unknown>;
-type TableDef<Row> = {
+type TableDef<Row, Relationships extends readonly unknown[] = []> = {
   Row: IndexableRow<Row>;
   Insert: Partial<IndexableRow<Row>>;
   Update: Partial<IndexableRow<Row>>;
-  Relationships: [];
+  Relationships: Relationships;
 };
+
+// subscriptions is the only table queried with a PostgREST embed
+// (lib/repositories/subscriptions-repository.ts listSubscriptionsWithDetails
+// selects "*, plans(*), ds_tenants(name, slug)") — the generic client
+// needs these declared to type the embed's result instead of erroring
+// with SelectQueryError, since (unlike a real `supabase gen types` run)
+// this hand-written Database type has no other way to know the FKs exist.
+type SubscriptionsRelationships = [
+  {
+    foreignKeyName: "subscriptions_plan_id_fkey";
+    columns: ["plan_id"];
+    isOneToOne: false;
+    referencedRelation: "plans";
+    referencedColumns: ["id"];
+  },
+  {
+    foreignKeyName: "subscriptions_tenant_id_fkey";
+    columns: ["tenant_id"];
+    isOneToOne: true;
+    referencedRelation: "ds_tenants";
+    referencedColumns: ["id"];
+  },
+];
 
 export interface Database {
   public: {
     Tables: {
       super_admin_users: TableDef<SuperAdminUserRow>;
       plans: TableDef<PlanRow>;
-      subscriptions: TableDef<SubscriptionRow>;
+      subscriptions: TableDef<SubscriptionRow, SubscriptionsRelationships>;
       ds_tenants: TableDef<TenantRow>;
       ns_categories: TableDef<CategoryRow>;
       ns_products: TableDef<ProductRow>;
@@ -202,7 +225,15 @@ export interface Database {
       ns_settings: TableDef<SettingsRow>;
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      // See supabase/schema.sql's "database size RPC" section — a thin
+      // wrapper over pg_database_size(), since PostgREST only exposes
+      // Postgres functions as RPCs, never raw SQL.
+      get_database_size_bytes: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

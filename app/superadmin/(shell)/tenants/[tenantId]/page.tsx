@@ -5,6 +5,8 @@ import { getTenantSummaryById } from "@/lib/repositories/superadmin-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
 import { listPlans } from "@/lib/repositories/plans-repository";
 import { getSubscriptionByTenantId } from "@/lib/repositories/subscriptions-repository";
+import { getStorageUsageForSlug } from "@/lib/repositories/storage-repository";
+import { formatBytes } from "@/lib/utils/format";
 import {
   updateTenantStatusAction,
   impersonateTenantAction,
@@ -38,10 +40,11 @@ export default async function SuperadminTenantDetailPage({
   const tenant = await getTenantSummaryById(tenantId);
   if (!tenant) notFound();
 
-  const [settings, plans, subscription] = await Promise.all([
+  const [settings, plans, subscription, storage] = await Promise.all([
     getSettings(tenant.id),
     listPlans(),
     getSubscriptionByTenantId(tenant.id),
+    getStorageUsageForSlug(tenant.slug),
   ]);
   const currentPlan = subscription ? plans.find((p) => p.id === subscription.planId) : null;
 
@@ -75,10 +78,11 @@ export default async function SuperadminTenantDetailPage({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
         <Stat label="Productos" value={tenant.counts.products} />
         <Stat label="Categorías" value={tenant.counts.categories} />
         <Stat label="Pedidos" value={tenant.counts.orders} />
+        <Stat label="Storage" value={formatBytes(storage.totalBytes)} />
         <Stat label="Onboarding" value={tenant.onboardingCompleted ? "Completo" : "Pendiente"} />
       </div>
 

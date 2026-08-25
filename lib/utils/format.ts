@@ -19,3 +19,10 @@ export function absoluteUrl(path: string): string {
   const domain = siteConfig.seo.domain.replace(/\/$/, "");
   return `${domain}${path.startsWith("/") ? path : `/${path}`}`;
 }
+
+/** Used by /superadmin's Storage pages — real byte counts from lib/repositories/storage-repository.ts, never a guess. */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
