@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
-import sharp from "sharp";
 import { isAdminAuthenticated } from "@/lib/auth/admin-auth";
 import { getSupabaseClient } from "@/lib/db/supabaseClient";
 import { PRODUCT_IMAGES_BUCKET } from "@/lib/media/storage-bucket";
@@ -17,72 +16,6 @@ const ALLOWED_EXTENSIONS: Record<string, string> = {
 };
 const MAX_SIZE = 8 * 1024 * 1024;
 const BUCKET = PRODUCT_IMAGES_BUCKET;
-
-// ---------- Compression ----------
-
-/** Never compress past this — an already-small file is left byte-for-byte untouched. */
-const TARGET_MAX_BYTES = 500 * 1024;
-const QUALITY_STEPS = [80, 70, 60, 50, 40, 30];
-/** Only tried if quality reduction alone can't reach the target at full size. */
-const MAX_DIMENSION_STEPS = [1600, 1200, 900];
-
-type SharpInstance = ReturnType<typeof sharp>;
-
-function encodeAt(image: SharpInstance, contentType: string, quality: number): SharpInstance {
-  switch (contentType) {
-    case "image/png":
-      // PNG is lossless by default — quality only has an effect once a
-      // palette-quantization step (the actual lossy part) is turned on.
-      return image.png({ quality, palette: true });
-    case "image/webp":
-      return image.webp({ quality });
-    case "image/avif":
-      return image.avif({ quality });
-    case "image/jpeg":
-    default:
-      return image.jpeg({ quality, mozjpeg: true });
-  }
-}
-
-/**
- * Re-encodes a raster image at decreasing quality (and, if that alone isn't
- * enough, decreasing max dimension) until it's under TARGET_MAX_BYTES,
- * keeping the same format throughout. Stops at the first attempt that fits;
- * if nothing gets there, returns the smallest one produced rather than the
- * original — compression is always best-effort, an upload is never
- * rejected just because a very dense image can't quite hit 500KB.
- */
-async function compressImage(buffer: Buffer, contentType: string): Promise<Buffer> {
-  // SVG is vector — rasterizing it would throw away the exact property
-  // (infinite scale, inherently tiny file) that makes SVG the right choice
-  // for a logo in the first place, so it's left alone entirely.
-  if (contentType === "image/svg+xml") return buffer;
-  if (buffer.length <= TARGET_MAX_BYTES) return buffer;
-
-  let smallest = buffer;
-
-  for (const quality of QUALITY_STEPS) {
-    const output = await encodeAt(sharp(buffer, { failOn: "none" }), contentType, quality).toBuffer();
-    if (output.length < smallest.length) smallest = output;
-    if (output.length <= TARGET_MAX_BYTES) return output;
-  }
-
-  for (const maxDimension of MAX_DIMENSION_STEPS) {
-    for (const quality of QUALITY_STEPS) {
-      const resized = sharp(buffer, { failOn: "none" }).resize({
-        width: maxDimension,
-        height: maxDimension,
-        fit: "inside",
-        withoutEnlargement: true,
-      });
-      const output = await encodeAt(resized, contentType, quality).toBuffer();
-      if (output.length < smallest.length) smallest = output;
-      if (output.length <= TARGET_MAX_BYTES) return output;
-    }
-  }
-
-  return smallest;
-}
 
 export async function POST(request: Request, { params }: { params: Promise<{ tenant: string }> }) {
   const { tenant: tenantSlug } = await params;
@@ -104,13 +37,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
     return NextResponse.json({ error: "La imagen supera 8MB" }, { status: 400 });
   }
 
-  // Compressed before the plan-limit check below, so that check (and what
-  // actually lands in Storage) reflects real stored bytes, not the size of
-  // the file the browser happened to send. Compression is a nice-to-have,
-  // never a reason to block the actual upload — if sharp fails for any
-  // reason, fall back to storing the original bytes untouched.
-  const rawBuffer = Buffer.from(await file.arrayBuffer());
-  const buffer = await compressImage(rawBuffer, file.type).catch(() => rawBuffer);
+  // Compression to ~500KB happens client-side before this request is even
+  // sent — see lib/utils/image-compress.ts. That file already explains why
+  // it isn't done here with sharp: sharp's native binaries proved
+  // unreliable to load inside a Vercel serverless function, and a failure
+  // there broke every upload through this route, not just large ones.
+  const buffer = Buffer.from(await file.arrayBuffer());
 
   // Storage is an internal, superadmin-managed number — never named as
   // such in what the tenant sees here (per the plan's own design: limits

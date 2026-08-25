@@ -13,11 +13,6 @@ const nextConfig: NextConfig = {
       ? [{ protocol: "https", hostname: supabaseHostname, pathname: "/storage/v1/object/public/**" }]
       : [],
   },
-  // sharp (app/[tenant]/admin/api/upload/route.ts) ships native binaries —
-  // bundling it like ordinary JS breaks loading those at runtime on
-  // Vercel. Marking it external makes the route require() it directly
-  // instead, which is the documented fix for this exact failure mode.
-  serverExternalPackages: ["sharp"],
 };
 
 export default nextConfig;

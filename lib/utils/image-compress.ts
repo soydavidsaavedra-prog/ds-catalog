@@ -1,47 +1,68 @@
 "use client";
 
 /**
- * Vercel's Serverless Functions reject any request body over roughly 4.5MB
- * with a plain-text 413 "Request Entity Too Large" — well under this app's
- * own 8MB upload ceiling, and easily hit by an unedited phone photo. That
- * response isn't JSON, so it broke the uploader's res.json() call before
- * the file ever reached the server-side compression in
- * app/[tenant]/admin/api/upload/route.ts. This shrinks oversized images in
- * the browser first so the upload always fits under the platform limit;
- * the server then does the precise pass down to ~500KB.
+ * All compression happens here, in the browser, via Canvas — not on the
+ * server. An earlier version used sharp server-side, but sharp ships
+ * native binaries that turned out unreliable to load inside a Vercel
+ * serverless function (it broke every upload through this route, not just
+ * large ones, including images that never even touched the compression
+ * path). Canvas has no such risk: it's plain browser API, and doing the
+ * work client-side also sidesteps Vercel's ~4.5MB request body limit for
+ * an unedited phone photo, since what actually gets sent is already small.
  */
-const CLIENT_COMPRESS_THRESHOLD_BYTES = 3 * 1024 * 1024;
-const MAX_DIMENSION = 2400;
-const QUALITY = 0.85;
+const TARGET_MAX_BYTES = 500 * 1024;
+const QUALITY_STEPS = [0.85, 0.75, 0.65, 0.55, 0.45, 0.35];
+const MAX_DIMENSION_STEPS = [2400, 1600, 1200, 900];
 
-/** Formats canvas can safely re-encode without silently changing them (e.g. AVIF support is inconsistent) or destroying transparency. */
+/** Formats canvas can safely re-encode without destroying transparency or silently failing (AVIF output support is inconsistent across browsers). */
 const RECOMPRESSIBLE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
+function drawScaled(bitmap: ImageBitmap, maxDimension: number): HTMLCanvasElement {
+  const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+  const width = Math.round(bitmap.width * scale);
+  const height = Math.round(bitmap.height * scale);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (ctx) ctx.drawImage(bitmap, 0, 0, width, height);
+  return canvas;
+}
+
+function encodeCanvas(canvas: HTMLCanvasElement, type: string, quality?: number): Promise<Blob | null> {
+  return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+}
+
 export async function compressImageBeforeUpload(file: File): Promise<File> {
-  if (file.size <= CLIENT_COMPRESS_THRESHOLD_BYTES || !RECOMPRESSIBLE_TYPES.has(file.type)) {
+  if (file.size <= TARGET_MAX_BYTES || !RECOMPRESSIBLE_TYPES.has(file.type)) {
     return file;
   }
 
   try {
     const bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, MAX_DIMENSION / Math.max(bitmap.width, bitmap.height));
-    const width = Math.round(bitmap.width * scale);
-    const height = Math.round(bitmap.height * scale);
+    // PNG's quality parameter is ignored by canvas.toBlob (it's lossless) —
+    // one encode per dimension is enough instead of repeating six times.
+    const qualitySteps = file.type === "image/png" ? [undefined] : QUALITY_STEPS;
+    const dimensionSteps = [Math.max(bitmap.width, bitmap.height), ...MAX_DIMENSION_STEPS];
 
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return file;
-    ctx.drawImage(bitmap, 0, 0, width, height);
+    let smallest: Blob | null = null;
+    for (const maxDimension of dimensionSteps) {
+      const canvas = drawScaled(bitmap, maxDimension);
+      for (const quality of qualitySteps) {
+        const blob = await encodeCanvas(canvas, file.type, quality);
+        if (!blob) continue;
+        if (!smallest || blob.size < smallest.size) smallest = blob;
+        if (blob.size <= TARGET_MAX_BYTES) return new File([blob], file.name, { type: file.type });
+      }
+    }
 
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, file.type, QUALITY));
-    if (!blob || blob.size >= file.size) return file;
-
-    return new File([blob], file.name, { type: file.type });
+    // Nothing hit the target (e.g. a very dense opaque PNG) — use the
+    // smallest attempt produced rather than the original, best-effort.
+    if (smallest && smallest.size < file.size) return new File([smallest], file.name, { type: file.type });
+    return file;
   } catch {
     // Decode/canvas failure of any kind — fall back to the original file
-    // and let the server's own MAX_SIZE check be the backstop.
+    // and let the server's own size check be the backstop.
     return file;
   }
 }
