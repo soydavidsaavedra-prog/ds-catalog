@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { isAdminAuthenticated } from "@/lib/auth/admin-auth";
 import { NSOnboardingWizard } from "@/components/admin/NSOnboardingWizard";
+import { DSPlatformMark } from "@/components/brand/DSPlatformMark";
 
 export const metadata: Metadata = {
   title: "Bienvenida",
@@ -27,7 +28,8 @@ export default async function OnboardingPage({
   return (
     <div className="flex min-h-dvh items-center justify-center bg-ink-950 px-4 py-16 text-ink-0">
       <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-2 text-center">
+        <div className="mb-8 flex flex-col items-center gap-3 text-center">
+          <DSPlatformMark className="h-14 w-14" />
           <p className="font-display text-xl uppercase tracking-wide">¡Bienvenido, {tenant.name}!</p>
           <p className="text-xs text-ink-400">Un par de datos y tu catálogo estará listo.</p>
         </div>
