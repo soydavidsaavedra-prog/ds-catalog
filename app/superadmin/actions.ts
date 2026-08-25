@@ -72,12 +72,20 @@ export async function updateTenantStatusAction(tenantId: string, status: TenantS
   revalidatePath("/superadmin");
 }
 
-/** Reclassifying only changes which optional fields the tenant's own product form shows going forward — it never touches existing products/categories, so this is safe to change at any time. */
-export async function updateTenantBusinessTypeAction(tenantId: string, formData: FormData): Promise<void> {
+/**
+ * Reclassifying only changes which optional fields the tenant's own
+ * product form shows going forward — it never touches existing
+ * products/categories, so this is safe to change at any time. One button
+ * per business type (bound with both tenantId and businessType, same
+ * pattern as updateTenantStatusAction above), not a <select> + submit —
+ * React resets an uncontrolled form field to its original value right
+ * after a plain Server Action succeeds, which made a select-based version
+ * of this look like it silently reverted even though the save itself
+ * always worked.
+ */
+export async function updateTenantBusinessTypeAction(tenantId: string, businessType: BusinessType): Promise<void> {
   await requireSuperadmin();
-  const businessTypeInput = String(formData.get("businessType") ?? "");
-  if (!(businessTypeInput in BUSINESS_TYPE_PROFILES)) return;
-  await updateTenantBusinessType(tenantId, businessTypeInput as BusinessType);
+  await updateTenantBusinessType(tenantId, businessType);
   revalidatePath(`/superadmin/tenants/${tenantId}`);
 }
 

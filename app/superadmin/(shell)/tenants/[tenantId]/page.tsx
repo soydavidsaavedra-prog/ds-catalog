@@ -111,21 +111,19 @@ export default async function SuperadminTenantDetailPage({
           Define qué campos ve el cliente en su formulario de productos (tallas, colores). No toca productos ni
           categorías ya creados.
         </p>
-        <form
-          action={updateTenantBusinessTypeAction.bind(null, tenant.id)}
-          className="mt-3 flex flex-wrap items-end gap-3"
-        >
-          <NSSelect id="businessType" name="businessType" defaultValue={tenant.businessType} className="w-64">
-            {BUSINESS_TYPE_OPTIONS.map((profile) => (
-              <option key={profile.value} value={profile.value}>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {BUSINESS_TYPE_OPTIONS.map((profile) => (
+            <form key={profile.value} action={updateTenantBusinessTypeAction.bind(null, tenant.id, profile.value)}>
+              <NSButton
+                type="submit"
+                variant={tenant.businessType === profile.value ? "primary" : "outline"}
+                size="sm"
+              >
                 {profile.label}
-              </option>
-            ))}
-          </NSSelect>
-          <NSButton type="submit" variant="outline" size="sm">
-            Guardar
-          </NSButton>
-        </form>
+              </NSButton>
+            </form>
+          ))}
+        </div>
       </div>
 
       <div>
