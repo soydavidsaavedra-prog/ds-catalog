@@ -18,7 +18,7 @@ export default async function SuperadminShellLayout({ children }: { children: Re
   }
 
   return (
-    <div className="flex min-h-dvh bg-surface">
+    <div className="flex min-h-dvh flex-col bg-surface lg:flex-row">
       <NSSuperAdminSidebar email={superadmin.email} />
       <div className="min-w-0 flex-1 overflow-x-hidden">
         <main className="mx-auto max-w-6xl px-6 py-8 sm:px-10">{children}</main>

@@ -29,7 +29,7 @@ export default async function AdminShellLayout({
   const settings = await getSettings(tenant.id);
 
   return (
-    <div className="flex min-h-dvh bg-surface">
+    <div className="flex min-h-dvh flex-col bg-surface lg:flex-row">
       <NSAdminSidebar
         tenantSlug={tenantSlug}
         logoSrc={settings.brandLogo}

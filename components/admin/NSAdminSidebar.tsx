@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NSLogo } from "@/components/brand/NSLogo";
@@ -21,6 +22,7 @@ export function NSAdminSidebar({
   impersonating?: boolean;
 }) {
   const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(false);
   const base = `/${tenantSlug}/admin`;
   const LINKS = [
     { href: base, label: "Dashboard", icon: DashboardIcon },
@@ -32,65 +34,113 @@ export function NSAdminSidebar({
     { href: `${base}/configuracion`, label: "Configuración", icon: SettingsIcon },
   ];
 
+  // A route change (tapping a nav link) means the drawer already did its
+  // job — close it instead of leaving it open over the new page.
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
   return (
-    <aside className="flex h-full w-60 shrink-0 flex-col border-r border-ink-800 bg-ink-950 text-ink-0">
-      <div className="flex h-16 items-center gap-2 border-b border-ink-800 px-5">
-        <NSLogo
-          id="ns-admin"
-          variant="mark"
-          className="h-8 w-8"
-          src={logoSrc}
-          brandName={brandName}
-          tagline={tagline}
-        />
-        <span className="text-xs font-semibold uppercase tracking-widest">Panel administrativo</span>
+    <>
+      <div className="flex h-14 shrink-0 items-center justify-between border-b border-ink-800 bg-ink-950 px-4 text-ink-0 lg:hidden">
+        <div className="flex items-center gap-2">
+          <NSLogo id="ns-admin-mobile" variant="mark" className="h-7 w-7" src={logoSrc} brandName={brandName} tagline={tagline} />
+          <span className="text-xs font-semibold uppercase tracking-widest">Panel administrativo</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsOpen(true)}
+          aria-label="Abrir menú"
+          className="flex h-9 w-9 items-center justify-center rounded-control text-ink-300 hover:bg-ink-900 hover:text-ink-0"
+        >
+          <MenuIcon className="h-5 w-5" />
+        </button>
       </div>
 
-      {impersonating ? (
-        <div className="border-b border-warning/30 bg-warning/10 px-4 py-2.5 text-center text-[11px] font-semibold uppercase tracking-wide text-warning">
-          Sesión vía Super Admin
-        </div>
+      {isOpen ? (
+        <div
+          className="fixed inset-0 z-40 bg-[var(--overlay)] lg:hidden"
+          onClick={() => setIsOpen(false)}
+          aria-hidden
+        />
       ) : null}
 
-      <nav className="flex-1 space-y-1 px-3 py-4">
-        {LINKS.map((link) => {
-          const active = link.href === base ? pathname === base : pathname.startsWith(link.href);
-          const Icon = link.icon;
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                "flex items-center gap-3 rounded-control px-3 py-2.5 text-sm font-medium transition-colors",
-                active ? "bg-accent text-accent-foreground" : "text-ink-300 hover:bg-ink-900 hover:text-ink-0",
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              {link.label}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="border-t border-ink-800 p-3">
-        <Link href={`/${tenantSlug}`} className="block rounded-control px-3 py-2 text-xs font-medium text-ink-400 hover:text-ink-0">
-          ← Ver sitio
-        </Link>
-        {impersonating ? (
-          <form action={endImpersonationAction}>
-            <button type="submit" className="w-full rounded-control px-3 py-2 text-left text-xs font-semibold text-warning hover:text-accent-strong">
-              ← Volver a Super Admin
-            </button>
-          </form>
-        ) : (
-          <form action={logoutAction.bind(null, tenantSlug)}>
-            <button type="submit" className="w-full rounded-control px-3 py-2 text-left text-xs font-medium text-ink-400 hover:text-danger">
-              Cerrar sesión
-            </button>
-          </form>
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-ink-800 bg-ink-950 text-ink-0 transition-transform duration-normal ease-out-ns",
+          "lg:static lg:z-auto lg:h-full lg:w-60 lg:translate-x-0",
+          isOpen ? "translate-x-0" : "-translate-x-full",
         )}
-      </div>
-    </aside>
+      >
+        <div className="flex h-16 items-center justify-between gap-2 border-b border-ink-800 px-5">
+          <div className="flex items-center gap-2">
+            <NSLogo id="ns-admin" variant="mark" className="h-8 w-8" src={logoSrc} brandName={brandName} tagline={tagline} />
+            <span className="text-xs font-semibold uppercase tracking-widest">Panel administrativo</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsOpen(false)}
+            aria-label="Cerrar menú"
+            className="flex h-8 w-8 items-center justify-center rounded-control text-ink-400 hover:bg-ink-900 hover:text-ink-0 lg:hidden"
+          >
+            <CloseIcon className="h-4 w-4" />
+          </button>
+        </div>
+
+        {impersonating ? (
+          <div className="border-b border-warning/30 bg-warning/10 px-4 py-2.5 text-center text-[11px] font-semibold uppercase tracking-wide text-warning">
+            Sesión vía Super Admin
+          </div>
+        ) : null}
+
+        <nav className="flex-1 space-y-1 px-3 py-4">
+          {LINKS.map((link) => {
+            const active = link.href === base ? pathname === base : pathname.startsWith(link.href);
+            const Icon = link.icon;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-control px-3 py-2.5 text-sm font-medium transition-colors",
+                  active ? "bg-accent text-accent-foreground" : "text-ink-300 hover:bg-ink-900 hover:text-ink-0",
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {link.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="border-t border-ink-800 p-3">
+          <Link href={`/${tenantSlug}`} className="block rounded-control px-3 py-2 text-xs font-medium text-ink-400 hover:text-ink-0">
+            ← Ver sitio
+          </Link>
+          {impersonating ? (
+            <form action={endImpersonationAction}>
+              <button type="submit" className="w-full rounded-control px-3 py-2 text-left text-xs font-semibold text-warning hover:text-accent-strong">
+                ← Volver a Super Admin
+              </button>
+            </form>
+          ) : (
+            <form action={logoutAction.bind(null, tenantSlug)}>
+              <button type="submit" className="w-full rounded-control px-3 py-2 text-left text-xs font-medium text-ink-400 hover:text-danger">
+                Cerrar sesión
+              </button>
+            </form>
+          )}
+        </div>
+      </aside>
+    </>
   );
 }
 
@@ -117,4 +167,10 @@ function BannerIcon({ className }: { className?: string }) {
 }
 function SettingsIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><circle cx="10" cy="10" r="2.6" /><path d="M10 2.5v2M10 15.5v2M17.5 10h-2M4.5 10h-2M15.1 4.9l-1.4 1.4M6.3 13.7l-1.4 1.4M15.1 15.1l-1.4-1.4M6.3 6.3 4.9 4.9" /></svg>;
+}
+function MenuIcon({ className }: { className?: string }) {
+  return <svg className={className} {...iconProps()} aria-hidden><path strokeLinecap="round" d="M3 5.5h14M3 10h14M3 14.5h14" /></svg>;
+}
+function CloseIcon({ className }: { className?: string }) {
+  return <svg className={className} {...iconProps()} aria-hidden><path strokeLinecap="round" d="M5 5l10 10M15 5L5 15" /></svg>;
 }
