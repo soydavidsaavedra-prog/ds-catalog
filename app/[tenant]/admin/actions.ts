@@ -25,16 +25,33 @@ import {
   listCategories,
   updateCategory,
 } from "@/lib/repositories/category-repository";
-import { createBanner, deleteBanner, updateBanner } from "@/lib/repositories/banner-repository";
+import { createBanner, deleteBanner, getBannerById, updateBanner } from "@/lib/repositories/banner-repository";
 import { updateOrderStatus } from "@/lib/repositories/order-repository";
-import { updateSettings } from "@/lib/repositories/settings-repository";
+import { getSettings, updateSettings } from "@/lib/repositories/settings-repository";
 import { completeOnboarding } from "@/lib/repositories/tenant-repository";
+import { deleteStorageFilesByUrls } from "@/lib/repositories/storage-repository";
 import { slugify } from "@/lib/utils/slug";
 import { HEX_COLOR, readableForegroundFor } from "@/lib/utils/brand";
 import type { Availability, Audience, ProductColor } from "@/lib/types/catalog";
 import type { OrderStatus } from "@/lib/types/order";
 
 export type ActionState = { error?: string; success?: boolean };
+
+/**
+ * Deletes whichever of `oldUrls` no longer appear in `newUrls` — an edit
+ * that removed or replaced an image, or a delete (newUrls = []). Best
+ * effort: a Storage hiccup here should never undo a product/banner/etc.
+ * save or delete that already succeeded in the database.
+ */
+async function cleanupReplacedImages(
+  oldUrls: (string | null | undefined)[],
+  newUrls: (string | null | undefined)[],
+): Promise<void> {
+  const kept = new Set(newUrls.filter((u): u is string => typeof u === "string" && u.length > 0));
+  const removed = oldUrls.filter((u): u is string => typeof u === "string" && u.length > 0 && !kept.has(u));
+  if (removed.length === 0) return;
+  await deleteStorageFilesByUrls(removed).catch(() => {});
+}
 
 // ---------- Auth ----------
 
@@ -194,6 +211,7 @@ export async function updateProductAction(
   const existing = await getProductById(tenantId, id);
   const updated = await updateProduct(tenantId, id, input);
   if (!updated) return { error: "Producto no encontrado." };
+  if (existing) await cleanupReplacedImages(existing.images, updated.images);
 
   revalidateStorefront(tenantSlug, existing?.categorySlug, existing?.slug);
   revalidateStorefront(tenantSlug, updated.categorySlug, updated.slug);
@@ -203,6 +221,7 @@ export async function updateProductAction(
 export async function deleteProductAction(tenantId: string, tenantSlug: string, id: string): Promise<void> {
   const existing = await getProductById(tenantId, id);
   await deleteProduct(tenantId, id);
+  if (existing) await cleanupReplacedImages(existing.images, []);
   revalidateStorefront(tenantSlug, existing?.categorySlug, existing?.slug);
   revalidatePath(`/${tenantSlug}/admin/productos`);
 }
@@ -267,6 +286,7 @@ export async function updateCategoryAction(
   const parentId = String(formData.get("parentId") ?? "").trim() || null;
   const slug = await namespaceSlugUnderParent(tenantId, baseSlug, parentId);
   const image = String(formData.get("image") ?? "").trim();
+  const existing = await getCategoryById(tenantId, id);
 
   await updateCategory(tenantId, id, {
     name,
@@ -275,6 +295,7 @@ export async function updateCategoryAction(
     parentId,
     ...(image ? { image } : {}),
   });
+  if (existing && image) await cleanupReplacedImages([existing.image], [image]);
   revalidatePath(`/${tenantSlug}`);
   revalidatePath(`/${tenantSlug}/catalogo`);
   revalidatePath(`/${tenantSlug}/admin/categorias`);
@@ -292,7 +313,9 @@ export async function toggleCategoryActiveAction(
 }
 
 export async function deleteCategoryAction(tenantId: string, tenantSlug: string, id: string): Promise<void> {
+  const existing = await getCategoryById(tenantId, id);
   await deleteCategory(tenantId, id);
+  if (existing) await cleanupReplacedImages([existing.image], []);
   revalidatePath(`/${tenantSlug}`);
   revalidatePath(`/${tenantSlug}/admin/categorias`);
 }
@@ -347,20 +370,25 @@ export async function updateBannerAction(
   id: string,
   formData: FormData,
 ): Promise<void> {
+  const image = String(formData.get("image") ?? "").trim();
+  const existing = await getBannerById(tenantId, id);
   await updateBanner(tenantId, id, {
     title: String(formData.get("title") ?? "").trim(),
     subtitle: String(formData.get("subtitle") ?? "").trim(),
-    image: String(formData.get("image") ?? "").trim(),
+    image,
     ctaLabel: String(formData.get("ctaLabel") ?? "").trim(),
     ctaHref: String(formData.get("ctaHref") ?? "").trim(),
     active: formData.get("active") === "on",
     order: Number(formData.get("order") ?? 1),
   });
+  if (existing) await cleanupReplacedImages([existing.image], [image]);
   revalidatePath(`/${tenantSlug}/admin/banners`);
 }
 
 export async function deleteBannerAction(tenantId: string, tenantSlug: string, id: string): Promise<void> {
+  const existing = await getBannerById(tenantId, id);
   await deleteBanner(tenantId, id);
+  if (existing) await cleanupReplacedImages([existing.image], []);
   revalidatePath(`/${tenantSlug}/admin/banners`);
 }
 
@@ -411,6 +439,10 @@ export async function updateSettingsAction(
     return { error: "El color de marca no es válido." };
   }
 
+  const brandLogo = String(formData.get("brandLogo") ?? "").trim();
+  const paymentBadgeIcon = String(formData.get("paymentBadgeIcon") ?? "").trim();
+  const existing = await getSettings(tenantId);
+
   try {
     await updateSettings(tenantId, {
       brandName: String(formData.get("brandName") ?? "").trim(),
@@ -425,8 +457,8 @@ export async function updateSettingsAction(
       instagram: String(formData.get("instagram") ?? "").trim(),
       facebook: String(formData.get("facebook") ?? "").trim(),
       tiktok: String(formData.get("tiktok") ?? "").trim(),
-      brandLogo: String(formData.get("brandLogo") ?? "").trim(),
-      paymentBadgeIcon: String(formData.get("paymentBadgeIcon") ?? "").trim(),
+      brandLogo,
+      paymentBadgeIcon,
       paymentBadgeLabel: String(formData.get("paymentBadgeLabel") ?? "").trim(),
       accentColor: customAccentColor ? accentColor : null,
       accentColorStrong: customAccentColor ? accentColorStrong : null,
@@ -435,6 +467,7 @@ export async function updateSettingsAction(
   } catch (err) {
     return { error: settingsErrorMessage(err) };
   }
+  await cleanupReplacedImages([existing.brandLogo, existing.paymentBadgeIcon], [brandLogo, paymentBadgeIcon]);
   revalidatePath(`/${tenantSlug}`, "layout");
   revalidatePath(`/${tenantSlug}/admin`, "layout");
   return { success: true };
@@ -446,6 +479,9 @@ export async function updateHeroSettingsAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const heroImage = String(formData.get("heroImage") ?? "").trim();
+  const existing = await getSettings(tenantId);
+
   try {
     await updateSettings(tenantId, {
       heroEyebrow: String(formData.get("heroEyebrow") ?? "").trim(),
@@ -455,13 +491,14 @@ export async function updateHeroSettingsAction(
       heroTagline: String(formData.get("heroTagline") ?? "").trim(),
       heroCtaLabel: String(formData.get("heroCtaLabel") ?? "").trim(),
       heroCtaHref: String(formData.get("heroCtaHref") ?? "").trim(),
-      heroImage: String(formData.get("heroImage") ?? "").trim(),
+      heroImage,
       heroImagePositionX: Number(formData.get("heroImagePositionX") ?? 50),
       heroImagePositionY: Number(formData.get("heroImagePositionY") ?? 50),
     });
   } catch (err) {
     return { error: settingsErrorMessage(err) };
   }
+  await cleanupReplacedImages([existing.heroImage], [heroImage]);
   revalidatePath(`/${tenantSlug}`, "layout");
   return { success: true };
 }
@@ -472,16 +509,23 @@ export async function updateStorySettingsAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const storyStepImage1 = String(formData.get("storyStepImage1") ?? "").trim();
+  const storyStepImage2 = String(formData.get("storyStepImage2") ?? "").trim();
+  const storyStepImage3 = String(formData.get("storyStepImage3") ?? "").trim();
+  const storyStepImage4 = String(formData.get("storyStepImage4") ?? "").trim();
+  const storyStepImage5 = String(formData.get("storyStepImage5") ?? "").trim();
+  const existing = await getSettings(tenantId);
+
   try {
     await updateSettings(tenantId, {
       storyEyebrow: String(formData.get("storyEyebrow") ?? "").trim(),
       storyTitle: String(formData.get("storyTitle") ?? "").trim(),
       storyDescription: String(formData.get("storyDescription") ?? "").trim(),
-      storyStepImage1: String(formData.get("storyStepImage1") ?? "").trim(),
-      storyStepImage2: String(formData.get("storyStepImage2") ?? "").trim(),
-      storyStepImage3: String(formData.get("storyStepImage3") ?? "").trim(),
-      storyStepImage4: String(formData.get("storyStepImage4") ?? "").trim(),
-      storyStepImage5: String(formData.get("storyStepImage5") ?? "").trim(),
+      storyStepImage1,
+      storyStepImage2,
+      storyStepImage3,
+      storyStepImage4,
+      storyStepImage5,
       storyStepLabel1: String(formData.get("storyStepLabel1") ?? "").trim() || null,
       storyStepLabel2: String(formData.get("storyStepLabel2") ?? "").trim() || null,
       storyStepLabel3: String(formData.get("storyStepLabel3") ?? "").trim() || null,
@@ -491,6 +535,10 @@ export async function updateStorySettingsAction(
   } catch (err) {
     return { error: settingsErrorMessage(err) };
   }
+  await cleanupReplacedImages(
+    [existing.storyStepImage1, existing.storyStepImage2, existing.storyStepImage3, existing.storyStepImage4, existing.storyStepImage5],
+    [storyStepImage1, storyStepImage2, storyStepImage3, storyStepImage4, storyStepImage5],
+  );
   revalidatePath(`/${tenantSlug}`, "layout");
   return { success: true };
 }
@@ -501,16 +549,20 @@ export async function updateStatementSettingsAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const statementImage = String(formData.get("statementImage") ?? "").trim();
+  const existing = await getSettings(tenantId);
+
   try {
     await updateSettings(tenantId, {
       statementTitleLine1: String(formData.get("statementTitleLine1") ?? "").trim(),
       statementTitleLine2: String(formData.get("statementTitleLine2") ?? "").trim(),
       statementDescription: String(formData.get("statementDescription") ?? "").trim(),
-      statementImage: String(formData.get("statementImage") ?? "").trim(),
+      statementImage,
     });
   } catch (err) {
     return { error: settingsErrorMessage(err) };
   }
+  await cleanupReplacedImages([existing.statementImage], [statementImage]);
   revalidatePath(`/${tenantSlug}`, "layout");
   return { success: true };
 }

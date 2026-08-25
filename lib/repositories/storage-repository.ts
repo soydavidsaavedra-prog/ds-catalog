@@ -137,6 +137,36 @@ export async function getDatabaseSizeBytes(): Promise<number | null> {
   return typeof data === "number" ? data : null;
 }
 
+/** Converts a public Storage URL (as returned by getPublicUrl) back into the bucket-relative path .remove() expects. Returns null for anything that isn't a real object in this bucket — a "placeholder:..." marker, an empty string, or a URL from somewhere else entirely. */
+function storagePathFromPublicUrl(url: string): string | null {
+  const marker = `/storage/v1/object/public/${PRODUCT_IMAGES_BUCKET}/`;
+  const index = url.indexOf(marker);
+  if (index === -1) return null;
+  return decodeURIComponent(url.slice(index + marker.length));
+}
+
+/**
+ * Deletes the real Storage objects behind these public URLs — the
+ * per-edit counterpart to deleteAllFilesForTenant below: called whenever a
+ * product, banner, category, or settings save drops an image (deleted
+ * outright, or swapped for a different one), so removing something in the
+ * admin panel actually frees the space instead of leaving it orphaned in
+ * the bucket forever. Placeholders, nulls, and empty strings are silently
+ * skipped — callers pass whatever a field held without checking first.
+ */
+export async function deleteStorageFilesByUrls(urls: (string | null | undefined)[]): Promise<void> {
+  const paths = urls.map((u) => (u ? storagePathFromPublicUrl(u) : null)).filter((p): p is string => p !== null);
+  if (paths.length === 0) return;
+
+  const supabase = getSupabaseClient();
+  const pageSize = 100;
+  for (let i = 0; i < paths.length; i += pageSize) {
+    const batch = paths.slice(i, i + pageSize);
+    const { error } = await supabase.storage.from(PRODUCT_IMAGES_BUCKET).remove(batch);
+    if (error) throw error;
+  }
+}
+
 /**
  * Permanently removes every Storage object belonging to a tenant — called
  * from deleteTenantAction (app/superadmin/actions.ts) as part of a hard
