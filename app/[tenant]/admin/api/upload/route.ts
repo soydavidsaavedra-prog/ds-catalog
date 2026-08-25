@@ -106,9 +106,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
 
   // Compressed before the plan-limit check below, so that check (and what
   // actually lands in Storage) reflects real stored bytes, not the size of
-  // the file the browser happened to send.
+  // the file the browser happened to send. Compression is a nice-to-have,
+  // never a reason to block the actual upload — if sharp fails for any
+  // reason, fall back to storing the original bytes untouched.
   const rawBuffer = Buffer.from(await file.arrayBuffer());
-  const buffer = await compressImage(rawBuffer, file.type);
+  const buffer = await compressImage(rawBuffer, file.type).catch(() => rawBuffer);
 
   // Storage is an internal, superadmin-managed number — never named as
   // such in what the tenant sees here (per the plan's own design: limits
