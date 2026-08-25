@@ -13,17 +13,19 @@ import { hashTenantPassword } from "@/lib/auth/tenant-credentials";
 import {
   createDefaultSettings,
   createTenant,
+  deleteTenant,
   getTenantById,
   isTenantSlugTaken,
   updateTenantStatus,
 } from "@/lib/repositories/tenant-repository";
 import { updateSettings } from "@/lib/repositories/settings-repository";
-import { createPlan, setPlanActive, type PlanInput } from "@/lib/repositories/plans-repository";
+import { createPlan, updatePlan, setPlanActive, type PlanInput } from "@/lib/repositories/plans-repository";
 import {
   assignPlanToTenant,
   updateSubscriptionStatus,
   type SubscriptionStatus,
 } from "@/lib/repositories/subscriptions-repository";
+import { deleteAllFilesForTenant } from "@/lib/repositories/storage-repository";
 import { slugify } from "@/lib/utils/slug";
 import type { TenantStatus } from "@/lib/types/tenant";
 
@@ -135,6 +137,28 @@ export async function createTenantBySuperadminAction(
 
 // ---------- Plans ----------
 
+function parseOptionalInt(value: FormDataEntryValue | null): number | null {
+  const str = String(value ?? "").trim();
+  if (!str) return null;
+  const n = Number.parseInt(str, 10);
+  return Number.isFinite(n) ? n : null;
+}
+
+function parsePlanFormFields(formData: FormData): Omit<PlanInput, "key"> {
+  return {
+    name: String(formData.get("name") ?? "").trim(),
+    description: String(formData.get("description") ?? "").trim(),
+    priceCents: Math.round(Number(formData.get("price") ?? 0) * 100),
+    maxProducts: parseOptionalInt(formData.get("maxProducts")),
+    maxStorageMb: parseOptionalInt(formData.get("maxStorageMb")),
+    maxImages: parseOptionalInt(formData.get("maxImages")),
+    features: String(formData.get("features") ?? "")
+      .split("\n")
+      .map((f) => f.trim())
+      .filter(Boolean),
+  };
+}
+
 export async function createPlanAction(
   _prev: SuperadminActionState,
   formData: FormData,
@@ -142,22 +166,11 @@ export async function createPlanAction(
   await requireSuperadmin();
 
   const key = slugify(String(formData.get("key") ?? "").trim());
-  const name = String(formData.get("name") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
-  const priceCents = Math.round(Number(formData.get("price") ?? 0) * 100);
-  const maxProducts = parseOptionalInt(formData.get("maxProducts"));
-  const maxStorageMb = parseOptionalInt(formData.get("maxStorageMb"));
-  const maxImages = parseOptionalInt(formData.get("maxImages"));
-  const features = String(formData.get("features") ?? "")
-    .split("\n")
-    .map((f) => f.trim())
-    .filter(Boolean);
+  const fields = parsePlanFormFields(formData);
+  if (!key || !fields.name) return { error: "Clave y nombre son obligatorios." };
 
-  if (!key || !name) return { error: "Clave y nombre son obligatorios." };
-
-  const input: PlanInput = { key, name, description, priceCents, maxProducts, maxStorageMb, maxImages, features };
   try {
-    await createPlan(input);
+    await createPlan({ key, ...fields });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     if (/duplicate key|unique constraint/i.test(message)) {
@@ -170,11 +183,24 @@ export async function createPlanAction(
   redirect("/superadmin/plans");
 }
 
-function parseOptionalInt(value: FormDataEntryValue | null): number | null {
-  const str = String(value ?? "").trim();
-  if (!str) return null;
-  const n = Number.parseInt(str, 10);
-  return Number.isFinite(n) ? n : null;
+export async function updatePlanAction(
+  planId: string,
+  _prev: SuperadminActionState,
+  formData: FormData,
+): Promise<SuperadminActionState> {
+  await requireSuperadmin();
+
+  const fields = parsePlanFormFields(formData);
+  if (!fields.name) return { error: "El nombre es obligatorio." };
+
+  try {
+    await updatePlan(planId, fields);
+  } catch (err) {
+    return { error: `No se pudo actualizar el plan: ${err instanceof Error ? err.message : String(err)}` };
+  }
+
+  revalidatePath("/superadmin/plans");
+  redirect("/superadmin/plans");
 }
 
 export async function togglePlanActiveAction(planId: string, active: boolean): Promise<void> {
@@ -205,4 +231,39 @@ export async function updateSubscriptionStatusAction(tenantId: string, status: S
   await updateSubscriptionStatus(tenantId, status);
   revalidatePath(`/superadmin/tenants/${tenantId}`);
   revalidatePath("/superadmin/subscriptions");
+}
+
+// ---------- Delete tenant (hard delete) ----------
+
+/**
+ * Irreversible. Requires the caller to type the tenant's exact slug as
+ * confirmation (checked here, server-side — never trust a client-side
+ * confirm dialog alone for something this destructive). Deletes Storage
+ * files first, then the database rows (see deleteTenant in
+ * tenant-repository.ts for why that order and not the reverse): if the DB
+ * delete fails, at least the tenant row survives to retry against, rather
+ * than a dangling tenant with no files and admins unable to tell what
+ * happened.
+ */
+export async function deleteTenantAction(
+  tenantId: string,
+  _prev: SuperadminActionState,
+  formData: FormData,
+): Promise<SuperadminActionState> {
+  await requireSuperadmin();
+
+  const tenant = await getTenantById(tenantId);
+  if (!tenant) return { error: "Cliente no encontrado." };
+
+  const confirmation = String(formData.get("confirmSlug") ?? "").trim();
+  if (confirmation !== tenant.slug) {
+    return { error: `Escribe "${tenant.slug}" exactamente para confirmar.` };
+  }
+
+  await deleteAllFilesForTenant(tenant.slug);
+  await deleteTenant(tenant.id);
+
+  revalidatePath("/superadmin/tenants");
+  revalidatePath("/superadmin");
+  redirect("/superadmin/tenants");
 }

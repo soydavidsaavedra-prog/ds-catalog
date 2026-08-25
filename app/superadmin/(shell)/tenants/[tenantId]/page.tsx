@@ -14,6 +14,7 @@ import {
   updateSubscriptionStatusAction,
 } from "@/app/superadmin/actions";
 import { NSTenantStatusBadge } from "@/components/superadmin/NSTenantStatusBadge";
+import { NSDeleteTenantForm } from "@/components/superadmin/NSDeleteTenantForm";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSLabel, NSSelect, NSInput } from "@/components/ui/NSInput";
 import { NSLogo } from "@/components/brand/NSLogo";
@@ -165,6 +166,17 @@ export default async function SuperadminTenantDetailPage({
           <Field label="Descripción" value={settings.brandDescription || "—"} />
           <Field label="Creado" value={new Date(tenant.createdAt).toLocaleString("es")} />
         </dl>
+      </div>
+
+      <div className="rounded-card border border-danger/30 p-5">
+        <h2 className="font-display text-lg uppercase tracking-wide text-danger">Zona de peligro</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Elimina permanentemente este cliente: su catálogo, pedidos, configuración y todos sus archivos en Supabase
+          Storage. Irreversible.
+        </p>
+        <div className="mt-4">
+          <NSDeleteTenantForm tenantId={tenant.id} tenantSlug={tenant.slug} />
+        </div>
       </div>
     </div>
   );

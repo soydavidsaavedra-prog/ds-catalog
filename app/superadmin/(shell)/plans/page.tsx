@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { listPlans } from "@/lib/repositories/plans-repository";
+import { getStorageUsageByTenant, deriveGlobalStorageUsage } from "@/lib/repositories/storage-repository";
+import { listAllTenantsWithCounts } from "@/lib/repositories/superadmin-repository";
 import { togglePlanActiveAction } from "@/app/superadmin/actions";
-import { NSCreatePlanForm } from "@/components/superadmin/NSCreatePlanForm";
+import { NSPlanForm } from "@/components/superadmin/NSPlanForm";
 import { NSButton } from "@/components/ui/NSButton";
 
 export const metadata: Metadata = {
@@ -13,7 +16,15 @@ function formatPriceUsd(cents: number): string {
 }
 
 export default async function SuperadminPlansPage() {
-  const plans = await listPlans();
+  const [plans, storageUsage, tenants] = await Promise.all([
+    listPlans(),
+    getStorageUsageByTenant(),
+    listAllTenantsWithCounts(),
+  ]);
+
+  const { totalBytes } = deriveGlobalStorageUsage(storageUsage);
+  const totalProducts = tenants.reduce((sum, t) => sum + t.counts.products, 0);
+  const avgBytesPerProduct = totalProducts > 0 ? totalBytes / totalProducts : null;
 
   return (
     <div className="flex flex-col gap-8">
@@ -53,11 +64,18 @@ export default async function SuperadminPlansPage() {
                 ))}
               </ul>
             ) : null}
-            <form action={togglePlanActiveAction.bind(null, plan.id, !plan.active)} className="mt-1">
-              <NSButton type="submit" variant="outline" size="sm">
-                {plan.active ? "Desactivar" : "Activar"}
-              </NSButton>
-            </form>
+            <div className="mt-1 flex gap-2">
+              <Link href={`/superadmin/plans/${plan.id}`}>
+                <NSButton variant="outline" size="sm">
+                  Editar
+                </NSButton>
+              </Link>
+              <form action={togglePlanActiveAction.bind(null, plan.id, !plan.active)}>
+                <NSButton type="submit" variant="outline" size="sm">
+                  {plan.active ? "Desactivar" : "Activar"}
+                </NSButton>
+              </form>
+            </div>
           </div>
         ))}
       </div>
@@ -65,7 +83,7 @@ export default async function SuperadminPlansPage() {
       <div className="border-t border-border pt-8">
         <h2 className="font-display text-lg uppercase tracking-wide">Nuevo plan</h2>
         <div className="mt-4">
-          <NSCreatePlanForm />
+          <NSPlanForm avgBytesPerProduct={avgBytesPerProduct} />
         </div>
       </div>
     </div>

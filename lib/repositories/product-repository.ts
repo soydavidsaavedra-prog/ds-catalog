@@ -66,6 +66,17 @@ export async function listProducts(tenantId: string, opts?: { activeOnly?: boole
   return (data as ProductRow[]).map(fromRow);
 }
 
+/** Used by createProductAction to check against the tenant's plan.maxProducts — a head-only count, not a full row fetch. */
+export async function countProducts(tenantId: string): Promise<number> {
+  const supabase = getSupabaseClient();
+  const { count, error } = await supabase
+    .from("ns_products")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenantId);
+  if (error) throw error;
+  return count ?? 0;
+}
+
 export async function getProductBySlug(tenantId: string, slug: string): Promise<Product | null> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase

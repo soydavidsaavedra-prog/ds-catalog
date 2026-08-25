@@ -80,3 +80,24 @@ export async function setPlanActive(id: string, active: boolean): Promise<void> 
   const { error } = await supabase.from("plans").update({ active }).eq("id", id);
   if (error) throw error;
 }
+
+/** key is intentionally NOT editable here — it's the stable identifier subscriptions.plan_id resolves through; changing what a plan IS (name/price/limits) is fine, changing its identity is not. */
+export async function updatePlan(id: string, input: Omit<PlanInput, "key">): Promise<Plan> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("plans")
+    .update({
+      name: input.name,
+      description: input.description,
+      price_cents: input.priceCents,
+      max_products: input.maxProducts,
+      max_storage_mb: input.maxStorageMb,
+      max_images: input.maxImages,
+      features: input.features,
+    })
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return fromRow(data as PlanRow);
+}

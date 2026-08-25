@@ -152,3 +152,36 @@ export async function updateTenantStatus(tenantId: string, status: TenantStatus)
   const { error } = await supabase.from("ds_tenants").update({ status }).eq("id", tenantId);
   if (error) throw error;
 }
+
+/**
+ * Hard delete — irreversible, unlike updateTenantStatus above (which the
+ * rest of the app still prefers for the normal "freeze this account" case).
+ * Deletes every row for this tenant across ns_* in FK-safe order — products
+ * before categories (ns_products holds a composite FK to ns_categories on
+ * (tenant_id, category_slug); nothing else here has a cross-table FK to
+ * worry about) — then the subscription row, then the tenant row itself.
+ * Storage files are NOT handled here: see deleteAllFilesForTenant in
+ * storage-repository.ts, which the caller (deleteTenantAction in
+ * app/superadmin/actions.ts) runs first, before this, so a DB failure
+ * never leaves files un-accounted-for by a tenant row that still exists.
+ */
+export async function deleteTenant(tenantId: string): Promise<void> {
+  const supabase = getSupabaseClient();
+
+  const del = async (
+    table: "ns_products" | "ns_categories" | "ns_banners" | "ns_orders" | "ns_settings" | "subscriptions",
+  ) => {
+    const { error } = await supabase.from(table).delete().eq("tenant_id", tenantId);
+    if (error) throw error;
+  };
+
+  await del("ns_products");
+  await del("ns_categories");
+  await del("ns_banners");
+  await del("ns_orders");
+  await del("ns_settings");
+  await del("subscriptions");
+
+  const { error } = await supabase.from("ds_tenants").delete().eq("id", tenantId);
+  if (error) throw error;
+}

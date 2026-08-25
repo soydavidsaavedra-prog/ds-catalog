@@ -8,6 +8,7 @@ import {
   verifyTenantAdminPassword,
 } from "@/lib/auth/admin-auth";
 import {
+  countProducts,
   createProduct,
   deleteProduct,
   getProductById,
@@ -15,6 +16,7 @@ import {
   updateProduct,
   type ProductInput,
 } from "@/lib/repositories/product-repository";
+import { getEffectivePlanForTenant } from "@/lib/tenant/plan-limits";
 import {
   createCategory,
   deleteCategory,
@@ -156,6 +158,14 @@ export async function createProductAction(
   }
   if (await isSlugTaken(tenantId, input.slug)) {
     return { error: `La referencia/slug "${input.slug}" ya existe.` };
+  }
+
+  const plan = await getEffectivePlanForTenant(tenantId);
+  if (plan?.maxProducts != null) {
+    const currentCount = await countProducts(tenantId);
+    if (currentCount >= plan.maxProducts) {
+      return { error: `Alcanzaste el límite de productos de tu plan (${plan.maxProducts}). Contacta a soporte para ampliarlo.` };
+    }
   }
 
   const product = await createProduct(tenantId, input);

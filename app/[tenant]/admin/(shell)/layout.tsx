@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { isAdminAuthenticated, isImpersonatedSession } from "@/lib/auth/admin-auth";
 import { getSettings } from "@/lib/repositories/settings-repository";
+import { isSubscriptionFrozen } from "@/lib/tenant/plan-limits";
 import { NSAdminSidebar } from "@/components/admin/NSAdminSidebar";
 
 export default async function AdminShellLayout({
@@ -17,8 +18,15 @@ export default async function AdminShellLayout({
   if (!(await isAdminAuthenticated(tenantSlug))) {
     redirect(`/${tenantSlug}/admin/login`);
   }
-  const settings = await getSettings(tenant.id);
   const impersonating = await isImpersonatedSession();
+  // The tenant's own session is frozen out the moment its plan expires —
+  // but a Super Admin impersonating in to fix things (renew the plan,
+  // check on the account) must still get through. See
+  // lib/tenant/plan-limits.ts isSubscriptionFrozen.
+  if (!impersonating && (await isSubscriptionFrozen(tenant.id))) {
+    redirect(`/${tenantSlug}/admin/suspended`);
+  }
+  const settings = await getSettings(tenant.id);
 
   return (
     <div className="flex min-h-dvh bg-surface">

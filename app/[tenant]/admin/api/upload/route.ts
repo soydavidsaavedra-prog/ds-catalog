@@ -3,6 +3,9 @@ import { randomUUID } from "node:crypto";
 import { isAdminAuthenticated } from "@/lib/auth/admin-auth";
 import { getSupabaseClient } from "@/lib/db/supabaseClient";
 import { PRODUCT_IMAGES_BUCKET } from "@/lib/media/storage-bucket";
+import { resolveTenant } from "@/lib/tenant/resolve-tenant";
+import { getEffectivePlanForTenant } from "@/lib/tenant/plan-limits";
+import { getStorageUsageForSlug } from "@/lib/repositories/storage-repository";
 
 const ALLOWED_EXTENSIONS: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -32,6 +35,25 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
   }
   if (file.size > MAX_SIZE) {
     return NextResponse.json({ error: "La imagen supera 8MB" }, { status: 400 });
+  }
+
+  // Storage is an internal, superadmin-managed number — never named as
+  // such in what the tenant sees here (per the plan's own design: limits
+  // are enforced for real, but "storage"/"MB" is not a concept the tenant
+  // needs to reason about, only "your plan's limit").
+  const tenant = await resolveTenant(tenantSlug);
+  const plan = await getEffectivePlanForTenant(tenant.id);
+  if (plan?.maxImages != null || plan?.maxStorageMb != null) {
+    const usage = await getStorageUsageForSlug(tenantSlug);
+    if (plan.maxImages != null && usage.fileCount >= plan.maxImages) {
+      return NextResponse.json({ error: "Alcanzaste el límite de imágenes de tu plan." }, { status: 403 });
+    }
+    if (plan.maxStorageMb != null && usage.totalBytes + file.size > plan.maxStorageMb * 1024 * 1024) {
+      return NextResponse.json(
+        { error: "Alcanzaste el límite de tu plan. Contacta a soporte para ampliarlo." },
+        { status: 403 },
+      );
+    }
   }
 
   // Path-prefixed by tenant slug so uploads are visibly namespaced per

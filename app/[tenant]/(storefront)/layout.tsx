@@ -1,5 +1,7 @@
+import { notFound } from "next/navigation";
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { getSettings } from "@/lib/repositories/settings-repository";
+import { isSubscriptionFrozen } from "@/lib/tenant/plan-limits";
 import { NSHeader } from "@/components/layout/NSHeader";
 import { NSFooter } from "@/components/layout/NSFooter";
 import { NSCartDrawer } from "@/components/cart/NSCartDrawer";
@@ -15,6 +17,10 @@ export default async function StorefrontLayout({
 }) {
   const { tenant: tenantSlug } = await params;
   const tenant = await resolveTenant(tenantSlug);
+  // Independent of tenant.status (already enforced inside resolveTenant) —
+  // this is the second, automatic way a catalog goes dark: its assigned
+  // subscription ran out. See lib/tenant/plan-limits.ts.
+  if (await isSubscriptionFrozen(tenant.id)) notFound();
   const settings = await getSettings(tenant.id);
   const accentOverrideCss = buildAccentOverrideCss(settings);
 
