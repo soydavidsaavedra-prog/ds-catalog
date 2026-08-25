@@ -99,6 +99,9 @@ function revalidateStorefront(tenantSlug: string, categorySlug?: string, product
 
 const AUDIENCE_VALUES: Audience[] = ["dama", "caballero", "nino", "unisex"];
 
+/** Same cap enforced client-side in NSImageUploader — repeated here since a form POST doesn't have to go through that component. */
+const MAX_PRODUCT_IMAGES = 10;
+
 /**
  * Audience is no longer a separate form field — it's derived from the
  * product's category so there's a single source of truth (the category
@@ -114,7 +117,7 @@ async function resolveAudienceForCategory(tenantId: string, categorySlug: string
 }
 
 async function parseProductInput(tenantId: string, formData: FormData): Promise<ProductInput> {
-  const images = JSON.parse(String(formData.get("images") ?? "[]")) as string[];
+  const images = (JSON.parse(String(formData.get("images") ?? "[]")) as string[]).slice(0, MAX_PRODUCT_IMAGES);
   const colors = JSON.parse(String(formData.get("colors") ?? "[]")) as ProductColor[];
   const sizes = String(formData.get("sizes") ?? "")
     .split(",")

@@ -3,6 +3,9 @@
 import { useRef, useState } from "react";
 import { NSMedia } from "@/components/ui/NSMedia";
 
+/** Carousel cap — enforced here for immediate feedback, and again server-side in parseProductInput (app/[tenant]/admin/actions.ts) since a form POST doesn't have to go through this component. */
+const MAX_IMAGES = 10;
+
 export function NSImageUploader({
   tenantSlug,
   name,
@@ -16,13 +19,24 @@ export function NSImageUploader({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const atLimit = images.length >= MAX_IMAGES;
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
+    const remainingSlots = MAX_IMAGES - images.length;
+    if (remainingSlots <= 0) {
+      setError(`Máximo ${MAX_IMAGES} fotos por producto.`);
+      return;
+    }
+    const selected = Array.from(files).slice(0, remainingSlots);
+    if (files.length > selected.length) {
+      setError(`Solo se subieron ${selected.length} de ${files.length} — el máximo es ${MAX_IMAGES} fotos por producto.`);
+    } else {
+      setError(null);
+    }
     setUploading(true);
-    setError(null);
     try {
-      for (const file of Array.from(files)) {
+      for (const file of selected) {
         const formData = new FormData();
         formData.append("file", file);
         const res = await fetch(`/${tenantSlug}/admin/api/upload`, { method: "POST", body: formData });
@@ -60,15 +74,17 @@ export function NSImageUploader({
             </button>
           </div>
         ))}
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          className="flex h-24 w-20 flex-col items-center justify-center gap-1 rounded-control border border-dashed border-border-strong text-muted-foreground transition-colors hover:border-accent-strong hover:text-accent-strong disabled:opacity-50"
-        >
-          <span className="text-xl leading-none">+</span>
-          <span className="text-[10px] font-medium uppercase">{uploading ? "Subiendo..." : "Agregar"}</span>
-        </button>
+        {atLimit ? null : (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="flex h-24 w-20 flex-col items-center justify-center gap-1 rounded-control border border-dashed border-border-strong text-muted-foreground transition-colors hover:border-accent-strong hover:text-accent-strong disabled:opacity-50"
+          >
+            <span className="text-xl leading-none">+</span>
+            <span className="text-[10px] font-medium uppercase">{uploading ? "Subiendo..." : "Agregar"}</span>
+          </button>
+        )}
       </div>
       <input
         ref={fileInputRef}
@@ -80,7 +96,8 @@ export function NSImageUploader({
       />
       {error ? <p className="mt-2 text-xs text-danger">{error}</p> : null}
       <p className="mt-2 text-xs text-muted-foreground">
-        La primera imagen es la principal. Sin imágenes, se usa un placeholder de marca.
+        La primera imagen es la principal. Sin imágenes, se usa un placeholder de marca. Máximo {MAX_IMAGES} fotos por
+        producto ({images.length}/{MAX_IMAGES}).
       </p>
     </div>
   );
