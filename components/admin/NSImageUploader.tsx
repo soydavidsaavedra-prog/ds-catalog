@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { NSMedia } from "@/components/ui/NSMedia";
+import { compressImageBeforeUpload } from "@/lib/utils/image-compress";
 
 /** Carousel cap — enforced here for immediate feedback, and again server-side in parseProductInput (app/[tenant]/admin/actions.ts) since a form POST doesn't have to go through this component. */
 const MAX_IMAGES = 10;
@@ -38,10 +39,12 @@ export function NSImageUploader({
     try {
       for (const file of selected) {
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append("file", await compressImageBeforeUpload(file));
         const res = await fetch(`/${tenantSlug}/admin/api/upload`, { method: "POST", body: formData });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "Error al subir imagen");
+        // A platform-level rejection (e.g. request too grande) comes back as
+        // plain text, not JSON — don't let that surface as a raw parse error.
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data) throw new Error(data?.error ?? `No se pudo subir la imagen (${res.status}).`);
         setImages((prev) => [...prev, data.url]);
       }
     } catch (err) {

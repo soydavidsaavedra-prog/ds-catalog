@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { NSMedia } from "@/components/ui/NSMedia";
+import { compressImageBeforeUpload } from "@/lib/utils/image-compress";
 
 /**
  * Single-image upload field (logo, payment badge icon, hero background...).
@@ -39,10 +40,12 @@ export function NSSingleImageUploader({
     setError(null);
     try {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", await compressImageBeforeUpload(file));
       const res = await fetch(`/${tenantSlug}/admin/api/upload`, { method: "POST", body: formData });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Error al subir imagen");
+      // A platform-level rejection (e.g. request too grande) comes back as
+      // plain text, not JSON — don't let that surface as a raw parse error.
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data) throw new Error(data?.error ?? `No se pudo subir la imagen (${res.status}).`);
       setValue(data.url as string);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al subir imagen");
