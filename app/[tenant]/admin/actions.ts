@@ -97,7 +97,7 @@ export async function completeOnboardingAction(
     });
     await completeOnboarding(tenantId);
   } catch (err) {
-    return { error: settingsErrorMessage(err) };
+    return { error: friendlyDbErrorMessage(err) };
   }
   revalidatePath(`/${tenantSlug}`, "layout");
   redirect(`/${tenantSlug}/admin`);
@@ -196,7 +196,12 @@ export async function createProductAction(
     }
   }
 
-  const product = await createProduct(tenantId, input);
+  let product;
+  try {
+    product = await createProduct(tenantId, input);
+  } catch (err) {
+    return { error: friendlyDbErrorMessage(err) };
+  }
   revalidateStorefront(tenantSlug, product.categorySlug, product.slug);
   redirect(`/${tenantSlug}/admin/productos`);
 }
@@ -217,7 +222,12 @@ export async function updateProductAction(
   }
 
   const existing = await getProductById(tenantId, id);
-  const updated = await updateProduct(tenantId, id, input);
+  let updated;
+  try {
+    updated = await updateProduct(tenantId, id, input);
+  } catch (err) {
+    return { error: friendlyDbErrorMessage(err) };
+  }
   if (!updated) return { error: "Producto no encontrado." };
   if (existing) await cleanupReplacedImages(existing.images, updated.images);
 
@@ -414,8 +424,8 @@ export async function updateOrderStatusAction(
 
 // ---------- Settings ----------
 
-/** Friendlier message for the common "you haven't re-run schema.sql yet" failure mode. */
-function settingsErrorMessage(err: unknown): string {
+/** Friendlier message for the common "you haven't re-run schema.sql yet" failure mode — any Supabase write in this file can hit it after a schema change, not just settings. */
+function friendlyDbErrorMessage(err: unknown): string {
   // Supabase errors (PostgrestError) are plain objects with a `.message`
   // string, not real Error instances — String(err) on those yields the
   // useless "[object Object]" instead of the actual reason.
@@ -473,7 +483,7 @@ export async function updateSettingsAction(
       accentForeground: customAccentColor ? readableForegroundFor(accentColor) : null,
     });
   } catch (err) {
-    return { error: settingsErrorMessage(err) };
+    return { error: friendlyDbErrorMessage(err) };
   }
   await cleanupReplacedImages([existing.brandLogo, existing.paymentBadgeIcon], [brandLogo, paymentBadgeIcon]);
   revalidatePath(`/${tenantSlug}`, "layout");
@@ -504,7 +514,7 @@ export async function updateHeroSettingsAction(
       heroImagePositionY: Number(formData.get("heroImagePositionY") ?? 50),
     });
   } catch (err) {
-    return { error: settingsErrorMessage(err) };
+    return { error: friendlyDbErrorMessage(err) };
   }
   await cleanupReplacedImages([existing.heroImage], [heroImage]);
   revalidatePath(`/${tenantSlug}`, "layout");
@@ -541,7 +551,7 @@ export async function updateStorySettingsAction(
       storyStepLabel5: String(formData.get("storyStepLabel5") ?? "").trim() || null,
     });
   } catch (err) {
-    return { error: settingsErrorMessage(err) };
+    return { error: friendlyDbErrorMessage(err) };
   }
   await cleanupReplacedImages(
     [existing.storyStepImage1, existing.storyStepImage2, existing.storyStepImage3, existing.storyStepImage4, existing.storyStepImage5],
@@ -568,7 +578,7 @@ export async function updateStatementSettingsAction(
       statementImage,
     });
   } catch (err) {
-    return { error: settingsErrorMessage(err) };
+    return { error: friendlyDbErrorMessage(err) };
   }
   await cleanupReplacedImages([existing.statementImage], [statementImage]);
   revalidatePath(`/${tenantSlug}`, "layout");
