@@ -1,5 +1,6 @@
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { listCategories, buildCategoryTree } from "@/lib/repositories/category-repository";
+import { getBusinessTypeProfile } from "@/lib/tenant/business-type";
 import { NSInput, NSLabel, NSSelect, NSTextarea } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSAdminDeleteButton } from "@/components/admin/NSAdminDeleteButton";
@@ -116,6 +117,7 @@ export default async function AdminCategoriesPage({
   const tree = buildCategoryTree(categories);
   const parents = categories.filter((c) => c.parentId === null);
   const createAction = createCategoryAction.bind(null, tenant.id, tenantSlug);
+  const { exampleParentCategory, exampleChildCategory } = getBusinessTypeProfile(tenant.businessType);
 
   return (
     <div className="flex flex-col gap-8">
@@ -123,8 +125,8 @@ export default async function AdminCategoriesPage({
         <h1 className="font-display text-3xl uppercase tracking-wide">Categorías</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {categories.length} categorías ({parents.length} principales). Se usan para las páginas /[categoría] y
-          los filtros del catálogo. Una categoría principal (ej. Dama) agrupa las páginas de sus subcategorías
-          (ej. Skinny, Cargo).
+          los filtros del catálogo. Una categoría principal (ej. {exampleParentCategory.name}) agrupa las páginas
+          de sus subcategorías (ej. {exampleChildCategory.name}).
         </p>
       </div>
 
@@ -133,20 +135,20 @@ export default async function AdminCategoriesPage({
         <form action={createAction} className="mt-4 flex flex-col gap-4">
           <div>
             <NSLabel htmlFor="new-name">Nombre</NSLabel>
-            <NSInput id="new-name" name="name" required placeholder="Ej. Recto" />
+            <NSInput id="new-name" name="name" required placeholder={`Ej. ${exampleChildCategory.name}`} />
           </div>
           <div>
             <NSLabel htmlFor="new-slug">Slug (opcional, se genera del nombre)</NSLabel>
             <NSInput id="new-slug" name="slug" placeholder="recto" />
             <p className="mt-1 text-xs text-muted-foreground">
-              Si eliges una categoría padre abajo, se le antepone automáticamente (ej. &quot;dama-recto&quot;) para
-              poder repetir el mismo nombre bajo distintas categorías principales.
+              Si eliges una categoría padre abajo, se le antepone automáticamente (ej. &quot;{exampleParentCategory.slug}-{exampleChildCategory.slug}&quot;)
+              para poder repetir el mismo nombre bajo distintas categorías principales.
             </p>
           </div>
           <div>
             <NSLabel htmlFor="new-parent">Categoría padre</NSLabel>
             <NSSelect id="new-parent" name="parentId" defaultValue="">
-              <option value="">Ninguna (categoría principal, ej. Dama)</option>
+              <option value="">Ninguna (categoría principal, ej. {exampleParentCategory.name})</option>
               {parents.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}

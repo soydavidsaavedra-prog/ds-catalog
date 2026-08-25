@@ -57,11 +57,11 @@ export function NSSettingsForm({ tenantId, tenantSlug, settings }: { tenantId: s
 
       <div className="border-t border-border pt-5">
         <NSLabel htmlFor="contactEmail">Correo de contacto</NSLabel>
-        <NSInput id="contactEmail" name="contactEmail" type="email" defaultValue={settings.contactEmail} placeholder="ventas@elnuevosanchez.com" />
+        <NSInput id="contactEmail" name="contactEmail" type="email" defaultValue={settings.contactEmail} placeholder="ventas@tunegocio.com" />
       </div>
       <div>
         <NSLabel htmlFor="contactAddress">Dirección</NSLabel>
-        <NSInput id="contactAddress" name="contactAddress" defaultValue={settings.contactAddress} placeholder="Barquisimeto, Venezuela" />
+        <NSInput id="contactAddress" name="contactAddress" defaultValue={settings.contactAddress} placeholder="Tu ciudad, país" />
       </div>
       <div>
         <NSLabel htmlFor="contactMapsUrl">Enlace de Google Maps</NSLabel>

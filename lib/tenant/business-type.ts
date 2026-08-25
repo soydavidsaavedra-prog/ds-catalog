@@ -22,6 +22,9 @@ export interface BusinessTypeProfile {
   /** Whether NSProductForm's "Colores" field makes sense for this kind of business. */
   showColors: boolean;
   starterCategories: StarterCategory[];
+  /** Used only for the "e.g." hints on the admin's Categorías page (a top-level category and one of its subcategories) — so a hardware-store admin doesn't see "ej. Dama, Skinny, Cargo" as their example. */
+  exampleParentCategory: { name: string; slug: string };
+  exampleChildCategory: { name: string; slug: string };
 }
 
 /**
@@ -43,6 +46,8 @@ export const BUSINESS_TYPE_PROFILES: Record<BusinessType, BusinessTypeProfile> =
       { slug: "nino", name: "Niño", description: "Ropa y accesorios para niños." },
       { slug: "unisex", name: "Unisex", description: "Productos para todos." },
     ],
+    exampleParentCategory: { name: "Dama", slug: "dama" },
+    exampleChildCategory: { name: "Skinny", slug: "skinny" },
   },
   ferreteria: {
     value: "ferreteria",
@@ -56,6 +61,8 @@ export const BUSINESS_TYPE_PROFILES: Record<BusinessType, BusinessTypeProfile> =
       { slug: "electricidad", name: "Electricidad", description: "Cables, interruptores e iluminación." },
       { slug: "pintura", name: "Pintura y acabados", description: "Pinturas, brochas y acabados." },
     ],
+    exampleParentCategory: { name: "Herramientas", slug: "herramientas" },
+    exampleChildCategory: { name: "Eléctricas", slug: "electricas" },
   },
   restaurante: {
     value: "restaurante",
@@ -69,6 +76,8 @@ export const BUSINESS_TYPE_PROFILES: Record<BusinessType, BusinessTypeProfile> =
       { slug: "bebidas", name: "Bebidas", description: "Frías, calientes y refrescantes." },
       { slug: "postres", name: "Postres", description: "Para cerrar con algo dulce." },
     ],
+    exampleParentCategory: { name: "Platos fuertes", slug: "platos-fuertes" },
+    exampleChildCategory: { name: "Pastas", slug: "pastas" },
   },
   belleza: {
     value: "belleza",
@@ -82,6 +91,8 @@ export const BUSINESS_TYPE_PROFILES: Record<BusinessType, BusinessTypeProfile> =
       { slug: "cabello", name: "Cabello", description: "Shampoo, tratamientos y styling." },
       { slug: "perfumeria", name: "Perfumería", description: "Fragancias y colonias." },
     ],
+    exampleParentCategory: { name: "Maquillaje", slug: "maquillaje" },
+    exampleChildCategory: { name: "Labios", slug: "labios" },
   },
   tecnologia: {
     value: "tecnologia",
@@ -95,6 +106,8 @@ export const BUSINESS_TYPE_PROFILES: Record<BusinessType, BusinessTypeProfile> =
       { slug: "audio-video", name: "Audio y video", description: "Audífonos, bocinas y pantallas." },
       { slug: "accesorios-tech", name: "Accesorios", description: "Cables, cargadores y más." },
     ],
+    exampleParentCategory: { name: "Celulares", slug: "celulares" },
+    exampleChildCategory: { name: "Accesorios", slug: "accesorios" },
   },
   hogar: {
     value: "hogar",
@@ -108,6 +121,8 @@ export const BUSINESS_TYPE_PROFILES: Record<BusinessType, BusinessTypeProfile> =
       { slug: "cocina", name: "Cocina", description: "Utensilios y electrodomésticos." },
       { slug: "organizacion", name: "Organización", description: "Almacenamiento y orden." },
     ],
+    exampleParentCategory: { name: "Muebles", slug: "muebles" },
+    exampleChildCategory: { name: "Sala", slug: "sala" },
   },
   otro: {
     value: "otro",
@@ -116,6 +131,8 @@ export const BUSINESS_TYPE_PROFILES: Record<BusinessType, BusinessTypeProfile> =
     showSizes: false,
     showColors: false,
     starterCategories: [],
+    exampleParentCategory: { name: "Categoría principal", slug: "categoria" },
+    exampleChildCategory: { name: "Subcategoría", slug: "subcategoria" },
   },
 };
 
