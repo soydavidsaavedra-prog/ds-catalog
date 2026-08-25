@@ -944,3 +944,33 @@ alter table ns_products add constraint ns_products_image_fit_check
   check (image_fit in ('cover', 'contain'));
 
 commit;
+
+-- Identidad real por email (Supabase Auth) en vez de contraseña compartida
+-- por slug/superadmin. ds_app_users.id es siempre el mismo id que
+-- auth.users.id de Supabase Auth — esta tabla es solo el "perfil" (rol +
+-- a qué tenant pertenece), la contraseña en sí vive en Supabase Auth, no
+-- aquí. Un owner tiene tenant_id (relación 1:1 con ds_tenants, igual que
+-- Horizon — ver docs/ANALISIS_HORIZON_REFERENCIA_SAAS.md sección 4); un
+-- superadmin tiene tenant_id null. on delete cascade en tenant_id: al
+-- borrar un tenant (deleteTenant en tenant-repository.ts) su fila de
+-- ds_app_users desaparece sola — el hard-delete además borra el usuario
+-- de Supabase Auth explícitamente (ver deleteTenantAction) para no dejar
+-- una cuenta huérfana sin tenant ni perfil.
+--
+-- Ninguna política RLS activa aquí tampoco: esta tabla solo se lee/escribe
+-- desde repositorios de servidor con el cliente service_role, igual que
+-- el resto del esquema (ver docs/ARCHITECTURE.md). Sin RLS.
+
+begin;
+
+create table if not exists ds_app_users (
+  id uuid primary key,
+  email text not null unique,
+  role text not null check (role in ('owner', 'superadmin')),
+  tenant_id uuid references ds_tenants(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists ds_app_users_tenant_id_idx on ds_app_users(tenant_id);
+
+commit;

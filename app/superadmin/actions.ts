@@ -2,14 +2,15 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import {
-  createSuperadminSession,
-  destroySuperadminSession,
-  getAuthenticatedSuperadmin,
-  verifySuperadminCredentials,
-} from "@/lib/auth/superadmin-auth";
+import { destroySuperadminSession, getAuthenticatedSuperadmin } from "@/lib/auth/superadmin-auth";
 import { createAdminSession, markImpersonatedSession } from "@/lib/auth/admin-auth";
-import { hashTenantPassword } from "@/lib/auth/tenant-credentials";
+import { createAuthUser, deleteAuthUser, sendPasswordResetEmail } from "@/lib/auth/supabase-auth";
+import {
+  createAppUser,
+  deleteAppUserByTenantId,
+  getAppUserByTenantId,
+  isAppUserEmailTaken,
+} from "@/lib/repositories/app-users-repository";
 import {
   createDefaultSettings,
   createTenant,
@@ -28,6 +29,8 @@ import {
   type SubscriptionStatus,
 } from "@/lib/repositories/subscriptions-repository";
 import { deleteAllFilesForTenant } from "@/lib/repositories/storage-repository";
+import { randomBytes } from "node:crypto";
+import { siteConfig } from "@/lib/config/site";
 import { slugify } from "@/lib/utils/slug";
 import { RESERVED_SLUGS } from "@/lib/utils/reserved-slugs";
 import { BUSINESS_TYPE_PROFILES } from "@/lib/tenant/business-type";
@@ -42,25 +45,9 @@ async function requireSuperadmin() {
   return superadmin;
 }
 
-export async function superadminLoginAction(
-  _prev: SuperadminActionState,
-  formData: FormData,
-): Promise<SuperadminActionState> {
-  const email = String(formData.get("email") ?? "").trim();
-  const password = String(formData.get("password") ?? "");
-
-  const user = await verifySuperadminCredentials(email, password);
-  if (!user) {
-    return { error: "Correo o contraseña incorrectos." };
-  }
-
-  await createSuperadminSession(user.id);
-  redirect("/superadmin");
-}
-
 export async function superadminLogoutAction(): Promise<void> {
   await destroySuperadminSession();
-  redirect("/superadmin/login");
+  redirect("/acceder");
 }
 
 // ---------- Tenant management ----------
@@ -117,6 +104,24 @@ export async function impersonateTenantAction(tenantId: string): Promise<void> {
 
 // ---------- Create tenant ----------
 
+/**
+ * Invites someone to be a tenant's owner: creates their Supabase Auth
+ * account with a random password nobody ever sees, links it via
+ * ds_app_users, then sends Supabase's own "reset your password" email as
+ * the invite — the person's first real action is setting their own
+ * password, exactly like the self-service /registro flow, just kicked off
+ * by the superadmin instead of by themselves. Shared by
+ * createTenantBySuperadminAction (brand-new tenant) and
+ * assignTenantOwnerEmailAction below (an existing tenant that predates
+ * email-based login, e.g. elnuevosanchez/demo).
+ */
+async function inviteTenantOwner(tenantId: string, email: string): Promise<void> {
+  const randomPassword = randomBytes(24).toString("base64url");
+  const authUser = await createAuthUser(email, randomPassword);
+  await createAppUser({ id: authUser.id, email, role: "owner", tenantId });
+  await sendPasswordResetEmail(email, `${siteConfig.seo.domain}/acceder/restablecer`);
+}
+
 export async function createTenantBySuperadminAction(
   _prev: SuperadminActionState,
   formData: FormData,
@@ -125,25 +130,32 @@ export async function createTenantBySuperadminAction(
 
   const name = String(formData.get("name") ?? "").trim();
   const slugInput = String(formData.get("slug") ?? "").trim();
-  const password = String(formData.get("password") ?? "");
+  const ownerEmail = String(formData.get("ownerEmail") ?? "").trim().toLowerCase();
   const businessTypeInput = String(formData.get("businessType") ?? "");
   const contactEmail = String(formData.get("contactEmail") ?? "").trim();
   const whatsappNumber = String(formData.get("whatsappNumber") ?? "").replace(/[^0-9]/g, "");
   const brandDescription = String(formData.get("brandDescription") ?? "").trim();
 
   if (!name) return { error: "El nombre del negocio es obligatorio." };
+  if (!ownerEmail || !ownerEmail.includes("@")) return { error: "Escribe el correo del administrador." };
   if (!(businessTypeInput in BUSINESS_TYPE_PROFILES)) return { error: "Elige el tipo de negocio." };
   const businessType = businessTypeInput as BusinessType;
-  if (password.length < 8) return { error: "La contraseña debe tener al menos 8 caracteres." };
 
   const slug = slugify(slugInput || name);
   if (!slug) return { error: "El slug no es válido. Usa letras, números y guiones." };
   if (RESERVED_SLUGS.has(slug)) return { error: `"${slug}" está reservado. Elige otro slug.` };
   if (await isTenantSlugTaken(slug)) return { error: `El slug "${slug}" ya está en uso.` };
+  if (await isAppUserEmailTaken(ownerEmail)) return { error: "Ya existe una cuenta con ese correo." };
 
-  const tenant = await createTenant({ slug, name, adminPasswordHash: hashTenantPassword(password), businessType });
+  const tenant = await createTenant({ slug, name, businessType });
   await createDefaultSettings(tenant.id, name);
   await seedStarterCategories(tenant.id, businessType);
+
+  try {
+    await inviteTenantOwner(tenant.id, ownerEmail);
+  } catch {
+    return { error: "El cliente se creó, pero no se pudo enviar la invitación por correo. Reenvíala desde su ficha." };
+  }
 
   if (contactEmail || whatsappNumber || brandDescription) {
     await updateSettings(tenant.id, {
@@ -156,6 +168,31 @@ export async function createTenantBySuperadminAction(
   revalidatePath("/superadmin/tenants");
   revalidatePath("/superadmin");
   redirect(`/superadmin/tenants/${tenant.id}`);
+}
+
+/**
+ * For a tenant that has no owner account yet (created before email login
+ * existed — elnuevosanchez, demo — or where the invite email needs
+ * resending). Deletes any existing ds_app_users row for this tenant first
+ * so re-inviting with a corrected email doesn't collide on the unique
+ * tenant_id-per-owner assumption.
+ */
+export async function assignTenantOwnerEmailAction(
+  tenantId: string,
+  _prev: SuperadminActionState,
+  formData: FormData,
+): Promise<SuperadminActionState> {
+  await requireSuperadmin();
+
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (!email || !email.includes("@")) return { error: "Escribe un correo válido." };
+  if (await isAppUserEmailTaken(email)) return { error: "Ya existe una cuenta con ese correo." };
+
+  await deleteAppUserByTenantId(tenantId);
+  await inviteTenantOwner(tenantId, email);
+
+  revalidatePath(`/superadmin/tenants/${tenantId}`);
+  return { error: undefined };
 }
 
 // ---------- Plans ----------
@@ -283,8 +320,14 @@ export async function deleteTenantAction(
     return { error: `Escribe "${tenant.slug}" exactamente para confirmar.` };
   }
 
+  const owner = await getAppUserByTenantId(tenant.id);
+
   await deleteAllFilesForTenant(tenant.slug);
-  await deleteTenant(tenant.id);
+  await deleteTenant(tenant.id); // cascades ds_app_users via tenant_id FK
+
+  if (owner) {
+    await deleteAuthUser(owner.id).catch(() => {});
+  }
 
   revalidatePath("/superadmin/tenants");
   revalidatePath("/superadmin");

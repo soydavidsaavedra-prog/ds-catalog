@@ -132,7 +132,7 @@ export function NSAdminSidebar({
               </button>
             </form>
           ) : (
-            <form action={logoutAction.bind(null, tenantSlug)}>
+            <form action={logoutAction}>
               <button type="submit" className="w-full rounded-control px-3 py-2 text-left text-xs font-medium text-ink-400 hover:text-danger">
                 Cerrar sesión
               </button>

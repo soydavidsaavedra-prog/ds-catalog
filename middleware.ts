@@ -25,8 +25,7 @@ async function tenantAdminMiddleware(request: NextRequest): Promise<NextResponse
   const expected = await computeSessionToken(tenant);
 
   if (cookieValue !== expected) {
-    const loginUrl = new URL(`/${tenant}/admin/login`, request.url);
-    loginUrl.searchParams.set("from", pathname);
+    const loginUrl = new URL("/acceder", request.url);
     return NextResponse.redirect(loginUrl);
   }
 
@@ -58,8 +57,7 @@ async function superadminMiddleware(request: NextRequest): Promise<NextResponse 
   const userId = await verifySuperadminSessionCookie(cookieValue);
 
   if (!userId) {
-    const loginUrl = new URL("/superadmin/login", request.url);
-    loginUrl.searchParams.set("from", pathname);
+    const loginUrl = new URL("/acceder", request.url);
     return NextResponse.redirect(loginUrl);
   }
 

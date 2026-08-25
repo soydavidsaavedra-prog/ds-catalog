@@ -6,15 +6,15 @@ import { NSSuperAdminSidebar } from "@/components/superadmin/NSSuperAdminSidebar
  * Server-side guard, same defense-in-depth pattern as
  * app/[tenant]/admin/(shell)/layout.tsx: middleware.ts already checked the
  * session cookie's signature, but this re-checks against the database
- * (getAuthenticatedSuperadmin re-reads super_admin_users, so a deactivated
- * account is rejected here even with a cryptographically valid cookie —
+ * (getAuthenticatedSuperadmin re-reads ds_app_users, so a role change or
+ * deletion is rejected here even with a cryptographically valid cookie —
  * middleware alone can't know about that without a DB call on every
  * request).
  */
 export default async function SuperadminShellLayout({ children }: { children: React.ReactNode }) {
   const superadmin = await getAuthenticatedSuperadmin();
   if (!superadmin) {
-    redirect("/superadmin/login");
+    redirect("/acceder");
   }
 
   return (

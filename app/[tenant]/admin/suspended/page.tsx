@@ -21,7 +21,7 @@ export default async function AdminSuspendedPage({
   const tenant = await resolveTenant(tenantSlug);
 
   if (!(await isAdminAuthenticated(tenantSlug))) {
-    redirect(`/${tenantSlug}/admin/login`);
+    redirect("/acceder");
   }
   // Redirect back to the normal panel the moment it's no longer frozen —
   // this page isn't where a healthy account should land.
@@ -50,7 +50,7 @@ export default async function AdminSuspendedPage({
             reactivarlo.
           </p>
         </div>
-        <form action={logoutAction.bind(null, tenantSlug)} className="mt-6">
+        <form action={logoutAction} className="mt-6">
           <button type="submit" className="text-xs font-medium text-ink-400 hover:text-ink-0">
             Cerrar sesión
           </button>

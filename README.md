@@ -61,10 +61,11 @@ tiene un valor de desarrollo pero **debe configurarse antes de desplegar**:
 | Variable | Uso | Default de desarrollo |
 | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto Supabase | — (obligatoria) |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clave pública anon (no se usa desde el navegador hoy, reservada) | — (obligatoria) |
+| `SUPABASE_ANON_KEY` | Clave anon del proyecto — usada solo desde el servidor (nunca llega al navegador) para el login/registro/recuperar contraseña vía Supabase Auth, ver `lib/auth/supabase-auth.ts` | — (obligatoria) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Clave de servicio, solo servidor — evita RLS | — (obligatoria, secreta) |
-| `ADMIN_PASSWORD` | Contraseña compartida para el panel `/{tenant}/admin` de cualquier tenant | `elnuevosanchez2026` |
+| `ADMIN_PASSWORD` | Secreto de respaldo para firmar la cookie de sesión admin si no se define `ADMIN_SESSION_SECRET` — ya no es una contraseña de login (login real es por correo, ver `/acceder`) | `elnuevosanchez2026` |
 | `ADMIN_SESSION_SECRET` | Firma de la cookie de sesión admin (además del tenant, ver abajo) | usa `ADMIN_PASSWORD` |
+| `SUPERADMIN_SESSION_SECRET` | Firma de la cookie de sesión de Super Admin | — (obligatoria, sin fallback inseguro) |
 | `NEXT_PUBLIC_WHATSAPP_NUMBER` | Número de WhatsApp por defecto (solo dígitos, con código de país) — cada tenant lo sobreescribe desde su propio `/admin/configuracion` | `584121234567` |
 | `NEXT_PUBLIC_WHATSAPP_DISPLAY` | Número formateado por defecto | `+58 412 123 4567` |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | Email de contacto por defecto | `ventas@elnuevosanchez.com` |

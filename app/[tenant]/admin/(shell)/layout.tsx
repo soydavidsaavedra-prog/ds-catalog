@@ -16,7 +16,7 @@ export default async function AdminShellLayout({
   const tenant = await resolveTenant(tenantSlug);
 
   if (!(await isAdminAuthenticated(tenantSlug))) {
-    redirect(`/${tenantSlug}/admin/login`);
+    redirect("/acceder");
   }
   const impersonating = await isImpersonatedSession();
   // The tenant's own session is frozen out the moment its plan expires —

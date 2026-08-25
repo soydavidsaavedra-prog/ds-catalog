@@ -6,17 +6,25 @@ import {
   verifySuperadminSessionCookie,
 } from "@/lib/auth/superadmin-token";
 import { verifyHashedPassword } from "@/lib/auth/password-hash";
-import { getSuperAdminAuthRecordByEmail, getSuperAdminById, type SuperAdminUser } from "@/lib/repositories/superadmin-users-repository";
+import { getSuperAdminAuthRecordByEmail, type SuperAdminUser } from "@/lib/repositories/superadmin-users-repository";
+import { getAppUserById } from "@/lib/repositories/app-users-repository";
 
 export { SUPERADMIN_SESSION_COOKIE };
 
 /**
  * Super Admin session auth — entirely separate from lib/auth/admin-auth.ts
  * (tenant admin). Different cookie name, different secret
- * (SUPERADMIN_SESSION_SECRET), different table (super_admin_users, real
- * per-person accounts with no self-registration). A tenant admin session
- * cookie is never valid here, and vice versa — see middleware.ts, which
- * checks each independently.
+ * (SUPERADMIN_SESSION_SECRET). The cookie itself still just carries an id +
+ * signature (see superadmin-token.ts) but that id now identifies a row in
+ * ds_app_users (role "superadmin"), not super_admin_users — real login
+ * goes through Supabase Auth via the unified /acceder (see
+ * app/acceder/actions.ts). super_admin_users / verifySuperadminCredentials
+ * below survive only as the one-time auto-migration path for whoever's
+ * account was created before this change: the first time they log in with
+ * their existing email+password, accederAction provisions a matching
+ * Supabase Auth user + ds_app_users row behind the scenes and every login
+ * after that goes through Supabase Auth directly, never touching this
+ * table again.
  */
 
 export async function verifySuperadminCredentials(email: string, password: string): Promise<SuperAdminUser | null> {
@@ -43,11 +51,12 @@ export async function destroySuperadminSession(): Promise<void> {
   store.delete(SUPERADMIN_SESSION_COOKIE);
 }
 
-/** Returns the authenticated super admin, or null — re-checks the account is still active on every call (unlike the cookie signature, which can't reflect a later deactivation). */
+/** Returns the authenticated super admin, or null — re-checks ds_app_users on every call (unlike the cookie signature, which can't reflect a later role/deletion change). */
 export async function getAuthenticatedSuperadmin(): Promise<SuperAdminUser | null> {
   const store = await cookies();
   const userId = await verifySuperadminSessionCookie(store.get(SUPERADMIN_SESSION_COOKIE)?.value);
   if (!userId) return null;
-  const user = await getSuperAdminById(userId);
-  return user?.active ? user : null;
+  const appUser = await getAppUserById(userId);
+  if (!appUser || appUser.role !== "superadmin") return null;
+  return { id: appUser.id, email: appUser.email, active: true };
 }

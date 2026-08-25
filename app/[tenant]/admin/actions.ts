@@ -2,11 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import {
-  createAdminSession,
-  destroyAdminSession,
-  verifyTenantAdminPassword,
-} from "@/lib/auth/admin-auth";
+import { destroyAdminSession } from "@/lib/auth/admin-auth";
 import {
   countProducts,
   createProduct,
@@ -55,22 +51,9 @@ async function cleanupReplacedImages(
 
 // ---------- Auth ----------
 
-export async function loginAction(
-  tenantSlug: string,
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const password = String(formData.get("password") ?? "");
-  if (!(await verifyTenantAdminPassword(tenantSlug, password))) {
-    return { error: "Contraseña incorrecta." };
-  }
-  await createAdminSession(tenantSlug);
-  redirect(`/${tenantSlug}/admin`);
-}
-
-export async function logoutAction(tenantSlug: string): Promise<void> {
+export async function logoutAction(): Promise<void> {
   await destroyAdminSession();
-  redirect(`/${tenantSlug}/admin/login`);
+  redirect("/acceder");
 }
 
 /** Distinct from logoutAction only in where it sends the browser back — the session teardown is identical (destroyAdminSession() already clears the impersonation marker too). */

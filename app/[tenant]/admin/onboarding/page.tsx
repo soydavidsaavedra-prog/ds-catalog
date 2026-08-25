@@ -19,7 +19,7 @@ export default async function OnboardingPage({
   const tenant = await resolveTenant(tenantSlug);
 
   if (!(await isAdminAuthenticated(tenantSlug))) {
-    redirect(`/${tenantSlug}/admin/login`);
+    redirect("/acceder");
   }
   if (tenant.onboardingCompleted) {
     redirect(`/${tenantSlug}/admin`);

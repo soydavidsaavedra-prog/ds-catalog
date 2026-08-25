@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { accederAction, type AccederActionState } from "@/app/acceder/actions";
 import { NSInput, NSLabel } from "@/components/ui/NSInput";
@@ -19,16 +20,18 @@ export function NSAccederForm() {
       ) : null}
 
       <div>
-        <NSLabel htmlFor="slug">Enlace de tu catálogo</NSLabel>
-        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-          <span className="shrink-0">ds-catalog.app/</span>
-          <NSInput id="slug" name="slug" required autoFocus placeholder="tu-negocio" className="flex-1" />
-        </div>
+        <NSLabel htmlFor="email">Correo</NSLabel>
+        <NSInput id="email" name="email" type="email" required autoFocus autoComplete="username" />
       </div>
 
       <div>
-        <NSLabel htmlFor="password">Contraseña</NSLabel>
-        <NSInput id="password" name="password" type="password" required />
+        <div className="flex items-center justify-between">
+          <NSLabel htmlFor="password">Contraseña</NSLabel>
+          <Link href="/acceder/recuperar" className="text-xs font-medium text-accent hover:underline">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </div>
+        <NSInput id="password" name="password" type="password" required autoComplete="current-password" />
       </div>
 
       <NSButton type="submit" loading={pending} className="w-full">

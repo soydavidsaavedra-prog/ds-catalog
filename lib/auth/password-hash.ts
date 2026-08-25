@@ -3,8 +3,10 @@ import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
 /**
  * Generic scrypt password hashing — no tenant/superadmin-specific logic.
- * Used by lib/auth/tenant-credentials.ts (ds_tenants.admin_password_hash)
- * and lib/auth/superadmin-auth.ts (super_admin_users.password_hash).
+ * Used only by lib/auth/superadmin-auth.ts's legacy super_admin_users
+ * check now (real credentials live in Supabase Auth — see
+ * lib/auth/supabase-auth.ts — this survives only as the one-time
+ * auto-migration path for accounts created before that existed).
  * Node-only (node:crypto) — never import from a file middleware.ts touches.
  *
  * Stored format is "<saltHex>:<hashHex>" — scrypt with a random salt per

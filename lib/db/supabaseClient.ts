@@ -34,3 +34,32 @@ export function getSupabaseClient(): SupabaseClient<Database> {
 
   return cachedClient;
 }
+
+let cachedAuthClient: SupabaseClient<Database> | null = null;
+
+/**
+ * Second client, keyed with the project's anon key instead of
+ * service_role — used exclusively for lib/auth/supabase-auth.ts's Auth
+ * calls (signInWithPassword, resetPasswordForEmail, getUser). Those are
+ * password/session operations, not table access, so the anon key is the
+ * correct credential for them (the service_role key is reserved for
+ * admin.* calls, which require it by design).
+ *
+ * Deliberately named SUPABASE_ANON_KEY, not NEXT_PUBLIC_SUPABASE_ANON_KEY:
+ * this client is only ever imported from "server-only" files, and this
+ * project's whole security model is "no Supabase credential of any kind
+ * reaches the browser" (see docs/ARCHITECTURE.md) — a NEXT_PUBLIC_ name
+ * here would invite a future client component to import it directly.
+ */
+export function getSupabaseAuthClient(): SupabaseClient<Database> {
+  if (cachedAuthClient) return cachedAuthClient;
+
+  const url = getEnv("NEXT_PUBLIC_SUPABASE_URL");
+  const anonKey = getEnv("SUPABASE_ANON_KEY");
+
+  cachedAuthClient = createClient<Database>(url, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  return cachedAuthClient;
+}

@@ -6,6 +6,7 @@ import { getSettings } from "@/lib/repositories/settings-repository";
 import { listPlans } from "@/lib/repositories/plans-repository";
 import { getSubscriptionByTenantId } from "@/lib/repositories/subscriptions-repository";
 import { getStorageUsageForSlug } from "@/lib/repositories/storage-repository";
+import { getAppUserByTenantId } from "@/lib/repositories/app-users-repository";
 import { formatBytes } from "@/lib/utils/format";
 import {
   updateTenantStatusAction,
@@ -16,6 +17,7 @@ import {
 } from "@/app/superadmin/actions";
 import { NSTenantStatusBadge } from "@/components/superadmin/NSTenantStatusBadge";
 import { NSDeleteTenantForm } from "@/components/superadmin/NSDeleteTenantForm";
+import { NSAssignOwnerEmailForm } from "@/components/superadmin/NSAssignOwnerEmailForm";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSLabel, NSSelect, NSInput } from "@/components/ui/NSInput";
 import { NSLogo } from "@/components/brand/NSLogo";
@@ -43,11 +45,12 @@ export default async function SuperadminTenantDetailPage({
   const tenant = await getTenantSummaryById(tenantId);
   if (!tenant) notFound();
 
-  const [settings, plans, subscription, storage] = await Promise.all([
+  const [settings, plans, subscription, storage, owner] = await Promise.all([
     getSettings(tenant.id),
     listPlans(),
     getSubscriptionByTenantId(tenant.id),
     getStorageUsageForSlug(tenant.slug),
+    getAppUserByTenantId(tenant.id),
   ]);
   const currentPlan = subscription ? plans.find((p) => p.id === subscription.planId) : null;
 
@@ -179,6 +182,24 @@ export default async function SuperadminTenantDetailPage({
           </div>
           <NSButton type="submit">{subscription ? "Actualizar" : "Asignar"}</NSButton>
         </form>
+      </div>
+
+      <div>
+        <h2 className="font-display text-lg uppercase tracking-wide">Administrador</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          El correo con el que este cliente inicia sesión en /acceder. Reasignarlo revoca el acceso del correo
+          anterior y envía una invitación nueva.
+        </p>
+        <div className="mt-3">
+          {owner ? (
+            <p className="rounded-card border border-border bg-surface-elevated px-4 py-3 text-sm">
+              <span className="font-semibold">{owner.email}</span>
+            </p>
+          ) : (
+            <p className="mb-2 text-sm text-danger">Este cliente todavía no tiene una cuenta de acceso.</p>
+          )}
+          <NSAssignOwnerEmailForm tenantId={tenant.id} currentEmail={owner?.email} />
+        </div>
       </div>
 
       <div>

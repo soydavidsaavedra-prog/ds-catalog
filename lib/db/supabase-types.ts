@@ -50,6 +50,16 @@ export interface SuperAdminUserRow {
   updated_at: string;
 }
 
+export type AppUserRole = "owner" | "superadmin";
+
+export interface AppUserRow {
+  id: string;
+  email: string;
+  role: AppUserRole;
+  tenant_id: string | null;
+  created_at: string;
+}
+
 export interface TenantRow {
   id: string;
   slug: string;
@@ -218,6 +228,7 @@ export interface Database {
   public: {
     Tables: {
       super_admin_users: TableDef<SuperAdminUserRow>;
+      ds_app_users: TableDef<AppUserRow>;
       plans: TableDef<PlanRow>;
       subscriptions: TableDef<SubscriptionRow, SubscriptionsRelationships>;
       ds_tenants: TableDef<TenantRow>;

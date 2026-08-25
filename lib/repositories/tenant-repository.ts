@@ -26,25 +26,9 @@ export async function isTenantSlugTaken(slug: string): Promise<boolean> {
   return data !== null;
 }
 
-/** Auth-only lookup — never exposed as part of the public Tenant type. */
-export async function getTenantAuthRecord(
-  slug: string,
-): Promise<{ id: string; adminPasswordHash: string | null } | null> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("ds_tenants")
-    .select("id, admin_password_hash")
-    .eq("slug", slug)
-    .maybeSingle();
-  if (error) throw error;
-  if (!data) return null;
-  return { id: data.id, adminPasswordHash: data.admin_password_hash };
-}
-
 export interface CreateTenantInput {
   slug: string;
   name: string;
-  adminPasswordHash: string;
   businessType: BusinessType;
 }
 
@@ -53,6 +37,12 @@ export interface CreateTenantInput {
  * subscription/plan gating yet (see docs/ANALISIS_HORIZON_REFERENCIA_SAAS.md
  * section 6), so a self-registered tenant's storefront is reachable as
  * soon as onboarding finishes, same as any tenant seeded by hand.
+ *
+ * admin_password_hash is always null now — real identity (who can log in
+ * as this tenant's owner) lives in Supabase Auth + ds_app_users (see
+ * lib/repositories/app-users-repository.ts), not on this row. The column
+ * itself stays in the schema only because dropping it isn't worth the
+ * migration risk; nothing reads it anymore.
  */
 export async function createTenant(input: CreateTenantInput): Promise<Tenant> {
   const supabase = getSupabaseClient();
@@ -63,7 +53,7 @@ export async function createTenant(input: CreateTenantInput): Promise<Tenant> {
       name: input.name,
       status: "active",
       business_type: input.businessType,
-      admin_password_hash: input.adminPasswordHash,
+      admin_password_hash: null,
       onboarding_completed: false,
     })
     .select("*")
