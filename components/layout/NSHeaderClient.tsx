@@ -17,20 +17,26 @@ interface NavParentCategory extends NavCategory {
   children: NavCategory[];
 }
 
-const NAV_LINKS = [
-  { href: "/", label: "Inicio" },
-  { href: "/catalogo", label: "Catálogo" },
-];
-
 export function NSHeaderClient({
+  tenantSlug,
   parents,
   whatsappNumber,
   logoSrc,
+  brandName,
+  tagline,
 }: {
+  tenantSlug: string;
   parents: NavParentCategory[];
   whatsappNumber: string;
   logoSrc?: string;
+  brandName: string;
+  tagline: string;
 }) {
+  const base = `/${tenantSlug}`;
+  const NAV_LINKS = [
+    { href: base, label: "Inicio" },
+    { href: `${base}/catalogo`, label: "Catálogo" },
+  ];
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -67,10 +73,17 @@ export function NSHeaderClient({
         )}
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-20 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-3 text-ink-0" aria-label="Inicio">
-            <NSLogo id="ns-header" variant="mark" className="h-10 w-10 sm:h-12 sm:w-12" src={logoSrc} />
+          <Link href={base} className="flex items-center gap-3 text-ink-0" aria-label="Inicio">
+            <NSLogo
+              id="ns-header"
+              variant="mark"
+              className="h-10 w-10 sm:h-12 sm:w-12"
+              src={logoSrc}
+              brandName={brandName}
+              tagline={tagline}
+            />
             <span className="hidden font-display text-lg uppercase tracking-wide sm:block">
-              El Nuevo Sánchez
+              {brandName}
             </span>
           </Link>
 
@@ -111,7 +124,7 @@ export function NSHeaderClient({
                     {parents.map((parent) => (
                       <div key={parent.slug} className="flex flex-col gap-2">
                         <Link
-                          href={`/${parent.slug}`}
+                          href={`${base}/${parent.slug}`}
                           className="text-xs font-semibold uppercase tracking-wide text-accent hover:underline"
                         >
                           {parent.name}
@@ -120,7 +133,7 @@ export function NSHeaderClient({
                           {parent.children.map((child) => (
                             <Link
                               key={child.slug}
-                              href={`/${child.slug}`}
+                              href={`${base}/${child.slug}`}
                               className="text-xs font-medium uppercase tracking-wide text-ink-300 hover:text-accent"
                             >
                               {child.name}
@@ -134,7 +147,7 @@ export function NSHeaderClient({
               </AnimatePresence>
             </div>
             <Link
-              href="/#contacto"
+              href={`${base}#contacto`}
               className="text-xs font-semibold uppercase tracking-widest text-ink-200 transition-colors hover:text-accent"
             >
               Contacto
@@ -180,7 +193,14 @@ export function NSHeaderClient({
             className="fixed inset-0 z-50 flex flex-col bg-ink-950 text-ink-0 lg:hidden"
           >
             <div className="flex h-16 items-center justify-between px-4">
-              <NSLogo id="ns-mobile" variant="mark" className="h-10 w-10" src={logoSrc} />
+              <NSLogo
+                id="ns-mobile"
+                variant="mark"
+                className="h-10 w-10"
+                src={logoSrc}
+                brandName={brandName}
+                tagline={tagline}
+              />
               <button
                 type="button"
                 aria-label="Cerrar menú"
@@ -208,7 +228,7 @@ export function NSHeaderClient({
               {parents.map((parent) => (
                 <div key={parent.slug} className="border-b border-ink-800 py-3">
                   <Link
-                    href={`/${parent.slug}`}
+                    href={`${base}/${parent.slug}`}
                     className="block text-sm font-semibold uppercase tracking-wide text-ink-0"
                   >
                     {parent.name}
@@ -218,7 +238,7 @@ export function NSHeaderClient({
                       {parent.children.map((child) => (
                         <Link
                           key={child.slug}
-                          href={`/${child.slug}`}
+                          href={`${base}/${child.slug}`}
                           className="text-sm font-medium uppercase tracking-wide text-ink-300"
                         >
                           {child.name}
@@ -241,12 +261,12 @@ export function NSHeaderClient({
         ) : null}
       </AnimatePresence>
 
-      <NSSearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <NSSearchOverlay base={base} open={searchOpen} onClose={() => setSearchOpen(false)} />
     </>
   );
 }
 
-function NSSearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
+function NSSearchOverlay({ base, open, onClose }: { base: string; open: boolean; onClose: () => void }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
 
@@ -282,7 +302,7 @@ function NSSearchOverlay({ open, onClose }: { open: boolean; onClose: () => void
             onSubmit={(e) => {
               e.preventDefault();
               if (!query.trim()) return;
-              router.push(`/catalogo?q=${encodeURIComponent(query.trim())}`);
+              router.push(`${base}/catalogo?q=${encodeURIComponent(query.trim())}`);
               onClose();
             }}
           >

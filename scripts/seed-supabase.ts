@@ -1,14 +1,17 @@
 /**
- * One-time seed script: pushes the existing demo catalog (categories,
- * products, banners, settings) into a fresh Supabase project.
+ * One-time seed script: pushes the "El Nuevo Sánchez" demo catalog
+ * (categories, products, banners, settings) into the elnuevosanchez
+ * tenant in Supabase.
  *
  * Usage:
- *   1. Run supabase/schema.sql in the Supabase SQL editor first.
+ *   1. Run supabase/schema.sql in the Supabase SQL editor first (creates
+ *      the tables AND the elnuevosanchez tenant row in ds_tenants).
  *   2. Create a .env.local with NEXT_PUBLIC_SUPABASE_URL and
  *      SUPABASE_SERVICE_ROLE_KEY (see README.md).
  *   3. npm run seed:supabase
  *
- * Safe to re-run: everything is upserted by slug/id, not blindly inserted.
+ * Safe to re-run: everything is upserted by (tenant_id, slug) / tenant_id,
+ * not blindly inserted.
  */
 import { config as loadEnv } from "dotenv";
 loadEnv({ path: ".env.local" });
@@ -18,6 +21,9 @@ import { categoriesSeed } from "../lib/data/seed/categories";
 import { productsSeed } from "../lib/data/seed/products";
 import { bannersSeed } from "../lib/data/seed/banners";
 import { settingsSeed } from "../lib/data/seed/settings";
+
+const TENANT_SLUG = "elnuevosanchez";
+const TENANT_NAME = "El Nuevo Sánchez";
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -33,7 +39,19 @@ const supabase = createClient(
   requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
 );
 
-async function seedCategories() {
+async function ensureTenant(): Promise<string> {
+  const { error: upsertError } = await supabase
+    .from("ds_tenants")
+    .upsert({ slug: TENANT_SLUG, name: TENANT_NAME, status: "active" }, { onConflict: "slug", ignoreDuplicates: true });
+  if (upsertError) throw upsertError;
+
+  const { data, error } = await supabase.from("ds_tenants").select("id").eq("slug", TENANT_SLUG).single();
+  if (error) throw error;
+  console.log(`✓ tenant "${TENANT_SLUG}" (${data.id})`);
+  return data.id as string;
+}
+
+async function seedCategories(tenantId: string) {
   // categoriesSeed.id/parentId are local demo ids (e.g. "cat-dama"), not real
   // Postgres uuids — parents are upserted first (without id/parent_id, so
   // Postgres generates the real uuid), then children are upserted with
@@ -42,6 +60,7 @@ async function seedCategories() {
   const children = categoriesSeed.filter((c) => c.parentId !== null);
 
   const parentRows = parents.map((c) => ({
+    tenant_id: tenantId,
     slug: c.slug,
     name: c.name,
     description: c.description,
@@ -54,7 +73,7 @@ async function seedCategories() {
 
   const { data: insertedParents, error: parentError } = await supabase
     .from("ns_categories")
-    .upsert(parentRows, { onConflict: "slug" })
+    .upsert(parentRows, { onConflict: "tenant_id,slug" })
     .select("id, slug");
   if (parentError) throw parentError;
 
@@ -67,6 +86,7 @@ async function seedCategories() {
     if (!parentRealId) throw new Error(`No pude resolver el id real del padre de "${c.slug}"`);
 
     return {
+      tenant_id: tenantId,
       slug: c.slug,
       name: c.name,
       description: c.description,
@@ -78,14 +98,17 @@ async function seedCategories() {
     };
   });
 
-  const { error: childError } = await supabase.from("ns_categories").upsert(childRows, { onConflict: "slug" });
+  const { error: childError } = await supabase
+    .from("ns_categories")
+    .upsert(childRows, { onConflict: "tenant_id,slug" });
   if (childError) throw childError;
 
   console.log(`✓ ${parentRows.length + childRows.length} categorías (${parentRows.length} principales, ${childRows.length} subcategorías)`);
 }
 
-async function seedProducts() {
+async function seedProducts(tenantId: string) {
   const rows = productsSeed.map((p) => ({
+    tenant_id: tenantId,
     slug: p.slug,
     reference: p.reference,
     name: p.name,
@@ -105,13 +128,24 @@ async function seedProducts() {
     hide_payment_badge: p.hidePaymentBadge,
   }));
 
-  const { error } = await supabase.from("ns_products").upsert(rows, { onConflict: "slug" });
+  const { error } = await supabase.from("ns_products").upsert(rows, { onConflict: "tenant_id,slug" });
   if (error) throw error;
   console.log(`✓ ${rows.length} productos`);
 }
 
-async function seedBanners() {
+async function seedBanners(tenantId: string) {
+  const { count, error: countError } = await supabase
+    .from("ns_banners")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenantId);
+  if (countError) throw countError;
+  if ((count ?? 0) > 0) {
+    console.log(`✓ banners ya existían (${count})`);
+    return;
+  }
+
   const rows = bannersSeed.map((b) => ({
+    tenant_id: tenantId,
     title: b.title,
     subtitle: b.subtitle,
     image: b.image,
@@ -122,16 +156,16 @@ async function seedBanners() {
   }));
 
   const { error } = await supabase.from("ns_banners").insert(rows);
-  if (error && error.code !== "23505") throw error; // ignore duplicate-key on re-run
-  console.log(`✓ ${rows.length} banners (o ya existían)`);
+  if (error) throw error;
+  console.log(`✓ ${rows.length} banners`);
 }
 
-async function seedSettings() {
+async function seedSettings(tenantId: string) {
   const { error } = await supabase
     .from("ns_settings")
     .upsert(
       {
-        id: 1,
+        tenant_id: tenantId,
         brand_name: settingsSeed.brandName,
         slogan: settingsSeed.slogan,
         brand_description: settingsSeed.brandDescription,
@@ -170,18 +204,19 @@ async function seedSettings() {
         statement_description: settingsSeed.statementDescription,
         statement_image: settingsSeed.statementImage,
       },
-      { onConflict: "id" },
+      { onConflict: "tenant_id" },
     );
   if (error) throw error;
   console.log("✓ configuración");
 }
 
 async function main() {
-  console.log("Sembrando catálogo de demo en Supabase...");
-  await seedCategories();
-  await seedProducts();
-  await seedBanners();
-  await seedSettings();
+  console.log(`Sembrando catálogo de demo para "${TENANT_SLUG}" en Supabase...`);
+  const tenantId = await ensureTenant();
+  await seedCategories(tenantId);
+  await seedProducts(tenantId);
+  await seedBanners(tenantId);
+  await seedSettings(tenantId);
   console.log("Listo.");
 }
 

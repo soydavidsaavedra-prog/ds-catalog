@@ -14,9 +14,10 @@ export interface NSBrandStatementProps {
   titleLine2?: string;
   description?: string;
   image?: string;
+  brandName?: string;
 }
 
-const DEFAULTS: Required<NSBrandStatementProps> = {
+const DEFAULTS: Required<Omit<NSBrandStatementProps, "brandName">> = {
   titleLine1: "Denim is",
   titleLine2: "our language",
   description:
@@ -35,6 +36,7 @@ export function NSBrandStatement({
   titleLine2 = DEFAULTS.titleLine2,
   description = DEFAULTS.description,
   image = DEFAULTS.image,
+  brandName,
 }: NSBrandStatementProps) {
   return (
     <>
@@ -49,7 +51,7 @@ export function NSBrandStatement({
             <p className="mt-6 max-w-sm text-sm leading-relaxed text-ink-300">{description}</p>
           </NSReveal>
           <div className="relative aspect-square sm:aspect-auto">
-            <NSMedia src={image} alt={`${titleLine1} ${titleLine2}`} className="h-full w-full" />
+            <NSMedia src={image} alt={`${titleLine1} ${titleLine2}`} className="h-full w-full" brandName={brandName} />
           </div>
         </div>
       </section>

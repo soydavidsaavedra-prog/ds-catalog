@@ -8,7 +8,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/admin", "/admin/"],
+      // Every tenant's admin panel lives at /{tenant}/admin/*.
+      disallow: ["/*/admin", "/*/admin/*"],
     },
     sitemap: `${domain}/sitemap.xml`,
   };

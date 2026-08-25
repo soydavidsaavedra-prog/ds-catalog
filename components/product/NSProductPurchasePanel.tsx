@@ -14,9 +14,11 @@ import { NSPaymentBadge } from "@/components/catalog/NSPaymentBadge";
 import type { PaymentBadgeInfo } from "@/components/catalog/NSProductCard";
 
 export function NSProductPurchasePanel({
+  tenantSlug,
   product,
   paymentBadge,
 }: {
+  tenantSlug: string;
   product: Product;
   paymentBadge?: PaymentBadgeInfo;
 }) {
@@ -50,7 +52,7 @@ export function NSProductPurchasePanel({
     const result = await shareProduct({
       title: product.name,
       text: `${product.name} — ${product.reference}`,
-      url: absoluteUrl(`/producto/${product.slug}`),
+      url: absoluteUrl(`/${tenantSlug}/producto/${product.slug}`),
     });
     if (result === "copied") {
       setShareState("copied");

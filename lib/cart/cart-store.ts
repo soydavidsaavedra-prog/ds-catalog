@@ -4,6 +4,19 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { cartItemKey, type CartItem } from "@/lib/types/cart";
 
+/**
+ * The storefront always renders under /[tenant]/..., so the first path
+ * segment on first load is the tenant's slug — used to key cart
+ * persistence per tenant (ds-cart-elnuevosanchez, ds-cart-demo, ...) so
+ * two tenants' carts never mix in the same browser. Read once at module
+ * load (SSR-safe: falls back to a neutral key on the server, where this
+ * store is never actually persisted/read).
+ */
+function currentTenantSlug(): string {
+  if (typeof window === "undefined") return "root";
+  return window.location.pathname.split("/").filter(Boolean)[0] || "root";
+}
+
 interface CartState {
   items: CartItem[];
   isOpen: boolean;
@@ -58,7 +71,7 @@ export const useCartStore = create<CartState>()(
       toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
     }),
     {
-      name: "ns-cart",
+      name: `ds-cart-${currentTenantSlug()}`,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ items: state.items }),
     },

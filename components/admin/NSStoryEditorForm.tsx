@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import type { SiteSettings } from "@/lib/types/catalog";
-import { updateStorySettingsAction, type ActionState } from "@/app/admin/actions";
+import { updateStorySettingsAction, type ActionState } from "@/app/[tenant]/admin/actions";
 import { NSInput, NSLabel, NSTextarea } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSSingleImageUploader } from "@/components/admin/NSSingleImageUploader";
@@ -13,8 +13,9 @@ const initialState: ActionState = {};
 const STEP_LABELS = ["Tela", "Corte", "Confección", "Detalle", "Producto"];
 const PREVIEW_SCALE = 0.4;
 
-export function NSStoryEditorForm({ settings }: { settings: SiteSettings }) {
-  const [state, formAction, pending] = useActionState(updateStorySettingsAction, initialState);
+export function NSStoryEditorForm({ tenantId, tenantSlug, settings }: { tenantId: string; tenantSlug: string; settings: SiteSettings }) {
+  const boundAction = updateStorySettingsAction.bind(null, tenantId, tenantSlug);
+  const [state, formAction, pending] = useActionState(boundAction, initialState);
 
   const [draft, setDraft] = useState({
     eyebrow: settings.storyEyebrow,
@@ -90,6 +91,7 @@ export function NSStoryEditorForm({ settings }: { settings: SiteSettings }) {
             <div key={label}>
               <p className="mb-1.5 text-xs font-medium text-muted-foreground">{label}</p>
               <NSSingleImageUploader
+                tenantSlug={tenantSlug}
                 name={`storyStepImage${index + 1}`}
                 initialValue={draft.stepImages[index]}
                 label="Subir foto"

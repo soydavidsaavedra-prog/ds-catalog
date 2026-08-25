@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import type { SiteSettings } from "@/lib/types/catalog";
-import { updateStatementSettingsAction, type ActionState } from "@/app/admin/actions";
+import { updateStatementSettingsAction, type ActionState } from "@/app/[tenant]/admin/actions";
 import { NSInput, NSLabel, NSTextarea } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSSingleImageUploader } from "@/components/admin/NSSingleImageUploader";
@@ -11,8 +11,9 @@ import { NSBrandStatement } from "@/components/home/NSBrandStatement";
 const initialState: ActionState = {};
 const PREVIEW_SCALE = 0.4;
 
-export function NSStatementEditorForm({ settings }: { settings: SiteSettings }) {
-  const [state, formAction, pending] = useActionState(updateStatementSettingsAction, initialState);
+export function NSStatementEditorForm({ tenantId, tenantSlug, settings }: { tenantId: string; tenantSlug: string; settings: SiteSettings }) {
+  const boundAction = updateStatementSettingsAction.bind(null, tenantId, tenantSlug);
+  const [state, formAction, pending] = useActionState(boundAction, initialState);
 
   const [draft, setDraft] = useState({
     titleLine1: settings.statementTitleLine1,
@@ -73,6 +74,7 @@ export function NSStatementEditorForm({ settings }: { settings: SiteSettings }) 
         <div className="border-t border-border pt-5">
           <NSLabel>Foto</NSLabel>
           <NSSingleImageUploader
+            tenantSlug={tenantSlug}
             name="statementImage"
             initialValue={draft.image}
             label="Subir foto"

@@ -9,11 +9,13 @@ import { NSMedia } from "@/components/ui/NSMedia";
  * resulting URL in a hidden input so it submits with the surrounding form.
  */
 export function NSSingleImageUploader({
+  tenantSlug,
   name,
   initialValue,
   label = "Subir imagen",
   onChange,
 }: {
+  tenantSlug: string;
   name: string;
   initialValue?: string;
   label?: string;
@@ -38,7 +40,7 @@ export function NSSingleImageUploader({
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/admin/api/upload", { method: "POST", body: formData });
+      const res = await fetch(`/${tenantSlug}/admin/api/upload`, { method: "POST", body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Error al subir imagen");
       setValue(data.url as string);

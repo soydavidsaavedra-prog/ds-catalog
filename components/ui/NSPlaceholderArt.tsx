@@ -7,6 +7,8 @@ interface NSPlaceholderArtProps {
   label?: string;
   reference?: string;
   className?: string;
+  /** Watermark letters in the middle of the plate — pass the tenant's own initials so this doesn't always read "NS". */
+  monogram?: string;
 }
 
 export function NSPlaceholderArt({
@@ -15,6 +17,7 @@ export function NSPlaceholderArt({
   label,
   reference,
   className,
+  monogram = "NS",
 }: NSPlaceholderArtProps) {
   const id = `ns-ph-${category}-${seed}`.replace(/[^a-zA-Z0-9-]/g, "");
   const gradientId = `${id}-grad`;
@@ -63,7 +66,7 @@ export function NSPlaceholderArt({
         fontWeight="700"
         fontFamily="var(--font-display), sans-serif"
       >
-        NS
+        {monogram}
       </text>
 
       <text x="24" y="40" fill="#f8c909" opacity="0.75" fontSize="12" fontWeight="600" letterSpacing="3">

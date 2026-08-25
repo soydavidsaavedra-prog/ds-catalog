@@ -2,15 +2,16 @@
 
 import { useActionState } from "react";
 import type { SiteSettings } from "@/lib/types/catalog";
-import { updateSettingsAction, type ActionState } from "@/app/admin/actions";
+import { updateSettingsAction, type ActionState } from "@/app/[tenant]/admin/actions";
 import { NSInput, NSLabel, NSTextarea } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSSingleImageUploader } from "@/components/admin/NSSingleImageUploader";
 
 const initialState: ActionState = {};
 
-export function NSSettingsForm({ settings }: { settings: SiteSettings }) {
-  const [state, formAction, pending] = useActionState(updateSettingsAction, initialState);
+export function NSSettingsForm({ tenantId, tenantSlug, settings }: { tenantId: string; tenantSlug: string; settings: SiteSettings }) {
+  const boundAction = updateSettingsAction.bind(null, tenantId, tenantSlug);
+  const [state, formAction, pending] = useActionState(boundAction, initialState);
 
   return (
     <form action={formAction} className="flex flex-col gap-5">
@@ -90,7 +91,7 @@ export function NSSettingsForm({ settings }: { settings: SiteSettings }) {
         <p className="mb-2 text-xs text-muted-foreground">
           Reemplaza el logo recreado en el header, footer y panel admin. Vacío = usa el logo por defecto.
         </p>
-        <NSSingleImageUploader name="brandLogo" initialValue={settings.brandLogo} label="Subir logo" />
+        <NSSingleImageUploader tenantSlug={tenantSlug} name="brandLogo" initialValue={settings.brandLogo} label="Subir logo" />
       </div>
 
       <div className="border-t border-border pt-5">
@@ -99,6 +100,7 @@ export function NSSettingsForm({ settings }: { settings: SiteSettings }) {
           Se muestra como sello en las tarjetas de producto y en la ficha de producto. Vacío = no se muestra.
         </p>
         <NSSingleImageUploader
+          tenantSlug={tenantSlug}
           name="paymentBadgeIcon"
           initialValue={settings.paymentBadgeIcon}
           label="Subir ícono"

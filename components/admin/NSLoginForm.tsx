@@ -1,14 +1,15 @@
 "use client";
 
 import { useActionState } from "react";
-import { loginAction, type ActionState } from "@/app/admin/actions";
+import { loginAction, type ActionState } from "@/app/[tenant]/admin/actions";
 import { NSInput, NSLabel } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 
 const initialState: ActionState = {};
 
-export function NSLoginForm() {
-  const [state, formAction, pending] = useActionState(loginAction, initialState);
+export function NSLoginForm({ tenantSlug }: { tenantSlug: string }) {
+  const boundAction = loginAction.bind(null, tenantSlug);
+  const [state, formAction, pending] = useActionState(boundAction, initialState);
 
   return (
     <form action={formAction} className="flex flex-col gap-5">

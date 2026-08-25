@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import type { Category, Product } from "@/lib/types/catalog";
-import type { ActionState } from "@/app/admin/actions";
+import type { ActionState } from "@/app/[tenant]/admin/actions";
 import { NSInput, NSLabel, NSSelect, NSTextarea } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSImageUploader } from "@/components/admin/NSImageUploader";
@@ -11,12 +11,14 @@ import { NSVariantListEditor } from "@/components/admin/NSVariantListEditor";
 const initialState: ActionState = {};
 
 export function NSProductForm({
+  tenantSlug,
   action,
   categories,
   product,
   nextReference,
   submitLabel = "Guardar producto",
 }: {
+  tenantSlug: string;
   action: (prevState: ActionState, formData: FormData) => Promise<ActionState>;
   categories: Category[];
   product?: Product;
@@ -117,7 +119,7 @@ export function NSProductForm({
 
       <section>
         <NSLabel>Imágenes</NSLabel>
-        <NSImageUploader name="images" initialImages={product?.images ?? []} />
+        <NSImageUploader tenantSlug={tenantSlug} name="images" initialImages={product?.images ?? []} />
       </section>
 
       <section className="flex flex-wrap gap-6">

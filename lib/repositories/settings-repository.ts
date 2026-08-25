@@ -101,20 +101,22 @@ function toRow(patch: Partial<SiteSettings>): Partial<SettingsRow> {
  * Wrapped in React's cache() so the many components that need settings
  * (header, footer, hero, every product card for the payment badge, ...)
  * share a single Supabase round-trip per request instead of one each.
+ * Keyed transparently by tenantId since cache() dedupes per distinct
+ * argument value within a request.
  */
-export const getSettings = cache(async (): Promise<SiteSettings> => {
+export const getSettings = cache(async (tenantId: string): Promise<SiteSettings> => {
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("ns_settings").select("*").eq("id", 1).single();
+  const { data, error } = await supabase.from("ns_settings").select("*").eq("tenant_id", tenantId).single();
   if (error) throw error;
   return fromRow(data as SettingsRow);
 });
 
-export async function updateSettings(patch: Partial<SiteSettings>): Promise<SiteSettings> {
+export async function updateSettings(tenantId: string, patch: Partial<SiteSettings>): Promise<SiteSettings> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from("ns_settings")
     .update(toRow(patch))
-    .eq("id", 1)
+    .eq("tenant_id", tenantId)
     .select("*")
     .single();
 

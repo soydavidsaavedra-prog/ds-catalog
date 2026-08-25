@@ -15,9 +15,10 @@ export interface NSHeroProps {
   image?: string;
   imagePositionX?: number;
   imagePositionY?: number;
+  brandName?: string;
 }
 
-const DEFAULTS: Required<Omit<NSHeroProps, "imagePositionX" | "imagePositionY">> = {
+const DEFAULTS: Required<Omit<NSHeroProps, "imagePositionX" | "imagePositionY" | "brandName">> = {
   eyebrow: "Calidad · Diseño · Confort",
   titleLine1: "El Nuevo",
   titleLine2: "Sánchez",
@@ -49,16 +50,18 @@ export function NSHero({
   image = DEFAULTS.image,
   imagePositionX = 50,
   imagePositionY = 50,
+  brandName,
 }: NSHeroProps) {
   return (
     <section className="relative flex h-[92vh] min-h-[640px] w-full items-end overflow-hidden bg-ink-950 text-ink-0 sm:h-screen">
       <div className="absolute inset-0">
         <NSMedia
           src={image}
-          alt="El Nuevo Sánchez"
+          alt={`${titleLine1} ${titleLine2}`}
           priority
           className="h-full w-full"
           objectPosition={`${imagePositionX}% ${imagePositionY}%`}
+          brandName={brandName}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/60 to-ink-950/20" />
         <div className="absolute inset-0 bg-gradient-to-r from-ink-950/80 via-transparent to-transparent" />

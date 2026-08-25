@@ -2,7 +2,7 @@
 
 import { useActionState, useRef, useState } from "react";
 import type { SiteSettings } from "@/lib/types/catalog";
-import { updateHeroSettingsAction, type ActionState } from "@/app/admin/actions";
+import { updateHeroSettingsAction, type ActionState } from "@/app/[tenant]/admin/actions";
 import { NSInput, NSLabel } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSHero } from "@/components/home/NSHero";
@@ -11,8 +11,9 @@ const initialState: ActionState = {};
 
 const PREVIEW_SCALE = 0.32;
 
-export function NSHeroEditorForm({ settings }: { settings: SiteSettings }) {
-  const [state, formAction, pending] = useActionState(updateHeroSettingsAction, initialState);
+export function NSHeroEditorForm({ tenantId, tenantSlug, settings }: { tenantId: string; tenantSlug: string; settings: SiteSettings }) {
+  const boundAction = updateHeroSettingsAction.bind(null, tenantId, tenantSlug);
+  const [state, formAction, pending] = useActionState(boundAction, initialState);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -42,7 +43,7 @@ export function NSHeroEditorForm({ settings }: { settings: SiteSettings }) {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/admin/api/upload", { method: "POST", body: formData });
+      const res = await fetch(`/${tenantSlug}/admin/api/upload`, { method: "POST", body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Error al subir imagen");
       set("image", data.url as string);

@@ -1,21 +1,31 @@
 import Link from "next/link";
+import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { listCategories } from "@/lib/repositories/category-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
 import { NSLogo } from "@/components/brand/NSLogo";
 
-export async function NSFooter() {
+export async function NSFooter({ tenantSlug }: { tenantSlug: string }) {
+  const tenant = await resolveTenant(tenantSlug);
   const [categories, settings] = await Promise.all([
-    listCategories({ activeOnly: true }),
-    getSettings(),
+    listCategories(tenant.id, { activeOnly: true }),
+    getSettings(tenant.id),
   ]);
   const topLevelCategories = categories.filter((c) => c.parentId === null);
   const subcategories = categories.filter((c) => c.parentId !== null);
+  const base = `/${tenantSlug}`;
 
   return (
     <footer id="contacto" className="border-t border-ink-800 bg-ink-950 text-ink-200">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr] lg:px-8">
         <div>
-          <NSLogo id="ns-footer" variant="full" className="text-ink-0" src={settings.brandLogo} />
+          <NSLogo
+            id="ns-footer"
+            variant="full"
+            className="text-ink-0"
+            src={settings.brandLogo}
+            brandName={settings.brandName}
+            tagline={settings.heroSubtitle}
+          />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink-400">
             {settings.brandDescription}
           </p>
@@ -47,10 +57,10 @@ export async function NSFooter() {
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-ink-0">Catálogo</p>
           <ul className="mt-4 space-y-2.5 text-sm">
-            <li><Link href="/catalogo" className="hover:text-accent">Ver todo</Link></li>
+            <li><Link href={`${base}/catalogo`} className="hover:text-accent">Ver todo</Link></li>
             {topLevelCategories.map((c) => (
               <li key={c.slug}>
-                <Link href={`/${c.slug}`} className="hover:text-accent">{c.name}</Link>
+                <Link href={`${base}/${c.slug}`} className="hover:text-accent">{c.name}</Link>
               </li>
             ))}
           </ul>
@@ -61,7 +71,7 @@ export async function NSFooter() {
           <ul className="mt-4 space-y-2.5 text-sm">
             {subcategories.slice(0, 6).map((c) => (
               <li key={c.slug}>
-                <Link href={`/${c.slug}`} className="hover:text-accent">
+                <Link href={`${base}/${c.slug}`} className="hover:text-accent">
                   {c.name}
                 </Link>
               </li>

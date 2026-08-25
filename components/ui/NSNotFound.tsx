@@ -1,6 +1,7 @@
 import { NSButton } from "@/components/ui/NSButton";
 
-export function NSNotFound() {
+export function NSNotFound({ tenantSlug }: { tenantSlug?: string } = {}) {
+  const base = tenantSlug ? `/${tenantSlug}` : "/";
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center gap-5 px-4 text-center">
       <p className="font-display text-8xl text-accent-strong sm:text-9xl">404</p>
@@ -12,8 +13,10 @@ export function NSNotFound() {
         catálogo para seguir explorando.
       </p>
       <div className="mt-2 flex flex-col gap-3 sm:flex-row">
-        <NSButton href="/">Volver al inicio</NSButton>
-        <NSButton href="/catalogo" variant="outline">Ver catálogo</NSButton>
+        <NSButton href={base}>Volver al inicio</NSButton>
+        {tenantSlug ? (
+          <NSButton href={`${base}/catalogo`} variant="outline">Ver catálogo</NSButton>
+        ) : null}
       </div>
     </div>
   );

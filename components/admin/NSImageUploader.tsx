@@ -4,9 +4,11 @@ import { useRef, useState } from "react";
 import { NSMedia } from "@/components/ui/NSMedia";
 
 export function NSImageUploader({
+  tenantSlug,
   name,
   initialImages,
 }: {
+  tenantSlug: string;
   name: string;
   initialImages: string[];
 }) {
@@ -23,7 +25,7 @@ export function NSImageUploader({
       for (const file of Array.from(files)) {
         const formData = new FormData();
         formData.append("file", file);
-        const res = await fetch("/admin/api/upload", { method: "POST", body: formData });
+        const res = await fetch(`/${tenantSlug}/admin/api/upload`, { method: "POST", body: formData });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Error al subir imagen");
         setImages((prev) => [...prev, data.url]);

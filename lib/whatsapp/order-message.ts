@@ -6,7 +6,7 @@ import { absoluteUrl, formatPrice } from "@/lib/utils/format";
  * the seller receives, including a direct product link per line so they
  * can open each item and confirm it before replying.
  */
-export function buildWhatsAppOrderMessage(items: CartItem[]): string {
+export function buildWhatsAppOrderMessage(items: CartItem[], tenantSlug: string): string {
   const header = "Hola, quiero realizar el siguiente pedido:";
 
   const blocks = items.map((item) => {
@@ -30,7 +30,7 @@ export function buildWhatsAppOrderMessage(items: CartItem[]): string {
       formatPrice(item.price),
       "",
       "LINK:",
-      absoluteUrl(`/producto/${item.slug}`),
+      absoluteUrl(`/${tenantSlug}/producto/${item.slug}`),
     ];
     return lines.join("\n");
   });
@@ -41,7 +41,7 @@ export function buildWhatsAppOrderMessage(items: CartItem[]): string {
   return [header, ...blocks, footer].join("\n\n----------\n\n");
 }
 
-export function buildWhatsAppOrderUrl(items: CartItem[], whatsappNumber: string): string {
-  const message = buildWhatsAppOrderMessage(items);
+export function buildWhatsAppOrderUrl(items: CartItem[], whatsappNumber: string, tenantSlug: string): string {
+  const message = buildWhatsAppOrderMessage(items, tenantSlug);
   return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
 }

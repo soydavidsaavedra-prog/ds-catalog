@@ -11,20 +11,24 @@ export interface PaymentBadgeInfo {
 }
 
 export function NSProductCard({
+  tenantSlug,
   product,
   priority = false,
   paymentBadge,
+  brandName,
 }: {
+  tenantSlug: string;
   product: Product;
   priority?: boolean;
   paymentBadge?: PaymentBadgeInfo;
+  brandName?: string;
 }) {
   const outOfStock = product.availability === "out_of_stock";
   const showPaymentBadge = !product.hidePaymentBadge && paymentBadge?.icon;
 
   return (
     <Link
-      href={`/producto/${product.slug}`}
+      href={`/${tenantSlug}/producto/${product.slug}`}
       className="group flex flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-strong"
     >
       <div className="relative aspect-[4/5] overflow-hidden rounded-card bg-ink-900">
@@ -35,6 +39,7 @@ export function NSProductCard({
             reference={product.reference}
             sizes="(min-width: 1024px) 23vw, (min-width: 640px) 45vw, 90vw"
             priority={priority}
+            brandName={brandName}
           />
         </div>
 
