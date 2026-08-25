@@ -747,3 +747,77 @@ alter table ds_tenants add constraint ds_tenants_status_check
   check (status in ('active', 'paused', 'suspended', 'archived'));
 
 commit;
+
+-- =====================================================================
+-- DS Catalog — plans & subscriptions (structural, no billing yet)
+-- =====================================================================
+-- Deliberately the opposite of Horizon's plan model (see
+-- docs/ANALISIS_HORIZON_REFERENCIA_SAAS.md section 5): there, "plan" was
+-- a free-text UI label ("Básico ($5/mes)") stored straight on the
+-- subscription, while a SEPARATE, disconnected capabilities module keyed
+-- off lowercase slugs ("basico") that never matched — the mismatch meant
+-- plan-based limits silently never applied. Here, plans.key is the single
+-- normalized identifier both the UI and any future limit-enforcement code
+-- reads, and subscriptions.plan_id is a real foreign key — there is no
+-- second place a plan's identity could drift out of sync.
+--
+-- No tenant is auto-subscribed here: existing tenants (elnuevosanchez,
+-- demo, and anything self-registered so far) keep working exactly as
+-- before — active and unlimited — until a Super Admin deliberately
+-- assigns a plan from /superadmin. This migration only adds the
+-- structure and 3 example plans, per "NO implementar Stripe/cobros
+-- todavía" — nothing here changes what any tenant can currently do.
+--
+-- Safe to re-run: create-if-not-exists + an idempotent plan seed keyed by
+-- `key`.
+
+begin;
+
+create table if not exists plans (
+  id uuid primary key default gen_random_uuid(),
+  key text unique not null,
+  name text not null,
+  description text not null default '',
+  price_cents integer not null default 0,
+  max_products integer,
+  max_storage_mb integer,
+  max_images integer,
+  features jsonb not null default '[]'::jsonb,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists plans_set_updated_at on plans;
+create trigger plans_set_updated_at
+  before update on plans
+  for each row execute function set_updated_at();
+
+alter table plans enable row level security;
+
+insert into plans (key, name, description, price_cents, max_products, max_storage_mb, max_images, features)
+values
+  ('basic', 'Basic', 'Para empezar a vender por WhatsApp.', 900, 50, 250, 200, '["Catálogo público", "Pedidos por WhatsApp", "1 tema"]'::jsonb),
+  ('pro', 'Pro', 'Para catálogos en crecimiento.', 2900, 300, 1024, 1000, '["Todo lo de Basic", "Productos ilimitados de temporada", "Banners personalizados"]'::jsonb),
+  ('premium', 'Premium', 'Sin límites de catálogo.', 5900, null, 5120, null, '["Todo lo de Pro", "Storage ampliado", "Soporte prioritario"]'::jsonb)
+on conflict (key) do nothing;
+
+create table if not exists subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null unique references ds_tenants (id),
+  plan_id uuid not null references plans (id),
+  status text not null default 'trial' check (status in ('active', 'trial', 'paused', 'expired', 'cancelled')),
+  started_at timestamptz not null default now(),
+  expires_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists subscriptions_set_updated_at on subscriptions;
+create trigger subscriptions_set_updated_at
+  before update on subscriptions
+  for each row execute function set_updated_at();
+
+alter table subscriptions enable row level security;
+
+commit;

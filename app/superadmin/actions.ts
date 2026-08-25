@@ -18,6 +18,12 @@ import {
   updateTenantStatus,
 } from "@/lib/repositories/tenant-repository";
 import { updateSettings } from "@/lib/repositories/settings-repository";
+import { createPlan, setPlanActive, type PlanInput } from "@/lib/repositories/plans-repository";
+import {
+  assignPlanToTenant,
+  updateSubscriptionStatus,
+  type SubscriptionStatus,
+} from "@/lib/repositories/subscriptions-repository";
 import { slugify } from "@/lib/utils/slug";
 import type { TenantStatus } from "@/lib/types/tenant";
 
@@ -125,4 +131,78 @@ export async function createTenantBySuperadminAction(
   revalidatePath("/superadmin/tenants");
   revalidatePath("/superadmin");
   redirect(`/superadmin/tenants/${tenant.id}`);
+}
+
+// ---------- Plans ----------
+
+export async function createPlanAction(
+  _prev: SuperadminActionState,
+  formData: FormData,
+): Promise<SuperadminActionState> {
+  await requireSuperadmin();
+
+  const key = slugify(String(formData.get("key") ?? "").trim());
+  const name = String(formData.get("name") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const priceCents = Math.round(Number(formData.get("price") ?? 0) * 100);
+  const maxProducts = parseOptionalInt(formData.get("maxProducts"));
+  const maxStorageMb = parseOptionalInt(formData.get("maxStorageMb"));
+  const maxImages = parseOptionalInt(formData.get("maxImages"));
+  const features = String(formData.get("features") ?? "")
+    .split("\n")
+    .map((f) => f.trim())
+    .filter(Boolean);
+
+  if (!key || !name) return { error: "Clave y nombre son obligatorios." };
+
+  const input: PlanInput = { key, name, description, priceCents, maxProducts, maxStorageMb, maxImages, features };
+  try {
+    await createPlan(input);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (/duplicate key|unique constraint/i.test(message)) {
+      return { error: `Ya existe un plan con la clave "${key}".` };
+    }
+    return { error: `No se pudo crear el plan: ${message}` };
+  }
+
+  revalidatePath("/superadmin/plans");
+  redirect("/superadmin/plans");
+}
+
+function parseOptionalInt(value: FormDataEntryValue | null): number | null {
+  const str = String(value ?? "").trim();
+  if (!str) return null;
+  const n = Number.parseInt(str, 10);
+  return Number.isFinite(n) ? n : null;
+}
+
+export async function togglePlanActiveAction(planId: string, active: boolean): Promise<void> {
+  await requireSuperadmin();
+  await setPlanActive(planId, active);
+  revalidatePath("/superadmin/plans");
+}
+
+// ---------- Subscriptions ----------
+
+export async function assignPlanAction(tenantId: string, formData: FormData): Promise<void> {
+  await requireSuperadmin();
+
+  const planId = String(formData.get("planId") ?? "");
+  const status = String(formData.get("status") ?? "trial") as SubscriptionStatus;
+  const expiresAtInput = String(formData.get("expiresAt") ?? "").trim();
+  const expiresAt = expiresAtInput ? new Date(expiresAtInput).toISOString() : null;
+
+  if (!planId) return;
+
+  await assignPlanToTenant(tenantId, planId, status, expiresAt);
+  revalidatePath(`/superadmin/tenants/${tenantId}`);
+  revalidatePath("/superadmin/subscriptions");
+}
+
+export async function updateSubscriptionStatusAction(tenantId: string, status: SubscriptionStatus): Promise<void> {
+  await requireSuperadmin();
+  await updateSubscriptionStatus(tenantId, status);
+  revalidatePath(`/superadmin/tenants/${tenantId}`);
+  revalidatePath("/superadmin/subscriptions");
 }

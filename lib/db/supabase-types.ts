@@ -13,6 +13,34 @@ import type { TenantStatus } from "@/lib/types/tenant";
  * Postgres column defaults/constraints.
  */
 
+export type SubscriptionStatus = "active" | "trial" | "paused" | "expired" | "cancelled";
+
+export interface PlanRow {
+  id: string;
+  key: string;
+  name: string;
+  description: string;
+  price_cents: number;
+  max_products: number | null;
+  max_storage_mb: number | null;
+  max_images: number | null;
+  features: string[];
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SubscriptionRow {
+  id: string;
+  tenant_id: string;
+  plan_id: string;
+  status: SubscriptionStatus;
+  started_at: string;
+  expires_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface SuperAdminUserRow {
   id: string;
   email: string;
@@ -164,6 +192,8 @@ export interface Database {
   public: {
     Tables: {
       super_admin_users: TableDef<SuperAdminUserRow>;
+      plans: TableDef<PlanRow>;
+      subscriptions: TableDef<SubscriptionRow>;
       ds_tenants: TableDef<TenantRow>;
       ns_categories: TableDef<CategoryRow>;
       ns_products: TableDef<ProductRow>;

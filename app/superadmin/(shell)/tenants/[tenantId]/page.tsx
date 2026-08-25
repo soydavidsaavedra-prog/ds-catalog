@@ -3,11 +3,20 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTenantSummaryById } from "@/lib/repositories/superadmin-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
-import { updateTenantStatusAction, impersonateTenantAction } from "@/app/superadmin/actions";
+import { listPlans } from "@/lib/repositories/plans-repository";
+import { getSubscriptionByTenantId } from "@/lib/repositories/subscriptions-repository";
+import {
+  updateTenantStatusAction,
+  impersonateTenantAction,
+  assignPlanAction,
+  updateSubscriptionStatusAction,
+} from "@/app/superadmin/actions";
 import { NSTenantStatusBadge } from "@/components/superadmin/NSTenantStatusBadge";
 import { NSButton } from "@/components/ui/NSButton";
+import { NSLabel, NSSelect, NSInput } from "@/components/ui/NSInput";
 import { NSLogo } from "@/components/brand/NSLogo";
 import type { TenantStatus } from "@/lib/types/tenant";
+import type { SubscriptionStatus } from "@/lib/repositories/subscriptions-repository";
 
 export const metadata: Metadata = {
   title: "Cliente",
@@ -29,7 +38,12 @@ export default async function SuperadminTenantDetailPage({
   const tenant = await getTenantSummaryById(tenantId);
   if (!tenant) notFound();
 
-  const settings = await getSettings(tenant.id);
+  const [settings, plans, subscription] = await Promise.all([
+    getSettings(tenant.id),
+    listPlans(),
+    getSubscriptionByTenantId(tenant.id),
+  ]);
+  const currentPlan = subscription ? plans.find((p) => p.id === subscription.planId) : null;
 
   return (
     <div className="flex flex-col gap-8">
@@ -82,6 +96,61 @@ export default async function SuperadminTenantDetailPage({
             </form>
           ))}
         </div>
+      </div>
+
+      <div>
+        <h2 className="font-display text-lg uppercase tracking-wide">Plan y suscripción</h2>
+        {subscription ? (
+          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-card border border-border p-5 text-sm">
+            <div className="flex-1">
+              <p className="font-display text-lg">{currentPlan?.name ?? "Plan eliminado"}</p>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                {subscription.status} · vence{" "}
+                {subscription.expiresAt ? new Date(subscription.expiresAt).toLocaleDateString("es") : "—"}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {(["active", "trial", "paused", "expired", "cancelled"] as SubscriptionStatus[]).map((s) => (
+                <form key={s} action={updateSubscriptionStatusAction.bind(null, tenant.id, s)}>
+                  <NSButton type="submit" variant={subscription.status === s ? "primary" : "outline"} size="sm">
+                    {s}
+                  </NSButton>
+                </form>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="mt-1 text-sm text-muted-foreground">Sin plan asignado — el cliente sigue activo e ilimitado.</p>
+        )}
+
+        <form action={assignPlanAction.bind(null, tenant.id)} className="mt-4 flex flex-wrap items-end gap-3">
+          <div>
+            <NSLabel htmlFor="planId">{subscription ? "Cambiar plan" : "Asignar plan"}</NSLabel>
+            <NSSelect id="planId" name="planId" defaultValue={subscription?.planId ?? ""} required className="w-48">
+              <option value="" disabled>
+                Elige un plan
+              </option>
+              {plans.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </NSSelect>
+          </div>
+          <div>
+            <NSLabel htmlFor="status">Estado</NSLabel>
+            <NSSelect id="status" name="status" defaultValue="trial" className="w-36">
+              <option value="trial">trial</option>
+              <option value="active">active</option>
+              <option value="paused">paused</option>
+            </NSSelect>
+          </div>
+          <div>
+            <NSLabel htmlFor="expiresAt">Vence</NSLabel>
+            <NSInput id="expiresAt" name="expiresAt" type="date" />
+          </div>
+          <NSButton type="submit">{subscription ? "Actualizar" : "Asignar"}</NSButton>
+        </form>
       </div>
 
       <div>
