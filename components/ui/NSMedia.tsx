@@ -19,6 +19,17 @@ interface NSMediaProps {
   objectFit?: "cover" | "contain";
   /** Overrides objectFit only below the sm breakpoint — e.g. a wide hero photo that should show in full on a narrow phone (nothing cropped off the sides) but still crop to fill on wider screens where there's room. Ignored for placeholder art. */
   objectFitMobile?: "cover" | "contain";
+  /**
+   * Ignores fill/objectFit entirely: renders at the photo's own natural
+   * aspect ratio, full container width, height following automatically —
+   * for a banner that should never crop no matter what shape the admin's
+   * uploaded photo is. Uses a plain <img> rather than next/image, since
+   * next/image needs either `fill` (a pre-sized parent) or a known
+   * width/height (a guessed aspect ratio) — neither fits "whatever ratio
+   * this particular upload happens to have." Placeholder art has no
+   * intrinsic ratio of its own, so it falls back to a 4:5 box instead.
+   */
+  auto?: boolean;
   /** Tenant's SiteSettings.brandName — feeds the placeholder plate's watermark initials (default "NS" — El Nuevo Sánchez's own). */
   brandName?: string;
 }
@@ -40,13 +51,16 @@ export function NSMedia({
   objectPosition,
   objectFit = "cover",
   objectFitMobile,
+  auto = false,
   brandName,
 }: NSMediaProps) {
   const placeholder = parsePlaceholder(src) ?? (src ? null : { category: "otros", seed: "0" });
 
   if (placeholder) {
     return (
-      <div className={cn("relative h-full w-full overflow-hidden bg-ink-900", className)}>
+      <div
+        className={cn("relative h-full w-full overflow-hidden bg-ink-900", auto && "aspect-[4/5] h-auto", className)}
+      >
         <NSPlaceholderArt
           category={placeholder.category}
           seed={placeholder.seed}
@@ -62,6 +76,19 @@ export function NSMedia({
   // Past this point `placeholder` is null, which only happens when `src` is a truthy,
   // non-"placeholder:" string (see the fallback above) — safe to treat as a real src.
   const realSrc = src as string;
+
+  if (auto) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- intentional: see the `auto` prop doc above.
+      <img
+        src={realSrc}
+        alt={alt}
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : undefined}
+        className={cn("block h-auto w-full", className)}
+      />
+    );
+  }
 
   if (fill) {
     if (objectFitMobile) {
