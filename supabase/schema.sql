@@ -614,3 +614,38 @@ update ds_tenants set onboarding_completed = true
 where slug in ('elnuevosanchez', 'demo') and onboarding_completed = false;
 
 commit;
+
+-- =====================================================================
+-- DS Catalog — per-tenant accent color override
+-- =====================================================================
+-- app/globals.css's --accent/--accent-strong/--focus-ring are the
+-- platform default (teal, matching the DS Catalog mark) — every tenant
+-- gets it unless these three columns are set, in which case
+-- app/[tenant]/(storefront)/layout.tsx and app/[tenant]/admin/layout.tsx
+-- inject a scoped CSS override (see lib/utils/brand.ts,
+-- buildAccentOverrideCss). NULL (the default for every tenant, including
+-- "demo" and any self-registered via /registro) means "use the platform
+-- default" — nothing to backfill for them.
+--
+-- El Nuevo Sánchez is the one exception: its storefront/admin were built
+-- and already deployed around the platform's *original* default (gold),
+-- back when there was only one tenant and no notion of a platform color
+-- distinct from any one tenant's brand. Pinning its old default here as
+-- an explicit per-tenant override keeps its look byte-for-byte the same
+-- now that the platform default has moved to teal.
+--
+-- Safe to re-run: add-column-if-not-exists + a backfill guarded by
+-- "still null".
+
+begin;
+
+alter table ns_settings add column if not exists accent_color text;
+alter table ns_settings add column if not exists accent_color_strong text;
+alter table ns_settings add column if not exists accent_foreground text;
+
+update ns_settings ns
+set accent_color = '#f8c909', accent_color_strong = '#e0b400', accent_foreground = '#0a0a09'
+from ds_tenants t
+where ns.tenant_id = t.id and t.slug = 'elnuevosanchez' and ns.accent_color is null;
+
+commit;

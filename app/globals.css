@@ -11,15 +11,27 @@
   --muted-foreground: #615f59;
   --border: #d9d9d6;
   --border-strong: #b6b6b1;
-  --accent: #f8c909;
-  --accent-strong: #e0b400;
+  /*
+   * Platform default accent — teal, sampled from the DS Catalog mark
+   * (public/ds-catalog-mark.png, #00a19a). This is what every tenant gets
+   * unless it has its own accentColor/accentColorStrong/accentForeground
+   * set (see lib/utils/brand.ts buildAccentOverrideCss and the
+   * app/[tenant]/(storefront)/layout.tsx + app/[tenant]/admin/layout.tsx
+   * injection points). El Nuevo Sánchez is the one tenant pinned to its
+   * original gold (#f8c909/#e0b400) — see supabase/schema.sql's
+   * "per-tenant accent color override" section — so demo and any new
+   * self-registered tenant read as their own platform, not as El Nuevo
+   * Sánchez's brand.
+   */
+  --accent: #00a19a;
+  --accent-strong: #006e69;
   --accent-foreground: #0a0a09;
   --denim: #2f4d6f;
   --denim-foreground: #ffffff;
   --success: #16a34a;
   --warning: #d97706;
   --danger: #dc2626;
-  --focus-ring: #e0b400;
+  --focus-ring: #006e69;
   --overlay: rgba(10, 10, 9, 0.6);
 
   /* Raw palette */

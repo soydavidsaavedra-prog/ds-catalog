@@ -126,6 +126,10 @@ export interface SettingsRow {
   statement_title_line2: string;
   statement_description: string;
   statement_image: string;
+  /** Null = use the platform default (see app/globals.css). Set only for tenants that need to diverge from it. */
+  accent_color: string | null;
+  accent_color_strong: string | null;
+  accent_foreground: string | null;
 }
 
 // Each Row/Insert/Update is intersected with Record<string, unknown> so the

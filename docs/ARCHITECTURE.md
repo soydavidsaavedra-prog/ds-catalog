@@ -231,6 +231,27 @@ todavía no hay identidad real de usuario (Supabase Auth), ni Super Admin,
 ni planes/suscripciones — un tenant registrado queda activo e ilimitado de
 inmediato. Son los siguientes tramos del mismo análisis.
 
+**Dos ajustes hechos tras las primeras pruebas reales de este flujo:**
+- `/` (la landing raíz) se marcó `export const dynamic = "force-dynamic"`.
+  Sin dynamic APIs (cookies/params), Next.js la pre-renderizaba una sola
+  vez como página estática y servía esa misma foto siempre — un tenant
+  creado después por `/registro` nunca aparecía ahí sin un nuevo deploy.
+- El acento de color de la plataforma (`--accent`/`--accent-strong`/
+  `--focus-ring` en `app/globals.css`) pasó de dorado a turquesa (tomado
+  del logo de DS Catalog, `public/ds-catalog-mark.png`, `#00a19a`). El
+  dorado era en realidad la marca de El Nuevo Sánchez filtrándose como
+  "color por defecto de la plataforma" a cualquier tenant nuevo (incluido
+  "demo") — la misma familia de bug que las fugas de marca cruzada ya
+  documentadas arriba, aquí en el sistema de color en vez de en el logo o
+  el texto. `ns_settings` ganó tres columnas opcionales
+  (`accent_color`/`accent_color_strong`/`accent_foreground`, ver
+  `lib/utils/brand.ts` `buildAccentOverrideCss`) para que un tenant pueda
+  anular el default de la plataforma — hoy solo El Nuevo Sánchez lo usa,
+  fijado a su dorado original para no cambiarle nada visualmente. El
+  badge de logo generado por `NSLogo` (usado cuando un tenant no subió su
+  propio logo) también dejó de leer el swatch crudo `--color-gold-400` y
+  ahora lee el token semántico `--accent`, por la misma razón.
+
 ## Motor de medios / placeholders
 
 No hay fotografía real todavía. `images[0]` de cada producto/categoría/banner

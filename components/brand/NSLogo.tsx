@@ -13,7 +13,11 @@ import { brandInitials } from "@/lib/utils/brand";
  * SVG badge (circular ring, arced brand-name/tagline text, monogram
  * initials) built from `brandName`/`tagline` — so a tenant that hasn't
  * uploaded a logo yet still gets *its own* placeholder, not another
- * tenant's. Defaults match El Nuevo Sánchez's original hand-built mark
+ * tenant's. The ring/text color reads from the semantic --accent token
+ * (app/globals.css), so this fallback badge follows each tenant's own
+ * accent color override (see lib/utils/brand.ts buildAccentOverrideCss)
+ * -- teal by default, gold only for El Nuevo Sánchez. Its shape was
+ * modeled on El Nuevo Sánchez's original hand-built mark
  * (its own brandLogo is empty too, so it relies on this same fallback) —
  * built because that original logo asset arrived only as an inline chat
  * image, not a file this project could read from disk directly.
@@ -23,7 +27,7 @@ interface NSLogoProps {
   className?: string;
   /** "mark" = badge only. "full" = badge + wordmark, for wide headers. */
   variant?: "mark" | "full";
-  tone?: "gold-on-black" | "black-on-transparent";
+  tone?: "accent-on-black" | "black-on-transparent";
   /** Pass a unique value when rendering more than one NSLogo on the same page (e.g. header + footer) so SVG ids don't collide. */
   id?: string;
   /** Real uploaded logo URL (SiteSettings.brandLogo). Falsy/placeholder = use the generated badge below. */
@@ -40,7 +44,7 @@ const DEFAULT_TAGLINE = "Especialista en Jeans";
 export function NSLogo({
   className,
   variant = "mark",
-  tone = "gold-on-black",
+  tone = "accent-on-black",
   id = "ns-logo",
   src,
   brandName = DEFAULT_BRAND_NAME,
@@ -62,9 +66,9 @@ export function NSLogo({
   const bottomArcId = `${id}-bottom`;
   const initials = brandInitials(brandName);
 
-  const ring = tone === "gold-on-black" ? "var(--color-gold-400)" : "var(--color-ink-950)";
-  const fill = tone === "gold-on-black" ? "var(--color-ink-950)" : "transparent";
-  const ink = tone === "gold-on-black" ? "var(--color-gold-400)" : "var(--color-ink-950)";
+  const ring = tone === "accent-on-black" ? "var(--accent)" : "var(--color-ink-950)";
+  const fill = tone === "accent-on-black" ? "var(--color-ink-950)" : "transparent";
+  const ink = tone === "accent-on-black" ? "var(--accent)" : "var(--color-ink-950)";
 
   const mark = (
     <svg

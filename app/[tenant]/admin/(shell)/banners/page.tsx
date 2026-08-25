@@ -52,7 +52,7 @@ export default async function AdminBannersPage({
             <NSInput id="new-order" name="order" type="number" defaultValue={banners.length + 1} />
           </div>
           <label className="flex items-center gap-2 text-sm font-medium sm:col-span-2">
-            <input type="checkbox" name="active" defaultChecked className="h-4 w-4 rounded border-border-strong accent-[var(--color-gold-400)]" />
+            <input type="checkbox" name="active" defaultChecked className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]" />
             Activo
           </label>
           <NSButton type="submit" size="sm" className="self-start sm:col-span-2">Crear banner</NSButton>
@@ -88,7 +88,7 @@ export default async function AdminBannersPage({
                 <NSInput id={`order-${banner.id}`} name="order" type="number" defaultValue={banner.order} />
               </div>
               <label className="flex items-center gap-2 text-sm font-medium">
-                <input type="checkbox" name="active" defaultChecked={banner.active} className="h-4 w-4 rounded border-border-strong accent-[var(--color-gold-400)]" />
+                <input type="checkbox" name="active" defaultChecked={banner.active} className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]" />
                 Activo
               </label>
               <div className="flex items-center gap-4 sm:col-span-2">

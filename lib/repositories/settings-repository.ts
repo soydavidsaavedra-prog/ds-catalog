@@ -52,6 +52,9 @@ function fromRow(row: SettingsRow): SiteSettings {
     statementTitleLine2: row.statement_title_line2 ?? "",
     statementDescription: row.statement_description ?? "",
     statementImage: row.statement_image ?? "",
+    accentColor: row.accent_color ?? null,
+    accentColorStrong: row.accent_color_strong ?? null,
+    accentForeground: row.accent_foreground ?? null,
   };
 }
 
@@ -94,6 +97,9 @@ function toRow(patch: Partial<SiteSettings>): Partial<SettingsRow> {
   if (patch.statementTitleLine2 !== undefined) row.statement_title_line2 = patch.statementTitleLine2;
   if (patch.statementDescription !== undefined) row.statement_description = patch.statementDescription;
   if (patch.statementImage !== undefined) row.statement_image = patch.statementImage;
+  if (patch.accentColor !== undefined) row.accent_color = patch.accentColor;
+  if (patch.accentColorStrong !== undefined) row.accent_color_strong = patch.accentColorStrong;
+  if (patch.accentForeground !== undefined) row.accent_foreground = patch.accentForeground;
   return row;
 }
 

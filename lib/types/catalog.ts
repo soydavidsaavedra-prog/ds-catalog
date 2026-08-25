@@ -120,6 +120,15 @@ export interface SiteSettings {
   statementTitleLine2: string;
   statementDescription: string;
   statementImage: string;
+  /**
+   * Overrides the platform's default accent color (see app/globals.css)
+   * for this tenant. Null on every tenant except El Nuevo Sánchez, which
+   * is pinned to its original gold — see supabase/schema.sql's "per-tenant
+   * accent color override" section for why.
+   */
+  accentColor: string | null;
+  accentColorStrong: string | null;
+  accentForeground: string | null;
 }
 
 export type SortOption =

@@ -4,6 +4,7 @@ import { NSHeader } from "@/components/layout/NSHeader";
 import { NSFooter } from "@/components/layout/NSFooter";
 import { NSCartDrawer } from "@/components/cart/NSCartDrawer";
 import { NSWhatsAppButton } from "@/components/whatsapp/NSWhatsAppButton";
+import { buildAccentOverrideCss } from "@/lib/utils/brand";
 
 export default async function StorefrontLayout({
   children,
@@ -15,9 +16,11 @@ export default async function StorefrontLayout({
   const { tenant: tenantSlug } = await params;
   const tenant = await resolveTenant(tenantSlug);
   const settings = await getSettings(tenant.id);
+  const accentOverrideCss = buildAccentOverrideCss(settings);
 
   return (
     <>
+      {accentOverrideCss ? <style>{accentOverrideCss}</style> : null}
       <NSHeader tenantSlug={tenant.slug} />
       <main className="flex-1">{children}</main>
       <NSFooter tenantSlug={tenant.slug} />

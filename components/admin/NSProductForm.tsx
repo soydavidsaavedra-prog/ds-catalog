@@ -135,7 +135,7 @@ export function NSProductForm({
           },
         ].map((flag) => (
           <label key={flag.name} className="flex items-center gap-2 text-sm font-medium">
-            <input type="checkbox" name={flag.name} defaultChecked={flag.defaultChecked} className="h-4 w-4 rounded border-border-strong accent-[var(--color-gold-400)]" />
+            <input type="checkbox" name={flag.name} defaultChecked={flag.defaultChecked} className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]" />
             {flag.label}
           </label>
         ))}

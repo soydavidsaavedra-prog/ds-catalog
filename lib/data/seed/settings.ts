@@ -46,4 +46,7 @@ export const settingsSeed: SiteSettings = {
   statementDescription:
     "Calidad que se siente, estilo que te define. Cada pieza sale de nuestra fábrica con un mismo propósito: vestir bien, sin intermediarios.",
   statementImage: "placeholder:denim:brand-statement",
+  accentColor: "#f8c909",
+  accentColorStrong: "#e0b400",
+  accentForeground: "#0a0a09",
 };

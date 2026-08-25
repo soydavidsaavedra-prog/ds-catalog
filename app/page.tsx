@@ -14,7 +14,14 @@ export const metadata: Metadata = {
  * /[tenant]/(storefront)/page.tsx; this page just orients a visitor who
  * lands on the bare domain toward an actual tenant. It intentionally does
  * not try to be a full SaaS marketing site yet.
+ *
+ * Forced dynamic: this page has no dynamic API usage (no cookies/params),
+ * so Next.js would otherwise prerender it once as a static page and keep
+ * serving that same snapshot — a tenant created later via /registro would
+ * never appear here without a new deploy.
  */
+export const dynamic = "force-dynamic";
+
 export default async function RootLandingPage() {
   const tenants = await listActiveTenants();
 

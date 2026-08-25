@@ -97,7 +97,7 @@ export function NSHeroEditorForm({ tenantId, tenantSlug, settings }: { tenantId:
               max={100}
               value={draft.imagePositionX}
               onChange={(e) => set("imagePositionX", Number(e.target.value))}
-              className="w-full accent-[var(--color-gold-400)]"
+              className="w-full accent-[var(--accent)]"
             />
             <input type="hidden" name="heroImagePositionX" value={draft.imagePositionX} />
           </div>
@@ -110,7 +110,7 @@ export function NSHeroEditorForm({ tenantId, tenantSlug, settings }: { tenantId:
               max={100}
               value={draft.imagePositionY}
               onChange={(e) => set("imagePositionY", Number(e.target.value))}
-              className="w-full accent-[var(--color-gold-400)]"
+              className="w-full accent-[var(--accent)]"
             />
             <input type="hidden" name="heroImagePositionY" value={draft.imagePositionY} />
           </div>
