@@ -17,8 +17,12 @@ function fromRow(row: ProductRow): Product {
     categorySlug: row.category_slug,
     audience: row.audience,
     images: row.images ?? [],
-    cardAspectRatio: row.card_aspect_ratio,
-    imageFit: row.image_fit,
+    // Fallback covers a row read before the card_aspect_ratio/image_fit
+    // migration was applied — Supabase returns undefined for a column it
+    // doesn't know about yet; "portrait"/"cover" is the original hardcoded
+    // look every product had before this was configurable.
+    cardAspectRatio: row.card_aspect_ratio ?? "portrait",
+    imageFit: row.image_fit ?? "cover",
     sizes: row.sizes ?? [],
     colors: row.colors ?? [],
     availability: row.availability,

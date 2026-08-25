@@ -119,8 +119,16 @@ export const BUSINESS_TYPE_PROFILES: Record<BusinessType, BusinessTypeProfile> =
   },
 };
 
+/**
+ * Never throws, even if `businessType` isn't actually one of the known
+ * values at runtime — e.g. the ds_tenants.business_type migration hasn't
+ * been applied yet, so Supabase returns undefined for a column it doesn't
+ * know about. Falls back to "moda" (full sizes/colors, the original
+ * behavior every tenant had before this concept existed) rather than
+ * crashing the product form entirely.
+ */
 export function getBusinessTypeProfile(businessType: BusinessType): BusinessTypeProfile {
-  return BUSINESS_TYPE_PROFILES[businessType];
+  return BUSINESS_TYPE_PROFILES[businessType] ?? BUSINESS_TYPE_PROFILES.moda;
 }
 
 /** In a stable, sensible display order for a <select> — Object.values on a Record keyed by string doesn't guarantee this on its own. */

@@ -20,7 +20,10 @@ function fromRow(row: TenantRow): Tenant {
     slug: row.slug,
     name: row.name,
     status: row.status,
-    businessType: row.business_type,
+    // Fallback covers a row read before the business_type migration was
+    // applied — Supabase returns undefined for a column it doesn't know
+    // about yet; "moda" is the original behavior every tenant had.
+    businessType: row.business_type ?? "moda",
     onboardingCompleted: row.onboarding_completed,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
