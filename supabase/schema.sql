@@ -892,5 +892,3 @@ alter table ds_tenants add constraint ds_tenants_business_type_check
   check (business_type in ('moda', 'ferreteria', 'restaurante', 'belleza', 'tecnologia', 'hogar', 'otro'));
 
 commit;
-
-commit;
