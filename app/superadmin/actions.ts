@@ -29,6 +29,7 @@ import {
 } from "@/lib/repositories/subscriptions-repository";
 import { deleteAllFilesForTenant } from "@/lib/repositories/storage-repository";
 import { slugify } from "@/lib/utils/slug";
+import { RESERVED_SLUGS } from "@/lib/utils/reserved-slugs";
 import { BUSINESS_TYPE_PROFILES } from "@/lib/tenant/business-type";
 import type { BusinessType, TenantStatus } from "@/lib/types/tenant";
 
@@ -115,8 +116,6 @@ export async function impersonateTenantAction(tenantId: string): Promise<void> {
 }
 
 // ---------- Create tenant ----------
-
-const RESERVED_SLUGS = new Set(["registro", "superadmin"]);
 
 export async function createTenantBySuperadminAction(
   _prev: SuperadminActionState,
