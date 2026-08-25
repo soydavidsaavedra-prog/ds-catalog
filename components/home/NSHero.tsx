@@ -61,6 +61,7 @@ export function NSHero({
           priority
           className="h-full w-full"
           objectPosition={`${imagePositionX}% ${imagePositionY}%`}
+          objectFitMobile="contain"
           brandName={brandName}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/60 to-ink-950/20" />

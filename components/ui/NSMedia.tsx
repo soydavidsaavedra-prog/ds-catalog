@@ -17,6 +17,8 @@ interface NSMediaProps {
   objectPosition?: string;
   /** "cover" (default) crops to fill; "contain" shows the whole image with neutral letterboxing instead of cropping anything out. Ignored for placeholder art. */
   objectFit?: "cover" | "contain";
+  /** Overrides objectFit only below the sm breakpoint — e.g. a wide hero photo that should show in full on a narrow phone (nothing cropped off the sides) but still crop to fill on wider screens where there's room. Ignored for placeholder art. */
+  objectFitMobile?: "cover" | "contain";
   /** Tenant's SiteSettings.brandName — feeds the placeholder plate's watermark initials (default "NS" — El Nuevo Sánchez's own). */
   brandName?: string;
 }
@@ -37,6 +39,7 @@ export function NSMedia({
   fill = true,
   objectPosition,
   objectFit = "cover",
+  objectFitMobile,
   brandName,
 }: NSMediaProps) {
   const placeholder = parsePlaceholder(src) ?? (src ? null : { category: "otros", seed: "0" });
@@ -61,6 +64,14 @@ export function NSMedia({
   const realSrc = src as string;
 
   if (fill) {
+    const fitClass = objectFitMobile
+      ? cn(
+          objectFitMobile === "contain" ? "object-contain" : "object-cover",
+          objectFit === "contain" ? "sm:object-contain" : "sm:object-cover",
+        )
+      : objectFit === "contain"
+        ? "object-contain"
+        : "object-cover";
     return (
       <div className={cn("relative h-full w-full overflow-hidden bg-surface", className)}>
         <Image
@@ -69,7 +80,7 @@ export function NSMedia({
           fill
           sizes={sizes ?? "(min-width: 1024px) 25vw, 50vw"}
           priority={priority}
-          className={objectFit === "contain" ? "object-contain" : "object-cover"}
+          className={fitClass}
           style={objectPosition ? { objectPosition } : undefined}
         />
       </div>
