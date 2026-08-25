@@ -4,8 +4,9 @@ export interface CartItem {
   reference: string;
   name: string;
   image: string;
-  size: string;
-  color: string;
+  /** null when the product has no sizes/colors to choose from — not every business sells apparel. */
+  size: string | null;
+  color: string | null;
   quantity: number;
   price: number;
 }

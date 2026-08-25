@@ -1,7 +1,7 @@
 import "server-only";
 import { getSupabaseClient } from "@/lib/db/supabaseClient";
 import type { TenantRow } from "@/lib/db/supabase-types";
-import type { Tenant, TenantStatus } from "@/lib/types/tenant";
+import type { BusinessType, Tenant, TenantStatus } from "@/lib/types/tenant";
 
 function fromRow(row: TenantRow): Tenant {
   return {
@@ -9,6 +9,7 @@ function fromRow(row: TenantRow): Tenant {
     slug: row.slug,
     name: row.name,
     status: row.status,
+    businessType: row.business_type,
     onboardingCompleted: row.onboarding_completed,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -41,6 +42,7 @@ export interface CreateTenantInput {
   slug: string;
   name: string;
   adminPasswordHash: string;
+  businessType: BusinessType;
 }
 
 /**
@@ -57,6 +59,7 @@ export async function createTenant(input: CreateTenantInput): Promise<Tenant> {
       slug: input.slug,
       name: input.name,
       status: "active",
+      business_type: input.businessType,
       admin_password_hash: input.adminPasswordHash,
       onboarding_completed: false,
     })
@@ -150,6 +153,13 @@ export async function getTenantById(tenantId: string): Promise<Tenant | null> {
 export async function updateTenantStatus(tenantId: string, status: TenantStatus): Promise<void> {
   const supabase = getSupabaseClient();
   const { error } = await supabase.from("ds_tenants").update({ status }).eq("id", tenantId);
+  if (error) throw error;
+}
+
+/** Super Admin only — reclassifying a tenant only changes which optional product fields its admin form shows (lib/tenant/business-type.ts); it never touches existing product/category rows. */
+export async function updateTenantBusinessType(tenantId: string, businessType: BusinessType): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from("ds_tenants").update({ business_type: businessType }).eq("id", tenantId);
   if (error) throw error;
 }
 

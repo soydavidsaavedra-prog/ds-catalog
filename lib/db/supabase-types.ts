@@ -1,6 +1,6 @@
 import type { Audience, Availability, ProductColor } from "@/lib/types/catalog";
 import type { OrderItem, OrderStatus } from "@/lib/types/order";
-import type { TenantStatus } from "@/lib/types/tenant";
+import type { BusinessType, TenantStatus } from "@/lib/types/tenant";
 
 /**
  * Minimal hand-written Database type (row shapes only — see
@@ -55,6 +55,7 @@ export interface TenantRow {
   slug: string;
   name: string;
   status: TenantStatus;
+  business_type: BusinessType;
   admin_password_hash: string | null;
   onboarding_completed: boolean;
   created_at: string;

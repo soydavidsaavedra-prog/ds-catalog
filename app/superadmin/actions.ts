@@ -16,9 +16,11 @@ import {
   deleteTenant,
   getTenantById,
   isTenantSlugTaken,
+  updateTenantBusinessType,
   updateTenantStatus,
 } from "@/lib/repositories/tenant-repository";
 import { updateSettings } from "@/lib/repositories/settings-repository";
+import { seedStarterCategories } from "@/lib/repositories/category-repository";
 import { createPlan, updatePlan, setPlanActive, type PlanInput } from "@/lib/repositories/plans-repository";
 import {
   assignPlanToTenant,
@@ -27,7 +29,8 @@ import {
 } from "@/lib/repositories/subscriptions-repository";
 import { deleteAllFilesForTenant } from "@/lib/repositories/storage-repository";
 import { slugify } from "@/lib/utils/slug";
-import type { TenantStatus } from "@/lib/types/tenant";
+import { BUSINESS_TYPE_PROFILES } from "@/lib/tenant/business-type";
+import type { BusinessType, TenantStatus } from "@/lib/types/tenant";
 
 export type SuperadminActionState = { error?: string };
 
@@ -69,6 +72,15 @@ export async function updateTenantStatusAction(tenantId: string, status: TenantS
   revalidatePath("/superadmin");
 }
 
+/** Reclassifying only changes which optional fields the tenant's own product form shows going forward — it never touches existing products/categories, so this is safe to change at any time. */
+export async function updateTenantBusinessTypeAction(tenantId: string, formData: FormData): Promise<void> {
+  await requireSuperadmin();
+  const businessTypeInput = String(formData.get("businessType") ?? "");
+  if (!(businessTypeInput in BUSINESS_TYPE_PROFILES)) return;
+  await updateTenantBusinessType(tenantId, businessTypeInput as BusinessType);
+  revalidatePath(`/superadmin/tenants/${tenantId}`);
+}
+
 /**
  * Grants the caller a normal tenant-admin session for `tenantId` — the
  * exact same createAdminSession() a tenant admin gets after logging in
@@ -107,11 +119,14 @@ export async function createTenantBySuperadminAction(
   const name = String(formData.get("name") ?? "").trim();
   const slugInput = String(formData.get("slug") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const businessTypeInput = String(formData.get("businessType") ?? "");
   const contactEmail = String(formData.get("contactEmail") ?? "").trim();
   const whatsappNumber = String(formData.get("whatsappNumber") ?? "").replace(/[^0-9]/g, "");
   const brandDescription = String(formData.get("brandDescription") ?? "").trim();
 
   if (!name) return { error: "El nombre del negocio es obligatorio." };
+  if (!(businessTypeInput in BUSINESS_TYPE_PROFILES)) return { error: "Elige el tipo de negocio." };
+  const businessType = businessTypeInput as BusinessType;
   if (password.length < 8) return { error: "La contraseña debe tener al menos 8 caracteres." };
 
   const slug = slugify(slugInput || name);
@@ -119,8 +134,9 @@ export async function createTenantBySuperadminAction(
   if (RESERVED_SLUGS.has(slug)) return { error: `"${slug}" está reservado. Elige otro slug.` };
   if (await isTenantSlugTaken(slug)) return { error: `El slug "${slug}" ya está en uso.` };
 
-  const tenant = await createTenant({ slug, name, adminPasswordHash: hashTenantPassword(password) });
+  const tenant = await createTenant({ slug, name, adminPasswordHash: hashTenantPassword(password), businessType });
   await createDefaultSettings(tenant.id, name);
+  await seedStarterCategories(tenant.id, businessType);
 
   if (contactEmail || whatsappNumber || brandDescription) {
     await updateSettings(tenant.id, {

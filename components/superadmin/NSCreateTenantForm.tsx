@@ -2,9 +2,10 @@
 
 import { useActionState, useState } from "react";
 import { createTenantBySuperadminAction, type SuperadminActionState } from "@/app/superadmin/actions";
-import { NSInput, NSLabel, NSTextarea } from "@/components/ui/NSInput";
+import { NSInput, NSLabel, NSSelect, NSTextarea } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import { slugify } from "@/lib/utils/slug";
+import { BUSINESS_TYPE_OPTIONS } from "@/lib/tenant/business-type";
 
 const initialState: SuperadminActionState = {};
 
@@ -44,6 +45,23 @@ export function NSCreateTenantForm() {
             className="flex-1"
           />
         </div>
+      </div>
+
+      <div>
+        <NSLabel htmlFor="businessType">Tipo de negocio</NSLabel>
+        <NSSelect id="businessType" name="businessType" required defaultValue="">
+          <option value="" disabled>
+            Elige el tipo de negocio
+          </option>
+          {BUSINESS_TYPE_OPTIONS.map((profile) => (
+            <option key={profile.value} value={profile.value}>
+              {profile.label}
+            </option>
+          ))}
+        </NSSelect>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Define qué campos ve el cliente en su formulario de productos (tallas, colores) y con qué categorías arranca.
+        </p>
       </div>
 
       <div>

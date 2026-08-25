@@ -850,3 +850,47 @@ as $$
 $$;
 
 commit;
+
+-- =====================================================================
+-- DS Catalog — tenant business type
+-- =====================================================================
+-- What kind of business a tenant runs — chosen at registration (or set by
+-- a Super Admin) — drives which optional product attributes their admin
+-- panel shows (see lib/tenant/business-type.ts): a "ferreteria" tenant's
+-- product form has no reason to show Tallas/Colores, a "moda" tenant's
+-- does. Every tenant that existed before this concept did (El Nuevo
+-- Sánchez, demo) backfills to 'moda' — the one profile with sizes/colors
+-- fully enabled, i.e. exactly their current behavior. Nothing about how
+-- they work changes.
+--
+-- Safe to re-run: add-column-if-not-exists + backfill guarded by null +
+-- drop-and-recreate the same check constraint.
+
+begin;
+
+alter table ds_tenants add column if not exists business_type text;
+
+update ds_tenants set business_type = 'moda' where business_type is null;
+
+alter table ds_tenants alter column business_type set not null;
+alter table ds_tenants alter column business_type set default 'moda';
+
+do $$
+declare
+  conname text;
+begin
+  select con.conname into conname
+  from pg_constraint con
+  join pg_class rel on rel.oid = con.conrelid
+  where rel.relname = 'ds_tenants' and con.contype = 'c' and pg_get_constraintdef(con.oid) ilike '%business_type%';
+  if conname is not null then
+    execute format('alter table ds_tenants drop constraint %I', conname);
+  end if;
+end $$;
+
+alter table ds_tenants add constraint ds_tenants_business_type_check
+  check (business_type in ('moda', 'ferreteria', 'restaurante', 'belleza', 'tecnologia', 'hogar', 'otro'));
+
+commit;
+
+commit;

@@ -20,6 +20,7 @@ function fromRow(row: TenantRow): Tenant {
     slug: row.slug,
     name: row.name,
     status: row.status,
+    businessType: row.business_type,
     onboardingCompleted: row.onboarding_completed,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

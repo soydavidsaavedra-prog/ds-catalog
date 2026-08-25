@@ -31,18 +31,14 @@ export default async function AdminHomePage({
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-display text-xl uppercase tracking-wide text-accent-strong">
-          &quot;Nuestra fábrica&quot; (&quot;De la fábrica a tus manos&quot;)
-        </h2>
+        <h2 className="font-display text-xl uppercase tracking-wide text-accent-strong">Historia de marca</h2>
         <div className="rounded-card border border-border bg-surface-elevated p-6">
           <NSStoryEditorForm tenantId={tenant.id} tenantSlug={tenantSlug} settings={settings} />
         </div>
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-display text-xl uppercase tracking-wide text-accent-strong">
-          &quot;Denim is our language&quot;
-        </h2>
+        <h2 className="font-display text-xl uppercase tracking-wide text-accent-strong">Frase destacada</h2>
         <div className="rounded-card border border-border bg-surface-elevated p-6">
           <NSStatementEditorForm tenantId={tenant.id} tenantSlug={tenantSlug} settings={settings} />
         </div>

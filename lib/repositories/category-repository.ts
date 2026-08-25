@@ -2,6 +2,8 @@ import "server-only";
 import { getSupabaseClient } from "@/lib/db/supabaseClient";
 import type { CategoryRow } from "@/lib/db/supabase-types";
 import type { Category } from "@/lib/types/catalog";
+import { getBusinessTypeProfile } from "@/lib/tenant/business-type";
+import type { BusinessType } from "@/lib/types/tenant";
 
 export interface CategoryInput {
   slug: string;
@@ -136,6 +138,28 @@ export async function updateCategory(
 
   if (error) throw error;
   return data ? fromRow(data as CategoryRow) : null;
+}
+
+/**
+ * Seeds a business type's starter categories once, right after a tenant is
+ * created (registerTenantAction / createTenantBySuperadminAction) — never
+ * re-applied afterward, and purely a starting point: the admin can rename,
+ * delete, or add to these freely from day one. Uses the same
+ * placeholder-art convention as a manually-created category with no
+ * uploaded image (see createCategoryAction) rather than a real photo.
+ */
+export async function seedStarterCategories(tenantId: string, businessType: BusinessType): Promise<void> {
+  const profile = getBusinessTypeProfile(businessType);
+  for (const starter of profile.starterCategories) {
+    await createCategory(tenantId, {
+      slug: starter.slug,
+      name: starter.name,
+      description: starter.description,
+      image: `placeholder:${starter.slug}:1`,
+      active: true,
+      featured: true,
+    });
+  }
 }
 
 export async function deleteCategory(tenantId: string, id: string): Promise<void> {

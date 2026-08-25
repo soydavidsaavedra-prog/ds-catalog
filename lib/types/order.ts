@@ -11,8 +11,9 @@ export interface OrderItem {
   name: string;
   image: string;
   slug: string;
-  size: string;
-  color: string;
+  /** null when the product had no sizes/colors to choose from — not every business sells apparel. */
+  size: string | null;
+  color: string | null;
   quantity: number;
   price: number;
 }

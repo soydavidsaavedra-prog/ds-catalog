@@ -40,8 +40,8 @@ export function NSProductPurchasePanel({
       reference: product.reference,
       name: product.name,
       image: product.images[0],
-      size: size || "Única",
-      color: color || "Único",
+      size: size || null,
+      color: color || null,
       quantity,
       price: product.price,
     });

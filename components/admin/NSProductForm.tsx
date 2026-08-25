@@ -17,6 +17,8 @@ export function NSProductForm({
   product,
   nextReference,
   submitLabel = "Guardar producto",
+  showSizes = true,
+  showColors = true,
 }: {
   tenantSlug: string;
   action: (prevState: ActionState, formData: FormData) => Promise<ActionState>;
@@ -24,6 +26,9 @@ export function NSProductForm({
   product?: Product;
   nextReference?: string;
   submitLabel?: string;
+  /** Driven by the tenant's business type (lib/tenant/business-type.ts) — a ferretería/restaurante has no use for either. */
+  showSizes?: boolean;
+  showColors?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
 
@@ -107,15 +112,19 @@ export function NSProductForm({
         <NSTextarea id="description" name="description" defaultValue={product?.description} rows={4} />
       </section>
 
-      <section>
-        <NSLabel htmlFor="sizes">Tallas (separadas por coma)</NSLabel>
-        <NSInput id="sizes" name="sizes" defaultValue={product?.sizes.join(", ")} placeholder="6, 8, 10, 12, 14" />
-      </section>
+      {showSizes ? (
+        <section>
+          <NSLabel htmlFor="sizes">Tallas (separadas por coma)</NSLabel>
+          <NSInput id="sizes" name="sizes" defaultValue={product?.sizes.join(", ")} placeholder="6, 8, 10, 12, 14" />
+        </section>
+      ) : null}
 
-      <section>
-        <NSLabel>Colores</NSLabel>
-        <NSVariantListEditor name="colors" initialColors={product?.colors ?? []} />
-      </section>
+      {showColors ? (
+        <section>
+          <NSLabel>Colores</NSLabel>
+          <NSVariantListEditor name="colors" initialColors={product?.colors ?? []} />
+        </section>
+      ) : null}
 
       <section>
         <NSLabel>Imágenes</NSLabel>

@@ -11,6 +11,9 @@ export function NSCartItemRow({ item, brandName }: { item: CartItem; brandName?:
   const key = cartItemKey(item);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
+  const variantLabel = [item.size ? `Talla: ${item.size}` : null, item.color ? `Color: ${item.color}` : null]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <div className="flex gap-3 border-b border-border py-4">
@@ -36,9 +39,7 @@ export function NSCartItemRow({ item, brandName }: { item: CartItem; brandName?:
             </svg>
           </button>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Talla: {item.size} · Color: {item.color}
-        </p>
+        {variantLabel ? <p className="text-xs text-muted-foreground">{variantLabel}</p> : null}
         <div className="mt-1 flex items-center justify-between">
           <NSQuantityStepper
             value={item.quantity}

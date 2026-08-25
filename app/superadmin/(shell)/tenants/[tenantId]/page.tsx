@@ -9,6 +9,7 @@ import { getStorageUsageForSlug } from "@/lib/repositories/storage-repository";
 import { formatBytes } from "@/lib/utils/format";
 import {
   updateTenantStatusAction,
+  updateTenantBusinessTypeAction,
   impersonateTenantAction,
   assignPlanAction,
   updateSubscriptionStatusAction,
@@ -18,6 +19,7 @@ import { NSDeleteTenantForm } from "@/components/superadmin/NSDeleteTenantForm";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSLabel, NSSelect, NSInput } from "@/components/ui/NSInput";
 import { NSLogo } from "@/components/brand/NSLogo";
+import { BUSINESS_TYPE_OPTIONS } from "@/lib/tenant/business-type";
 import type { TenantStatus } from "@/lib/types/tenant";
 import type { SubscriptionStatus } from "@/lib/repositories/subscriptions-repository";
 
@@ -101,6 +103,29 @@ export default async function SuperadminTenantDetailPage({
             </form>
           ))}
         </div>
+      </div>
+
+      <div>
+        <h2 className="font-display text-lg uppercase tracking-wide">Tipo de negocio</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Define qué campos ve el cliente en su formulario de productos (tallas, colores). No toca productos ni
+          categorías ya creados.
+        </p>
+        <form
+          action={updateTenantBusinessTypeAction.bind(null, tenant.id)}
+          className="mt-3 flex flex-wrap items-end gap-3"
+        >
+          <NSSelect id="businessType" name="businessType" defaultValue={tenant.businessType} className="w-64">
+            {BUSINESS_TYPE_OPTIONS.map((profile) => (
+              <option key={profile.value} value={profile.value}>
+                {profile.label}
+              </option>
+            ))}
+          </NSSelect>
+          <NSButton type="submit" variant="outline" size="sm">
+            Guardar
+          </NSButton>
+        </form>
       </div>
 
       <div>

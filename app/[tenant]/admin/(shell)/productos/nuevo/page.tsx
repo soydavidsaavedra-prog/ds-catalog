@@ -1,6 +1,7 @@
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { listCategories } from "@/lib/repositories/category-repository";
 import { getNextReference } from "@/lib/repositories/product-repository";
+import { getBusinessTypeProfile } from "@/lib/tenant/business-type";
 import { NSProductForm } from "@/components/admin/NSProductForm";
 import { createProductAction } from "@/app/[tenant]/admin/actions";
 
@@ -16,6 +17,7 @@ export default async function AdminNewProductPage({
     getNextReference(tenant.id),
   ]);
   const action = createProductAction.bind(null, tenant.id, tenantSlug);
+  const profile = getBusinessTypeProfile(tenant.businessType);
 
   return (
     <div className="flex flex-col gap-6">
@@ -30,6 +32,8 @@ export default async function AdminNewProductPage({
           categories={categories}
           nextReference={nextReference}
           submitLabel="Crear producto"
+          showSizes={profile.showSizes}
+          showColors={profile.showColors}
         />
       </div>
     </div>
