@@ -252,6 +252,24 @@ inmediato. Son los siguientes tramos del mismo análisis.
   propio logo) también dejó de leer el swatch crudo `--color-gold-400` y
   ahora lee el token semántico `--accent`, por la misma razón.
 
+**Personalización de marca por tenant**, agregada tras las mismas pruebas:
+- `/admin/configuracion` ganó un selector "Personalizar color de marca"
+  (checkbox + dos `<input type="color">` para `accentColor`/
+  `accentColorStrong`). El color de texto/ícono sobre el acento
+  (`accentForeground`) se calcula solo por luminancia WCAG
+  (`lib/utils/brand.ts` `readableForegroundFor`) — el admin no tiene que
+  razonar sobre contraste, solo elige un color. Desmarcar el checkbox
+  vuelve a `null` (hereda el turquesa de plataforma). Esto es lo que
+  `buildAccentOverrideCss` ya sabía leer desde el ajuste anterior; ahora
+  cualquier tenant puede escribir ahí, no solo El Nuevo Sánchez por SQL.
+- Los 5 labels de "Nuestra fábrica" (Tela/Corte/Confección/Detalle/
+  Producto) estaban hardcodeados en dos archivos (`NSFactoryStory.tsx` y
+  su editor `NSStoryEditorForm.tsx`) — tenía sentido para jeans, no para
+  cualquier otro rubro. `ns_settings` ganó `story_step_label1..5`
+  (nulos = usan el wording original, exportado como
+  `NSFactoryStory.DEFAULT_STEP_LABELS`), y el editor de `/admin/inicio`
+  los expone como texto editable junto a cada foto del proceso.
+
 ## Motor de medios / placeholders
 
 No hay fotografía real todavía. `images[0]` de cada producto/categoría/banner

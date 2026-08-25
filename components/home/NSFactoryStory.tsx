@@ -2,13 +2,21 @@ import { NSSectionHeading } from "@/components/ui/NSSectionHeading";
 import { NSMedia } from "@/components/ui/NSMedia";
 import { NSReveal } from "@/components/ui/NSReveal";
 
-const STEP_LABELS = ["Tela", "Corte", "Confección", "Detalle", "Producto"];
+export const DEFAULT_STEP_LABELS: [string, string, string, string, string] = [
+  "Tela",
+  "Corte",
+  "Confección",
+  "Detalle",
+  "Producto",
+];
 
 export interface NSFactoryStoryProps {
   eyebrow?: string;
   title?: string;
   description?: string;
   stepImages?: [string, string, string, string, string];
+  /** Per-step label under each photo — defaults to the original jeans-catalog wording (Tela/Corte/...); editable from /admin/inicio for catalogs selling something else. */
+  stepLabels?: [string, string, string, string, string];
   brandName?: string;
 }
 
@@ -31,14 +39,14 @@ const DEFAULT_STEP_IMAGES: [string, string, string, string, string] = [
  * "De la fábrica a tus manos" section — content is admin-editable (see
  * /admin/inicio, backed by SiteSettings.story*), all props default to the
  * original launch copy/art so the section renders identically until an
- * admin customizes it. Step labels (Tela/Corte/...) stay fixed; only the
- * heading copy and the 5 step photos are editable.
+ * admin customizes it, including the 5 step labels.
  */
 export function NSFactoryStory({
   eyebrow = DEFAULTS.eyebrow,
   title = DEFAULTS.title,
   description = DEFAULTS.description,
   stepImages = DEFAULT_STEP_IMAGES,
+  stepLabels = DEFAULT_STEP_LABELS,
   brandName,
 }: NSFactoryStoryProps) {
   return (
@@ -54,8 +62,8 @@ export function NSFactoryStory({
         />
 
         <div className="mt-14 grid grid-cols-2 gap-4 sm:grid-cols-5 sm:gap-3">
-          {STEP_LABELS.map((label, index) => (
-            <NSReveal key={label} delay={index * 0.08} className="flex flex-col gap-3">
+          {stepLabels.map((label, index) => (
+            <NSReveal key={index} delay={index * 0.08} className="flex flex-col gap-3">
               <div className="relative aspect-[4/5] overflow-hidden rounded-card">
                 <NSMedia src={stepImages[index]} alt={label} className="h-full w-full" brandName={brandName} />
                 <span className="absolute left-2.5 top-2.5 font-display text-3xl text-accent opacity-90">

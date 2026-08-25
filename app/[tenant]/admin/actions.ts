@@ -28,6 +28,7 @@ import { updateOrderStatus } from "@/lib/repositories/order-repository";
 import { updateSettings } from "@/lib/repositories/settings-repository";
 import { completeOnboarding } from "@/lib/repositories/tenant-repository";
 import { slugify } from "@/lib/utils/slug";
+import { HEX_COLOR, readableForegroundFor } from "@/lib/utils/brand";
 import type { Availability, Audience, ProductColor } from "@/lib/types/catalog";
 import type { OrderStatus } from "@/lib/types/order";
 
@@ -384,6 +385,13 @@ export async function updateSettingsAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const customAccentColor = formData.get("customAccentColor") === "on";
+  const accentColor = String(formData.get("accentColor") ?? "").trim();
+  const accentColorStrong = String(formData.get("accentColorStrong") ?? "").trim();
+  if (customAccentColor && (!HEX_COLOR.test(accentColor) || !HEX_COLOR.test(accentColorStrong))) {
+    return { error: "El color de marca no es válido." };
+  }
+
   try {
     await updateSettings(tenantId, {
       brandName: String(formData.get("brandName") ?? "").trim(),
@@ -401,11 +409,15 @@ export async function updateSettingsAction(
       brandLogo: String(formData.get("brandLogo") ?? "").trim(),
       paymentBadgeIcon: String(formData.get("paymentBadgeIcon") ?? "").trim(),
       paymentBadgeLabel: String(formData.get("paymentBadgeLabel") ?? "").trim(),
+      accentColor: customAccentColor ? accentColor : null,
+      accentColorStrong: customAccentColor ? accentColorStrong : null,
+      accentForeground: customAccentColor ? readableForegroundFor(accentColor) : null,
     });
   } catch (err) {
     return { error: settingsErrorMessage(err) };
   }
   revalidatePath(`/${tenantSlug}`, "layout");
+  revalidatePath(`/${tenantSlug}/admin`, "layout");
   return { success: true };
 }
 
@@ -451,6 +463,11 @@ export async function updateStorySettingsAction(
       storyStepImage3: String(formData.get("storyStepImage3") ?? "").trim(),
       storyStepImage4: String(formData.get("storyStepImage4") ?? "").trim(),
       storyStepImage5: String(formData.get("storyStepImage5") ?? "").trim(),
+      storyStepLabel1: String(formData.get("storyStepLabel1") ?? "").trim() || null,
+      storyStepLabel2: String(formData.get("storyStepLabel2") ?? "").trim() || null,
+      storyStepLabel3: String(formData.get("storyStepLabel3") ?? "").trim() || null,
+      storyStepLabel4: String(formData.get("storyStepLabel4") ?? "").trim() || null,
+      storyStepLabel5: String(formData.get("storyStepLabel5") ?? "").trim() || null,
     });
   } catch (err) {
     return { error: settingsErrorMessage(err) };

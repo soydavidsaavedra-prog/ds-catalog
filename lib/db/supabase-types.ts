@@ -130,6 +130,12 @@ export interface SettingsRow {
   accent_color: string | null;
   accent_color_strong: string | null;
   accent_foreground: string | null;
+  /** Null = use NSFactoryStory's built-in default label for that step. */
+  story_step_label1: string | null;
+  story_step_label2: string | null;
+  story_step_label3: string | null;
+  story_step_label4: string | null;
+  story_step_label5: string | null;
 }
 
 // Each Row/Insert/Update is intersected with Record<string, unknown> so the

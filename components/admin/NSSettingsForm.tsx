@@ -1,17 +1,21 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import type { SiteSettings } from "@/lib/types/catalog";
 import { updateSettingsAction, type ActionState } from "@/app/[tenant]/admin/actions";
 import { NSInput, NSLabel, NSTextarea } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSSingleImageUploader } from "@/components/admin/NSSingleImageUploader";
 
+const PLATFORM_DEFAULT_ACCENT = "#00a19a";
+const PLATFORM_DEFAULT_ACCENT_STRONG = "#006e69";
+
 const initialState: ActionState = {};
 
 export function NSSettingsForm({ tenantId, tenantSlug, settings }: { tenantId: string; tenantSlug: string; settings: SiteSettings }) {
   const boundAction = updateSettingsAction.bind(null, tenantId, tenantSlug);
   const [state, formAction, pending] = useActionState(boundAction, initialState);
+  const [customAccentColor, setCustomAccentColor] = useState(Boolean(settings.accentColor));
 
   return (
     <form action={formAction} className="flex flex-col gap-5">
@@ -84,6 +88,47 @@ export function NSSettingsForm({ tenantId, tenantSlug, settings }: { tenantId: s
       <div>
         <NSLabel htmlFor="tiktok">TikTok (URL)</NSLabel>
         <NSInput id="tiktok" name="tiktok" defaultValue={settings.tiktok} />
+      </div>
+
+      <div className="border-t border-border pt-5">
+        <label className="flex items-center gap-2 text-sm text-foreground">
+          <input
+            type="checkbox"
+            name="customAccentColor"
+            checked={customAccentColor}
+            onChange={(e) => setCustomAccentColor(e.target.checked)}
+            className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
+          />
+          Personalizar color de marca
+        </label>
+        <p className="mt-1 mb-3 text-xs text-muted-foreground">
+          Si no lo personalizas, tu catálogo usa el turquesa por defecto de DS Catalog. Este color se usa en
+          botones, enlaces y acentos de todo el sitio y del panel.
+        </p>
+        {customAccentColor ? (
+          <div className="flex items-center gap-6">
+            <div>
+              <NSLabel htmlFor="accentColor">Color principal</NSLabel>
+              <input
+                type="color"
+                id="accentColor"
+                name="accentColor"
+                defaultValue={settings.accentColor ?? PLATFORM_DEFAULT_ACCENT}
+                className="h-11 w-16 cursor-pointer rounded-control border border-border bg-transparent p-1"
+              />
+            </div>
+            <div>
+              <NSLabel htmlFor="accentColorStrong">Color al pasar el mouse</NSLabel>
+              <input
+                type="color"
+                id="accentColorStrong"
+                name="accentColorStrong"
+                defaultValue={settings.accentColorStrong ?? PLATFORM_DEFAULT_ACCENT_STRONG}
+                className="h-11 w-16 cursor-pointer rounded-control border border-border bg-transparent p-1"
+              />
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="border-t border-border pt-5">

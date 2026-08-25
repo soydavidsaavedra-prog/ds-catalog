@@ -5,7 +5,7 @@ import { listProducts } from "@/lib/repositories/product-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
 import { siteConfig } from "@/lib/config/site";
 import { NSHero } from "@/components/home/NSHero";
-import { NSFactoryStory } from "@/components/home/NSFactoryStory";
+import { NSFactoryStory, DEFAULT_STEP_LABELS } from "@/components/home/NSFactoryStory";
 import { NSCollections } from "@/components/home/NSCollections";
 import { NSFeaturedProducts } from "@/components/home/NSFeaturedProducts";
 import { NSBrandStatement } from "@/components/home/NSBrandStatement";
@@ -73,6 +73,13 @@ export default async function Home({
           settings.storyStepImage3,
           settings.storyStepImage4,
           settings.storyStepImage5,
+        ]}
+        stepLabels={[
+          settings.storyStepLabel1 ?? DEFAULT_STEP_LABELS[0],
+          settings.storyStepLabel2 ?? DEFAULT_STEP_LABELS[1],
+          settings.storyStepLabel3 ?? DEFAULT_STEP_LABELS[2],
+          settings.storyStepLabel4 ?? DEFAULT_STEP_LABELS[3],
+          settings.storyStepLabel5 ?? DEFAULT_STEP_LABELS[4],
         ]}
         brandName={settings.brandName}
       />

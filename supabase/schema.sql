@@ -649,3 +649,26 @@ from ds_tenants t
 where ns.tenant_id = t.id and t.slug = 'elnuevosanchez' and ns.accent_color is null;
 
 commit;
+
+-- =====================================================================
+-- DS Catalog — editable "Nuestra fábrica" step labels
+-- =====================================================================
+-- The 5 labels under the home "De la fábrica a tus manos" step photos
+-- (Tela/Corte/Confección/Detalle/Producto) were hardcoded in both
+-- components/home/NSFactoryStory.tsx and components/admin/
+-- NSStoryEditorForm.tsx — fine for a jeans catalog, wrong for any tenant
+-- selling something else. NULL keeps rendering that same original wording
+-- (see NSFactoryStory's defaults) until an admin edits it from
+-- /admin/inicio, so no backfill is needed for existing tenants.
+--
+-- Safe to re-run: add-column-if-not-exists only.
+
+begin;
+
+alter table ns_settings add column if not exists story_step_label1 text;
+alter table ns_settings add column if not exists story_step_label2 text;
+alter table ns_settings add column if not exists story_step_label3 text;
+alter table ns_settings add column if not exists story_step_label4 text;
+alter table ns_settings add column if not exists story_step_label5 text;
+
+commit;

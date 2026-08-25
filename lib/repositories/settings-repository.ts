@@ -55,6 +55,11 @@ function fromRow(row: SettingsRow): SiteSettings {
     accentColor: row.accent_color ?? null,
     accentColorStrong: row.accent_color_strong ?? null,
     accentForeground: row.accent_foreground ?? null,
+    storyStepLabel1: row.story_step_label1 ?? null,
+    storyStepLabel2: row.story_step_label2 ?? null,
+    storyStepLabel3: row.story_step_label3 ?? null,
+    storyStepLabel4: row.story_step_label4 ?? null,
+    storyStepLabel5: row.story_step_label5 ?? null,
   };
 }
 
@@ -100,6 +105,11 @@ function toRow(patch: Partial<SiteSettings>): Partial<SettingsRow> {
   if (patch.accentColor !== undefined) row.accent_color = patch.accentColor;
   if (patch.accentColorStrong !== undefined) row.accent_color_strong = patch.accentColorStrong;
   if (patch.accentForeground !== undefined) row.accent_foreground = patch.accentForeground;
+  if (patch.storyStepLabel1 !== undefined) row.story_step_label1 = patch.storyStepLabel1;
+  if (patch.storyStepLabel2 !== undefined) row.story_step_label2 = patch.storyStepLabel2;
+  if (patch.storyStepLabel3 !== undefined) row.story_step_label3 = patch.storyStepLabel3;
+  if (patch.storyStepLabel4 !== undefined) row.story_step_label4 = patch.storyStepLabel4;
+  if (patch.storyStepLabel5 !== undefined) row.story_step_label5 = patch.storyStepLabel5;
   return row;
 }
 

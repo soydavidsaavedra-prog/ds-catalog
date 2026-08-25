@@ -129,6 +129,16 @@ export interface SiteSettings {
   accentColor: string | null;
   accentColorStrong: string | null;
   accentForeground: string | null;
+  /**
+   * Labels for the 5 "De la fábrica a tus manos" step photos — null falls
+   * back to NSFactoryStory's default (Tela/Corte/Confección/Detalle/
+   * Producto), which only makes sense for a clothing catalog.
+   */
+  storyStepLabel1: string | null;
+  storyStepLabel2: string | null;
+  storyStepLabel3: string | null;
+  storyStepLabel4: string | null;
+  storyStepLabel5: string | null;
 }
 
 export type SortOption =

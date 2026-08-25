@@ -49,4 +49,9 @@ export const settingsSeed: SiteSettings = {
   accentColor: "#f8c909",
   accentColorStrong: "#e0b400",
   accentForeground: "#0a0a09",
+  storyStepLabel1: null,
+  storyStepLabel2: null,
+  storyStepLabel3: null,
+  storyStepLabel4: null,
+  storyStepLabel5: null,
 };
