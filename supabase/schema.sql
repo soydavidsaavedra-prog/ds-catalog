@@ -672,3 +672,39 @@ alter table ns_settings add column if not exists story_step_label4 text;
 alter table ns_settings add column if not exists story_step_label5 text;
 
 commit;
+
+-- =====================================================================
+-- DS Catalog — Super Admin accounts
+-- =====================================================================
+-- Real per-person accounts for the platform-level Super Admin role —
+-- deliberately NOT the same mechanism as tenant admin (one shared
+-- ADMIN_PASSWORD, or a tenant's own admin_password_hash). No self-
+-- registration: rows here are only ever created by hand, via
+-- `npm run superadmin:create` (scripts/create-superadmin.ts), never from
+-- a web form — this table is never exposed to public traffic.
+--
+-- RLS stays enabled with no policies, same as every other table: only
+-- the server (service_role) ever queries this, via
+-- lib/repositories/superadmin-repository.ts.
+--
+-- Safe to re-run: create-if-not-exists only, no data changes.
+
+begin;
+
+create table if not exists super_admin_users (
+  id uuid primary key default gen_random_uuid(),
+  email text unique not null,
+  password_hash text not null,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists super_admin_users_set_updated_at on super_admin_users;
+create trigger super_admin_users_set_updated_at
+  before update on super_admin_users
+  for each row execute function set_updated_at();
+
+alter table super_admin_users enable row level security;
+
+commit;

@@ -13,6 +13,15 @@ import type { TenantStatus } from "@/lib/types/tenant";
  * Postgres column defaults/constraints.
  */
 
+export interface SuperAdminUserRow {
+  id: string;
+  email: string;
+  password_hash: string;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface TenantRow {
   id: string;
   slug: string;
@@ -154,6 +163,7 @@ type TableDef<Row> = {
 export interface Database {
   public: {
     Tables: {
+      super_admin_users: TableDef<SuperAdminUserRow>;
       ds_tenants: TableDef<TenantRow>;
       ns_categories: TableDef<CategoryRow>;
       ns_products: TableDef<ProductRow>;
