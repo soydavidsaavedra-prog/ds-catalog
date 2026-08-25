@@ -64,14 +64,39 @@ export function NSMedia({
   const realSrc = src as string;
 
   if (fill) {
-    const fitClass = objectFitMobile
-      ? cn(
-          objectFitMobile === "contain" ? "object-contain" : "object-cover",
-          objectFit === "contain" ? "sm:object-contain" : "sm:object-cover",
-        )
-      : objectFit === "contain"
-        ? "object-contain"
-        : "object-cover";
+    if (objectFitMobile) {
+      // A custom crop-focus objectPosition only makes sense wherever the
+      // image is actually being cropped (cover) — applying it under
+      // contain just shoves the already-fully-visible image off-center,
+      // leaving an empty gap instead of centering it (exactly what showed
+      // up as a blank strip above a "fixed" hero photo on mobile). Each
+      // breakpoint renders its own <Image> so its object-position can be
+      // set independently — a single inline `style` can't vary by
+      // breakpoint the way a Tailwind class can.
+      return (
+        <div className={cn("relative h-full w-full overflow-hidden bg-surface", className)}>
+          <Image
+            src={realSrc}
+            alt={alt}
+            fill
+            sizes={sizes ?? "100vw"}
+            priority={priority}
+            className={cn(objectFitMobile === "contain" ? "object-contain" : "object-cover", "sm:hidden")}
+            style={objectFitMobile === "cover" && objectPosition ? { objectPosition } : undefined}
+          />
+          <Image
+            src={realSrc}
+            alt={alt}
+            fill
+            sizes={sizes ?? "(min-width: 1024px) 25vw, 50vw"}
+            priority={priority}
+            className={cn("hidden", objectFit === "contain" ? "sm:object-contain" : "sm:object-cover", "sm:block")}
+            style={objectFit === "cover" && objectPosition ? { objectPosition } : undefined}
+          />
+        </div>
+      );
+    }
+
     return (
       <div className={cn("relative h-full w-full overflow-hidden bg-surface", className)}>
         <Image
@@ -80,7 +105,7 @@ export function NSMedia({
           fill
           sizes={sizes ?? "(min-width: 1024px) 25vw, 50vw"}
           priority={priority}
-          className={fitClass}
+          className={objectFit === "contain" ? "object-contain" : "object-cover"}
           style={objectPosition ? { objectPosition } : undefined}
         />
       </div>
