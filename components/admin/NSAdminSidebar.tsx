@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NSLogo } from "@/components/brand/NSLogo";
-import { logoutAction } from "@/app/[tenant]/admin/actions";
+import { logoutAction, endImpersonationAction } from "@/app/[tenant]/admin/actions";
 import { cn } from "@/lib/utils/cn";
 
 export function NSAdminSidebar({
@@ -11,11 +11,14 @@ export function NSAdminSidebar({
   logoSrc,
   brandName,
   tagline,
+  impersonating = false,
 }: {
   tenantSlug: string;
   logoSrc?: string;
   brandName: string;
   tagline: string;
+  /** True when this session was opened via Super Admin's "Administrar catálogo" — see app/superadmin/actions.ts impersonateTenantAction. Swaps the footer for a clearly-labeled exit back to Super Admin instead of a normal logout, so no one mistakes this for the tenant's own session. */
+  impersonating?: boolean;
 }) {
   const pathname = usePathname();
   const base = `/${tenantSlug}/admin`;
@@ -43,6 +46,12 @@ export function NSAdminSidebar({
         <span className="text-xs font-semibold uppercase tracking-widest">Panel administrativo</span>
       </div>
 
+      {impersonating ? (
+        <div className="border-b border-warning/30 bg-warning/10 px-4 py-2.5 text-center text-[11px] font-semibold uppercase tracking-wide text-warning">
+          Sesión vía Super Admin
+        </div>
+      ) : null}
+
       <nav className="flex-1 space-y-1 px-3 py-4">
         {LINKS.map((link) => {
           const active = link.href === base ? pathname === base : pathname.startsWith(link.href);
@@ -67,11 +76,19 @@ export function NSAdminSidebar({
         <Link href={`/${tenantSlug}`} className="block rounded-control px-3 py-2 text-xs font-medium text-ink-400 hover:text-ink-0">
           ← Ver sitio
         </Link>
-        <form action={logoutAction.bind(null, tenantSlug)}>
-          <button type="submit" className="w-full rounded-control px-3 py-2 text-left text-xs font-medium text-ink-400 hover:text-danger">
-            Cerrar sesión
-          </button>
-        </form>
+        {impersonating ? (
+          <form action={endImpersonationAction}>
+            <button type="submit" className="w-full rounded-control px-3 py-2 text-left text-xs font-semibold text-warning hover:text-accent-strong">
+              ← Volver a Super Admin
+            </button>
+          </form>
+        ) : (
+          <form action={logoutAction.bind(null, tenantSlug)}>
+            <button type="submit" className="w-full rounded-control px-3 py-2 text-left text-xs font-medium text-ink-400 hover:text-danger">
+              Cerrar sesión
+            </button>
+          </form>
+        )}
       </div>
     </aside>
   );

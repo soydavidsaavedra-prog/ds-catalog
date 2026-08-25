@@ -54,6 +54,12 @@ export async function logoutAction(tenantSlug: string): Promise<void> {
   redirect(`/${tenantSlug}/admin/login`);
 }
 
+/** Distinct from logoutAction only in where it sends the browser back — the session teardown is identical (destroyAdminSession() already clears the impersonation marker too). */
+export async function endImpersonationAction(): Promise<void> {
+  await destroyAdminSession();
+  redirect("/superadmin/tenants");
+}
+
 // ---------- Onboarding ----------
 
 export async function completeOnboardingAction(

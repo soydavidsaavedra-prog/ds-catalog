@@ -708,3 +708,42 @@ create trigger super_admin_users_set_updated_at
 alter table super_admin_users enable row level security;
 
 commit;
+
+-- =====================================================================
+-- DS Catalog — tenant lifecycle states (active/paused/suspended/archived)
+-- =====================================================================
+-- ds_tenants.status was a two-value active/disabled switch (disabled just
+-- meant "resolveTenant() 404s it"). The Super Admin needs to distinguish
+-- WHY a tenant is unreachable — paused by its own owner, suspended by the
+-- platform, or archived (kept for records, never coming back) — without
+-- ever deleting the row or its data. Every one of these still 404s at
+-- resolveTenant() exactly like "disabled" did (only 'active' resolves),
+-- so this changes vocabulary, not behavior, for elnuevosanchez/demo/every
+-- existing tenant: none of them were ever 'disabled', so there is nothing
+-- to backfill for them, but any future 'disabled' row (there shouldn't be
+-- one) maps to 'suspended' rather than being left invalid.
+--
+-- Safe to re-run: drop-and-recreate the same check constraint, backfill
+-- guarded by the old value.
+
+begin;
+
+update ds_tenants set status = 'suspended' where status = 'disabled';
+
+do $$
+declare
+  conname text;
+begin
+  select con.conname into conname
+  from pg_constraint con
+  join pg_class rel on rel.oid = con.conrelid
+  where rel.relname = 'ds_tenants' and con.contype = 'c' and pg_get_constraintdef(con.oid) ilike '%status%';
+  if conname is not null then
+    execute format('alter table ds_tenants drop constraint %I', conname);
+  end if;
+end $$;
+
+alter table ds_tenants add constraint ds_tenants_status_check
+  check (status in ('active', 'paused', 'suspended', 'archived'));
+
+commit;

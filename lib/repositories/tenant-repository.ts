@@ -1,7 +1,7 @@
 import "server-only";
 import { getSupabaseClient } from "@/lib/db/supabaseClient";
 import type { TenantRow } from "@/lib/db/supabase-types";
-import type { Tenant } from "@/lib/types/tenant";
+import type { Tenant, TenantStatus } from "@/lib/types/tenant";
 
 function fromRow(row: TenantRow): Tenant {
   return {
@@ -128,5 +128,27 @@ export async function completeOnboarding(tenantId: string): Promise<void> {
     .from("ds_tenants")
     .update({ onboarding_completed: true })
     .eq("id", tenantId);
+  if (error) throw error;
+}
+
+/** Super Admin only — every other read/write in the app is tenant-scoped by slug (from the URL) or id (from a resolved tenant), never a bare "list everything". */
+export async function listAllTenants(): Promise<Tenant[]> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.from("ds_tenants").select("*").order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data as TenantRow[]).map(fromRow);
+}
+
+export async function getTenantById(tenantId: string): Promise<Tenant | null> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.from("ds_tenants").select("*").eq("id", tenantId).maybeSingle();
+  if (error) throw error;
+  return data ? fromRow(data as TenantRow) : null;
+}
+
+/** Super Admin only — changes reachability (see resolveTenant), never touches the tenant's rows in ns_*. */
+export async function updateTenantStatus(tenantId: string, status: TenantStatus): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from("ds_tenants").update({ status }).eq("id", tenantId);
   if (error) throw error;
 }
