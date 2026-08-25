@@ -174,15 +174,62 @@ fallback de build-time/env (ver `lib/data/seed/settings.ts`).
 
 ## Autenticación de administrador
 
-Sin proveedor externo, sin cuentas de comprador. Una sola contraseña
-(`ADMIN_PASSWORD`, con fallback de desarrollo inseguro documentado en
-`lib/auth/admin-token.ts`) más una cookie firmada (hash SHA-256 vía Web
-Crypto, compatible con Edge y Node). `middleware.ts` protege todo `/admin/*`
-excepto `/admin/login`; `app/admin/(shell)/layout.tsx` repite la verificación
-del lado del servidor como defensa en profundidad.
+Sin proveedor externo, sin cuentas de comprador. Sesión por cookie firmada
+(hash SHA-256 vía Web Crypto, compatible con Edge y Node), derivada del
+slug del tenant — una sesión de `/elnuevosanchez/admin` nunca autentica
+`/demo/admin`. `middleware.ts` protege todo `/[tenant]/admin/*` excepto
+`/[tenant]/admin/login`; `app/[tenant]/admin/(shell)/layout.tsx` repite la
+verificación del lado del servidor como defensa en profundidad.
+
+Lo que valida la *contraseña* en sí ya no es un único secreto compartido:
+`verifyTenantAdminPassword()` (`lib/auth/admin-auth.ts`) primero revisa si
+el tenant tiene su propio `ds_tenants.admin_password_hash` (scrypt con sal
+por tenant — `lib/auth/tenant-credentials.ts`, ver sección "Registro y
+onboarding de nuevos tenants" abajo) y solo si no lo tiene cae al secreto
+compartido `ADMIN_PASSWORD`. Esto mantiene funcionando sin cambios a los
+tenants sembrados a mano (elnuevosanchez, demo) mientras cada tenant nuevo
+creado por `/registro` ya tiene su propia contraseña real desde el día uno.
 
 **Antes de desplegar a producción**: define `ADMIN_PASSWORD` y
 `ADMIN_SESSION_SECRET` en las variables de entorno reales.
+
+## Registro y onboarding de nuevos tenants
+
+Primer tramo de la evolución a SaaS descrita en
+`docs/ANALISIS_HORIZON_REFERENCIA_SAAS.md` (secciones A/E/F/G/H/I): alta
+de cliente por autoservicio, sin intervención manual por SQL.
+
+- **`/registro`** (`app/registro/`) — ruta pública de nivel raíz, fuera de
+  `app/[tenant]/...`. Pide nombre del negocio, slug (auto-sugerido desde el
+  nombre, editable en vivo, con verificación de colisión — a diferencia
+  del reintento silencioso de Horizon, aquí se informa el conflicto y se
+  sugiere una alternativa) y una contraseña real. `registerTenantAction`
+  crea la fila en `ds_tenants` (`status: "active"` de inmediato — todavía
+  no existe gating por suscripción, ver sección 6 del análisis), su
+  `admin_password_hash`, una fila `ns_settings` con copy neutro (ver nota
+  abajo), abre sesión automáticamente y redirige a onboarding.
+- **`/[tenant]/admin/onboarding`** — wizard de 2 pasos (marca; contacto y
+  WhatsApp) protegido por la misma cookie de sesión que el resto de
+  `/admin/*`. Guarda todo en un solo Server Action al finalizar
+  (`completeOnboardingAction`), marca `ds_tenants.onboarding_completed` y
+  redirige al panel. Los tenants existentes antes de esta migración
+  (elnuevosanchez, demo) se backfillearon con `onboarding_completed = true`
+  para no verse enviados al wizard retroactivamente.
+- **Copy neutro, no defaults de El Nuevo Sánchez**: las columnas de
+  `ns_settings` en `supabase/schema.sql` todavía tienen como `default` SQL
+  el copy de El Nuevo Sánchez ("Especialista en Jeans", imágenes denim,
+  etc.) de antes de la migración multi-tenant. `createDefaultSettings()`
+  (`lib/repositories/tenant-repository.ts`) por eso nunca depende de esos
+  defaults: inserta explícitamente strings vacíos/genéricos para un tenant
+  nuevo, igual que ya hacía `scripts/seed-demo-tenant.ts` para "demo" — es
+  la misma clase de bug que las fugas de marca cruzada ya corregidas
+  (NSLogo/NSPlaceholderArt), solo que a nivel de fila de base de datos en
+  vez de componente.
+
+**Deliberadamente fuera de este alcance** (ver sección G del análisis):
+todavía no hay identidad real de usuario (Supabase Auth), ni Super Admin,
+ni planes/suscripciones — un tenant registrado queda activo e ilimitado de
+inmediato. Son los siguientes tramos del mismo análisis.
 
 ## Motor de medios / placeholders
 

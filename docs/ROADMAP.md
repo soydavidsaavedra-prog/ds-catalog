@@ -38,6 +38,11 @@ Ver `docs/ARCHITECTURE.md` para decisiones técnicas y pendientes detallados.
       banners, pedidos (seguimiento), configuración (WhatsApp, marca, redes)
 - [x] SEO: sitemap, robots, metadata/OG por producto y categoría, 404 de marca, loading states
 - [x] Responsive de extremo a extremo; `prefers-reduced-motion` respetado
+- [x] Registro público de nuevo cliente (`/registro`) + onboarding de 2 pasos
+      (`/[tenant]/admin/onboarding`): crea el tenant, su contraseña real
+      (`ds_tenants.admin_password_hash`, ya no depende de `ADMIN_PASSWORD`
+      compartida) y su fila de configuración con copy neutro — primer tramo de
+      `docs/ANALISIS_HORIZON_REFERENCIA_SAAS.md` sección A. Ver ARCHITECTURE.md.
 
 ## Pendiente (ver "Lo que falta para producción" en ARCHITECTURE.md)
 

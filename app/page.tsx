@@ -39,6 +39,13 @@ export default async function RootLandingPage() {
           ))}
         </div>
       ) : null}
+
+      <Link
+        href="/registro"
+        className="rounded-control bg-accent px-6 py-3 text-sm font-semibold uppercase tracking-wide text-accent-foreground transition-colors hover:bg-accent-strong"
+      >
+        Crear mi catálogo
+      </Link>
     </div>
   );
 }

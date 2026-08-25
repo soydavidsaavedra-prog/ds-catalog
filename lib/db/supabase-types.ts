@@ -19,6 +19,7 @@ export interface TenantRow {
   name: string;
   status: TenantStatus;
   admin_password_hash: string | null;
+  onboarding_completed: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import {
   createAdminSession,
   destroyAdminSession,
-  verifyPassword,
+  verifyTenantAdminPassword,
 } from "@/lib/auth/admin-auth";
 import {
   createProduct,
@@ -26,6 +26,8 @@ import {
 import { createBanner, deleteBanner, updateBanner } from "@/lib/repositories/banner-repository";
 import { updateOrderStatus } from "@/lib/repositories/order-repository";
 import { updateSettings } from "@/lib/repositories/settings-repository";
+import { completeOnboarding } from "@/lib/repositories/tenant-repository";
+import { slugify } from "@/lib/utils/slug";
 import type { Availability, Audience, ProductColor } from "@/lib/types/catalog";
 import type { OrderStatus } from "@/lib/types/order";
 
@@ -39,7 +41,7 @@ export async function loginAction(
   formData: FormData,
 ): Promise<ActionState> {
   const password = String(formData.get("password") ?? "");
-  if (!verifyPassword(password)) {
+  if (!(await verifyTenantAdminPassword(tenantSlug, password))) {
     return { error: "Contraseña incorrecta." };
   }
   await createAdminSession(tenantSlug);
@@ -51,6 +53,30 @@ export async function logoutAction(tenantSlug: string): Promise<void> {
   redirect(`/${tenantSlug}/admin/login`);
 }
 
+// ---------- Onboarding ----------
+
+export async function completeOnboardingAction(
+  tenantId: string,
+  tenantSlug: string,
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await updateSettings(tenantId, {
+      slogan: String(formData.get("slogan") ?? "").trim(),
+      brandDescription: String(formData.get("brandDescription") ?? "").trim(),
+      whatsappNumber: String(formData.get("whatsappNumber") ?? "").replace(/[^0-9]/g, ""),
+      whatsappDisplay: String(formData.get("whatsappDisplay") ?? "").trim(),
+      contactEmail: String(formData.get("contactEmail") ?? "").trim(),
+    });
+    await completeOnboarding(tenantId);
+  } catch (err) {
+    return { error: settingsErrorMessage(err) };
+  }
+  revalidatePath(`/${tenantSlug}`, "layout");
+  redirect(`/${tenantSlug}/admin`);
+}
+
 // ---------- Shared revalidation ----------
 
 function revalidateStorefront(tenantSlug: string, categorySlug?: string, productSlug?: string) {
@@ -58,15 +84,6 @@ function revalidateStorefront(tenantSlug: string, categorySlug?: string, product
   revalidatePath(`/${tenantSlug}/catalogo`);
   if (categorySlug) revalidatePath(`/${tenantSlug}/${categorySlug}`);
   if (productSlug) revalidatePath(`/${tenantSlug}/producto/${productSlug}`);
-}
-
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
 }
 
 // ---------- Products ----------

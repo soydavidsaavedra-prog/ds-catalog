@@ -585,3 +585,32 @@ begin
 end $$;
 
 commit;
+
+-- =====================================================================
+-- DS Catalog — self-service registration & onboarding
+-- =====================================================================
+-- Adds the bookkeeping a new tenant needs once it can be created by
+-- self-service registration (see app/registro) instead of only by hand:
+--   - onboarding_completed marks whether the wizard at
+--     /[tenant]/admin/onboarding has been finished. Tenants created before
+--     this column existed (elnuevosanchez, demo) default to true so they
+--     are never sent through onboarding retroactively.
+--   - admin_password_hash (already present, added as an unused extension
+--     point during the multi-tenant migration) is now actually written to
+--     by app/registro's registration action — see lib/auth/tenant-
+--     credentials.ts for the hashing scheme. Existing tenants keep this
+--     column null and keep authenticating against the shared
+--     ADMIN_PASSWORD env var (see lib/auth/admin-auth.ts) until someone
+--     sets a real per-tenant password for them.
+--
+-- Safe to re-run: add-column-if-not-exists + a backfill that only ever
+-- touches rows still at the default.
+
+begin;
+
+alter table ds_tenants add column if not exists onboarding_completed boolean not null default false;
+
+update ds_tenants set onboarding_completed = true
+where slug in ('elnuevosanchez', 'demo') and onboarding_completed = false;
+
+commit;
