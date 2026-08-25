@@ -1,9 +1,16 @@
 import Link from "next/link";
-import type { Product } from "@/lib/types/catalog";
+import type { CardAspectRatio, Product } from "@/lib/types/catalog";
 import { NSMedia } from "@/components/ui/NSMedia";
 import { NSBadge } from "@/components/ui/NSBadge";
 import { NSPrice } from "@/components/ui/NSPrice";
 import { NSPaymentBadge } from "@/components/catalog/NSPaymentBadge";
+
+/** Shared with NSProductCardPreview (the admin's live preview) so both stay pixel-identical. */
+export const CARD_ASPECT_RATIO_CLASSES: Record<CardAspectRatio, string> = {
+  portrait: "aspect-[4/5]",
+  square: "aspect-square",
+  landscape: "aspect-[4/3]",
+};
 
 export interface PaymentBadgeInfo {
   icon: string;
@@ -31,7 +38,9 @@ export function NSProductCard({
       href={`/${tenantSlug}/producto/${product.slug}`}
       className="group flex flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-strong"
     >
-      <div className="relative aspect-[4/5] overflow-hidden rounded-card bg-ink-900">
+      <div
+        className={`relative overflow-hidden rounded-card bg-ink-900 ${CARD_ASPECT_RATIO_CLASSES[product.cardAspectRatio]}`}
+      >
         <div className="h-full w-full transition-transform duration-slower ease-out-ns group-hover:scale-105">
           <NSMedia
             src={product.images[0]}
@@ -39,6 +48,7 @@ export function NSProductCard({
             reference={product.reference}
             sizes="(min-width: 1024px) 23vw, (min-width: 640px) 45vw, 90vw"
             priority={priority}
+            objectFit={product.imageFit}
             brandName={brandName}
           />
         </div>

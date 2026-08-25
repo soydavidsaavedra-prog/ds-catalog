@@ -1,6 +1,7 @@
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { listCategories } from "@/lib/repositories/category-repository";
 import { getNextReference } from "@/lib/repositories/product-repository";
+import { getSettings } from "@/lib/repositories/settings-repository";
 import { getBusinessTypeProfile } from "@/lib/tenant/business-type";
 import { NSProductForm } from "@/components/admin/NSProductForm";
 import { createProductAction } from "@/app/[tenant]/admin/actions";
@@ -12,9 +13,10 @@ export default async function AdminNewProductPage({
 }) {
   const { tenant: tenantSlug } = await params;
   const tenant = await resolveTenant(tenantSlug);
-  const [categories, nextReference] = await Promise.all([
+  const [categories, nextReference, settings] = await Promise.all([
     listCategories(tenant.id),
     getNextReference(tenant.id),
+    getSettings(tenant.id),
   ]);
   const action = createProductAction.bind(null, tenant.id, tenantSlug);
   const profile = getBusinessTypeProfile(tenant.businessType);
@@ -25,7 +27,7 @@ export default async function AdminNewProductPage({
         <h1 className="font-display text-3xl uppercase tracking-wide">Nuevo producto</h1>
         <p className="mt-1 text-sm text-muted-foreground">Completa los datos para publicarlo en el catálogo.</p>
       </div>
-      <div className="max-w-2xl rounded-card border border-border bg-surface-elevated p-6">
+      <div className="max-w-5xl rounded-card border border-border bg-surface-elevated p-6">
         <NSProductForm
           tenantSlug={tenantSlug}
           action={action}
@@ -34,6 +36,8 @@ export default async function AdminNewProductPage({
           submitLabel="Crear producto"
           showSizes={profile.showSizes}
           showColors={profile.showColors}
+          paymentBadge={{ icon: settings.paymentBadgeIcon, label: settings.paymentBadgeLabel }}
+          brandName={settings.brandName}
         />
       </div>
     </div>

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { NSMedia } from "@/components/ui/NSMedia";
+import { CARD_ASPECT_RATIO_CLASSES } from "@/components/catalog/NSProductCard";
+import type { CardAspectRatio, ImageFit } from "@/lib/types/catalog";
 import { cn } from "@/lib/utils/cn";
 
 export function NSProductGallery({
@@ -9,11 +11,15 @@ export function NSProductGallery({
   reference,
   name,
   brandName,
+  cardAspectRatio = "portrait",
+  imageFit = "cover",
 }: {
   images: string[];
   reference: string;
   name: string;
   brandName?: string;
+  cardAspectRatio?: CardAspectRatio;
+  imageFit?: ImageFit;
 }) {
   const [active, setActive] = useState(0);
   const gallery = images.length > 0 ? images : [`placeholder:producto:${reference}`];
@@ -40,8 +46,16 @@ export function NSProductGallery({
       ) : null}
 
       <div className="relative flex-1 overflow-hidden rounded-card bg-ink-900">
-        <div className="aspect-[4/5]">
-          <NSMedia src={gallery[active]} alt={name} reference={reference} priority sizes="(min-width: 1024px) 45vw, 100vw" brandName={brandName} />
+        <div className={CARD_ASPECT_RATIO_CLASSES[cardAspectRatio]}>
+          <NSMedia
+            src={gallery[active]}
+            alt={name}
+            reference={reference}
+            priority
+            sizes="(min-width: 1024px) 45vw, 100vw"
+            objectFit={imageFit}
+            brandName={brandName}
+          />
         </div>
       </div>
     </div>

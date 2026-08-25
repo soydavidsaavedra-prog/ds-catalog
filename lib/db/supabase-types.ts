@@ -1,4 +1,4 @@
-import type { Audience, Availability, ProductColor } from "@/lib/types/catalog";
+import type { Audience, Availability, CardAspectRatio, ImageFit, ProductColor } from "@/lib/types/catalog";
 import type { OrderItem, OrderStatus } from "@/lib/types/order";
 import type { BusinessType, TenantStatus } from "@/lib/types/tenant";
 
@@ -89,6 +89,8 @@ export interface ProductRow {
   category_slug: string;
   audience: Audience;
   images: string[];
+  card_aspect_ratio: CardAspectRatio;
+  image_fit: ImageFit;
   sizes: string[];
   colors: ProductColor[];
   availability: Availability;

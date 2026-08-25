@@ -32,7 +32,7 @@ import { completeOnboarding } from "@/lib/repositories/tenant-repository";
 import { deleteStorageFilesByUrls } from "@/lib/repositories/storage-repository";
 import { slugify } from "@/lib/utils/slug";
 import { HEX_COLOR, readableForegroundFor } from "@/lib/utils/brand";
-import type { Availability, Audience, ProductColor } from "@/lib/types/catalog";
+import type { Availability, Audience, CardAspectRatio, ImageFit, ProductColor } from "@/lib/types/catalog";
 import type { OrderStatus } from "@/lib/types/order";
 
 export type ActionState = { error?: string; success?: boolean };
@@ -115,6 +115,8 @@ function revalidateStorefront(tenantSlug: string, categorySlug?: string, product
 // ---------- Products ----------
 
 const AUDIENCE_VALUES: Audience[] = ["dama", "caballero", "nino", "unisex"];
+const CARD_ASPECT_RATIO_VALUES: CardAspectRatio[] = ["portrait", "square", "landscape"];
+const IMAGE_FIT_VALUES: ImageFit[] = ["cover", "contain"];
 
 /** Same cap enforced client-side in NSImageUploader — repeated here since a form POST doesn't have to go through that component. */
 const MAX_PRODUCT_IMAGES = 10;
@@ -144,6 +146,8 @@ async function parseProductInput(tenantId: string, formData: FormData): Promise<
   const reference = String(formData.get("reference") ?? "").trim();
   const slugInput = String(formData.get("slug") ?? "").trim();
   const categorySlug = String(formData.get("categorySlug") ?? "");
+  const cardAspectRatioInput = String(formData.get("cardAspectRatio") ?? "");
+  const imageFitInput = String(formData.get("imageFit") ?? "");
 
   return {
     slug: slugify(slugInput || `${reference}-${name}`),
@@ -155,6 +159,10 @@ async function parseProductInput(tenantId: string, formData: FormData): Promise<
     categorySlug,
     audience: await resolveAudienceForCategory(tenantId, categorySlug),
     images: images.length > 0 ? images : [`placeholder:${categorySlug}:new`],
+    cardAspectRatio: CARD_ASPECT_RATIO_VALUES.includes(cardAspectRatioInput as CardAspectRatio)
+      ? (cardAspectRatioInput as CardAspectRatio)
+      : "portrait",
+    imageFit: IMAGE_FIT_VALUES.includes(imageFitInput as ImageFit) ? (imageFitInput as ImageFit) : "cover",
     sizes,
     colors,
     availability: String(formData.get("availability") ?? "in_stock") as Availability,

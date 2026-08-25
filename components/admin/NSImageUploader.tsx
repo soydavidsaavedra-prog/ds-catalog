@@ -11,12 +11,22 @@ export function NSImageUploader({
   tenantSlug,
   name,
   initialImages,
+  onChange,
 }: {
   tenantSlug: string;
   name: string;
   initialImages: string[];
+  /** Mirrors the current image list to a parent that wants to reflect it live (e.g. NSProductCardPreview) — not needed for the field to submit with the form, which happens via the hidden input below regardless. */
+  onChange?: (images: string[]) => void;
 }) {
-  const [images, setImages] = useState<string[]>(initialImages);
+  const [images, setImagesState] = useState<string[]>(initialImages);
+  function setImages(update: string[] | ((prev: string[]) => string[])) {
+    setImagesState((prev) => {
+      const next = typeof update === "function" ? update(prev) : update;
+      onChange?.(next);
+      return next;
+    });
+  }
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);

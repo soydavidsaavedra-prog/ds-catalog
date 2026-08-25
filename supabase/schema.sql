@@ -892,3 +892,55 @@ alter table ds_tenants add constraint ds_tenants_business_type_check
   check (business_type in ('moda', 'ferreteria', 'restaurante', 'belleza', 'tecnologia', 'hogar', 'otro'));
 
 commit;
+
+-- =====================================================================
+-- DS Catalog — per-product card shape + image fit
+-- =====================================================================
+-- Product photos aren't all the same shape — some near-square, some
+-- wider, some taller — and the catalog card/gallery used to force every
+-- one of them into a fixed 4:5 crop (object-fit: cover), silently
+-- cropping out whatever didn't fit. Both are now per-product: the card's
+-- frame shape (card_aspect_ratio) and whether the image fills that frame
+-- by cropping (cover, the old-and-only behavior) or is shown in full with
+-- neutral letterboxing (contain). Defaults ('portrait' + 'cover') are
+-- exactly the old hardcoded behavior, so every existing product (El Nuevo
+-- Sánchez, demo, anything else already created) renders pixel-identical
+-- to before — this is purely a new option, never a retroactive change.
+--
+-- Safe to re-run: add-column-if-not-exists with the default already
+-- applied (Postgres backfills a NOT NULL + DEFAULT column addition in the
+-- same statement — no separate UPDATE needed) + drop-and-recreate the
+-- same check constraints.
+
+begin;
+
+alter table ns_products add column if not exists card_aspect_ratio text not null default 'portrait';
+alter table ns_products add column if not exists image_fit text not null default 'cover';
+
+do $$
+declare
+  conname text;
+begin
+  select con.conname into conname
+  from pg_constraint con
+  join pg_class rel on rel.oid = con.conrelid
+  where rel.relname = 'ns_products' and con.contype = 'c' and pg_get_constraintdef(con.oid) ilike '%card_aspect_ratio%';
+  if conname is not null then
+    execute format('alter table ns_products drop constraint %I', conname);
+  end if;
+
+  select con.conname into conname
+  from pg_constraint con
+  join pg_class rel on rel.oid = con.conrelid
+  where rel.relname = 'ns_products' and con.contype = 'c' and pg_get_constraintdef(con.oid) ilike '%image_fit%';
+  if conname is not null then
+    execute format('alter table ns_products drop constraint %I', conname);
+  end if;
+end $$;
+
+alter table ns_products add constraint ns_products_card_aspect_ratio_check
+  check (card_aspect_ratio in ('portrait', 'square', 'landscape'));
+alter table ns_products add constraint ns_products_image_fit_check
+  check (image_fit in ('cover', 'contain'));
+
+commit;

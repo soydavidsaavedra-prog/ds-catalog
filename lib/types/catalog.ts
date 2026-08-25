@@ -21,6 +21,12 @@ export interface ProductColor {
   hex: string;
 }
 
+/** The catalog card / detail gallery's frame shape — chosen per product to match its photos (a wide product photo doesn't have to be squeezed into a tall frame). "portrait" (4:5) is the original, still-default shape. */
+export type CardAspectRatio = "portrait" | "square" | "landscape";
+
+/** cover crops the image to fill the frame (the original, still-default behavior); contain shows the whole image with neutral letterboxing instead of cropping anything out. */
+export type ImageFit = "cover" | "contain";
+
 export interface Category {
   id: string;
   slug: string;
@@ -49,6 +55,8 @@ export interface Product {
   categorySlug: string;
   audience: Audience;
   images: string[];
+  cardAspectRatio: CardAspectRatio;
+  imageFit: ImageFit;
   sizes: string[];
   colors: ProductColor[];
   availability: Availability;

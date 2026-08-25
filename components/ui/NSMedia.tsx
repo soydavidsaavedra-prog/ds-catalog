@@ -15,6 +15,8 @@ interface NSMediaProps {
   fill?: boolean;
   /** CSS object-position (e.g. "50% 30%") for a real photo — ignored for placeholder art. */
   objectPosition?: string;
+  /** "cover" (default) crops to fill; "contain" shows the whole image with neutral letterboxing instead of cropping anything out. Ignored for placeholder art. */
+  objectFit?: "cover" | "contain";
   /** Tenant's SiteSettings.brandName — feeds the placeholder plate's watermark initials (default "NS" — El Nuevo Sánchez's own). */
   brandName?: string;
 }
@@ -34,6 +36,7 @@ export function NSMedia({
   priority,
   fill = true,
   objectPosition,
+  objectFit = "cover",
   brandName,
 }: NSMediaProps) {
   const placeholder = parsePlaceholder(src) ?? (src ? null : { category: "otros", seed: "0" });
@@ -66,7 +69,7 @@ export function NSMedia({
           fill
           sizes={sizes ?? "(min-width: 1024px) 25vw, 50vw"}
           priority={priority}
-          className="object-cover"
+          className={objectFit === "contain" ? "object-contain" : "object-cover"}
           style={objectPosition ? { objectPosition } : undefined}
         />
       </div>

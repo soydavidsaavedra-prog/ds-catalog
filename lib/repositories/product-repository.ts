@@ -17,6 +17,8 @@ function fromRow(row: ProductRow): Product {
     categorySlug: row.category_slug,
     audience: row.audience,
     images: row.images ?? [],
+    cardAspectRatio: row.card_aspect_ratio,
+    imageFit: row.image_fit,
     sizes: row.sizes ?? [],
     colors: row.colors ?? [],
     availability: row.availability,
@@ -41,6 +43,8 @@ function toRow(input: Partial<ProductInput>): Partial<ProductRow> {
   if (input.categorySlug !== undefined) row.category_slug = input.categorySlug;
   if (input.audience !== undefined) row.audience = input.audience;
   if (input.images !== undefined) row.images = input.images;
+  if (input.cardAspectRatio !== undefined) row.card_aspect_ratio = input.cardAspectRatio;
+  if (input.imageFit !== undefined) row.image_fit = input.imageFit;
   if (input.sizes !== undefined) row.sizes = input.sizes;
   if (input.colors !== undefined) row.colors = input.colors;
   if (input.availability !== undefined) row.availability = input.availability;

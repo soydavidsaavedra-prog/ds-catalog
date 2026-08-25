@@ -103,6 +103,8 @@ export default async function ProductPage({
             reference={product.reference}
             name={product.name}
             brandName={settings.brandName}
+            cardAspectRatio={product.cardAspectRatio}
+            imageFit={product.imageFit}
           />
           <NSProductPurchasePanel tenantSlug={tenantSlug} product={product} paymentBadge={paymentBadge} />
         </div>

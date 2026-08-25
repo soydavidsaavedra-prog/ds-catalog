@@ -287,6 +287,8 @@ function toProduct(seed: Seed): Product {
     categorySlug: `${seed.audience}-${seed.category}`,
     audience: seed.audience,
     images: [`placeholder:${seed.category}:${seed.id}`],
+    cardAspectRatio: "portrait",
+    imageFit: "cover",
     sizes: seed.sizes,
     colors: seed.colors,
     availability: seed.availability,
