@@ -99,11 +99,11 @@ export function NSOnboardingWizard({ tenantId, tenantSlug }: { tenantId: string;
           <span />
         )}
         {isLastStep ? (
-          <NSButton type="submit" loading={pending}>
+          <NSButton key="finalizar" type="submit" loading={pending}>
             Finalizar
           </NSButton>
         ) : (
-          <NSButton type="button" onClick={() => setStep((s) => s + 1)}>
+          <NSButton key="siguiente" type="button" onClick={() => setStep((s) => s + 1)}>
             Siguiente
           </NSButton>
         )}
