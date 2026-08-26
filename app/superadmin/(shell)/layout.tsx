@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getAuthenticatedSuperadmin } from "@/lib/auth/superadmin-auth";
 import { NSSuperAdminSidebar } from "@/components/superadmin/NSSuperAdminSidebar";
+import { NSPageTransition } from "@/components/ui/NSPageTransition";
 
 /**
  * Server-side guard, same defense-in-depth pattern as
@@ -21,7 +22,9 @@ export default async function SuperadminShellLayout({ children }: { children: Re
     <div className="flex min-h-dvh flex-col bg-surface lg:flex-row">
       <NSSuperAdminSidebar email={superadmin.email} />
       <div className="min-w-0 flex-1 overflow-x-hidden">
-        <main className="mx-auto max-w-6xl px-6 py-8 sm:px-10">{children}</main>
+        <main className="mx-auto max-w-7xl px-6 py-8 sm:px-10 lg:px-12 lg:py-10">
+          <NSPageTransition>{children}</NSPageTransition>
+        </main>
       </div>
     </div>
   );

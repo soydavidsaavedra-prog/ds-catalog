@@ -3,20 +3,12 @@ import Link from "next/link";
 import { listAllTenantsWithCounts, derivePlatformKpis } from "@/lib/repositories/superadmin-repository";
 import { listSubscriptionsWithDetails, listPendingPlanChangeRequests } from "@/lib/repositories/subscriptions-repository";
 import { listPlans } from "@/lib/repositories/plans-repository";
+import { DSPageHeader } from "@/components/ui/DSPageHeader";
+import { DSStatCard } from "@/components/ui/DSStatCard";
 
 export const metadata: Metadata = {
   title: "Dashboard",
 };
-
-function KpiCard({ label, value, tone }: { label: string; value: string | number; tone?: "danger" | "warning" }) {
-  const color = tone === "danger" ? "text-danger" : tone === "warning" ? "text-warning" : "text-foreground";
-  return (
-    <div className="rounded-card border border-border bg-surface-elevated p-5">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={`mt-2 font-display text-3xl ${color}`}>{value}</p>
-    </div>
-  );
-}
 
 export default async function SuperadminDashboardPage() {
   const [tenants, subscriptions, planChangeRequests, plans] = await Promise.all([
@@ -36,29 +28,32 @@ export default async function SuperadminDashboardPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="font-display text-2xl uppercase tracking-wide">Dashboard</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Vista general de toda la plataforma DS Catalog.</p>
-      </div>
+      <DSPageHeader
+        eyebrow="Plataforma"
+        title="Dashboard"
+        description="Vista general de toda la plataforma DS Catalog."
+      />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        <KpiCard label="Clientes" value={kpis.totalTenants} />
-        <KpiCard
+        <DSStatCard label="Clientes" value={kpis.totalTenants} href="/superadmin/tenants" />
+        <DSStatCard
           label="Pendientes de aprobar"
           value={pendingSubscriptions.length}
-          tone={pendingSubscriptions.length > 0 ? "warning" : undefined}
+          tone={pendingSubscriptions.length > 0 ? "warning" : "default"}
+          href="/superadmin/subscriptions"
         />
-        <KpiCard label="Activos" value={kpis.activeTenants} />
-        <KpiCard label="Pausados" value={kpis.pausedTenants} tone={kpis.pausedTenants > 0 ? "warning" : undefined} />
-        <KpiCard
+        <DSStatCard label="Activos" value={kpis.activeTenants} tone="success" href="/superadmin/tenants" />
+        <DSStatCard label="Pausados" value={kpis.pausedTenants} tone={kpis.pausedTenants > 0 ? "warning" : "default"} href="/superadmin/tenants" />
+        <DSStatCard
           label="Suspendidos"
           value={kpis.suspendedTenants}
-          tone={kpis.suspendedTenants > 0 ? "danger" : undefined}
+          tone={kpis.suspendedTenants > 0 ? "danger" : "default"}
+          href="/superadmin/tenants"
         />
-        <KpiCard label="Productos" value={kpis.totalProducts.toLocaleString("es")} />
-        <KpiCard label="Categorías" value={kpis.totalCategories.toLocaleString("es")} />
-        <KpiCard label="Pedidos" value={kpis.totalOrders.toLocaleString("es")} />
-        <KpiCard label="Archivados" value={kpis.archivedTenants} />
+        <DSStatCard label="Productos" value={kpis.totalProducts.toLocaleString("es")} />
+        <DSStatCard label="Categorías" value={kpis.totalCategories.toLocaleString("es")} />
+        <DSStatCard label="Pedidos" value={kpis.totalOrders.toLocaleString("es")} />
+        <DSStatCard label="Archivados" value={kpis.archivedTenants} href="/superadmin/tenants" />
       </div>
 
       <div>

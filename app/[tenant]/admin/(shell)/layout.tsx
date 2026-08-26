@@ -6,6 +6,7 @@ import { getPlanStatusInfo, EXPIRY_WARNING_DAYS } from "@/lib/tenant/plan-limits
 import { getPlatformSettings } from "@/lib/repositories/platform-settings-repository";
 import { NSAdminSidebar } from "@/components/admin/NSAdminSidebar";
 import { NSPlanExpiryBanner } from "@/components/admin/NSPlanExpiryBanner";
+import { NSPageTransition } from "@/components/ui/NSPageTransition";
 
 export default async function AdminShellLayout({
   children,
@@ -42,7 +43,7 @@ export default async function AdminShellLayout({
         supportWhatsappNumber={platformSettings.supportWhatsappNumber}
       />
       <div className="min-w-0 flex-1 overflow-x-hidden">
-        <main className="mx-auto max-w-6xl px-6 py-8 sm:px-10">
+        <main className="mx-auto max-w-7xl px-6 py-8 sm:px-10 lg:px-12 lg:py-10">
           {planStatus.daysUntilExpiry !== null && planStatus.daysUntilExpiry <= EXPIRY_WARNING_DAYS ? (
             <NSPlanExpiryBanner
               tenantSlug={tenantSlug}
@@ -50,7 +51,7 @@ export default async function AdminShellLayout({
               expiresAt={planStatus.expiresAt}
             />
           ) : null}
-          {children}
+          <NSPageTransition>{children}</NSPageTransition>
         </main>
       </div>
     </div>
