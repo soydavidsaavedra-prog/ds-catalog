@@ -3,6 +3,7 @@ import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { listCategories } from "@/lib/repositories/category-repository";
 import { listProducts } from "@/lib/repositories/product-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
+import { listHeroSlides } from "@/lib/repositories/hero-slide-repository";
 import { siteConfig } from "@/lib/config/site";
 import { NSHero } from "@/components/home/NSHero";
 import { NSFactoryStory, DEFAULT_STEP_LABELS } from "@/components/home/NSFactoryStory";
@@ -35,10 +36,11 @@ export default async function Home({
   const { tenant: tenantSlug } = await params;
   const tenant = await resolveTenant(tenantSlug);
 
-  const [categories, products, settings] = await Promise.all([
+  const [categories, products, settings, heroSlides] = await Promise.all([
     listCategories(tenant.id, { activeOnly: true }),
     listProducts(tenant.id, { activeOnly: true }),
     getSettings(tenant.id),
+    listHeroSlides(tenant.id, { activeOnly: true }),
   ]);
 
   const nuevos = products.filter((p) => p.isNew);
@@ -62,6 +64,7 @@ export default async function Home({
         imagePositionX={settings.heroImagePositionX}
         imagePositionY={settings.heroImagePositionY}
         brandName={settings.brandName}
+        slides={heroSlides}
       />
       <NSFactoryStory
         eyebrow={settings.storyEyebrow}

@@ -13,8 +13,16 @@ const ALLOWED_EXTENSIONS: Record<string, string> = {
   "image/webp": "webp",
   "image/avif": "avif",
   "image/svg+xml": "svg",
+  "video/mp4": "mp4",
+  "video/webm": "webm",
 };
-const MAX_SIZE = 8 * 1024 * 1024;
+const VIDEO_TYPES = new Set(["video/mp4", "video/webm"]);
+const MAX_IMAGE_SIZE = 8 * 1024 * 1024;
+// Hero background videos are meant to be short, muted loops, not real
+// clips — this cap keeps that honest and keeps a single upload from
+// eating a big chunk of a tenant's plan storage (see the maxStorageMb
+// check below, which still applies on top of this).
+const MAX_VIDEO_SIZE = 25 * 1024 * 1024;
 const BUCKET = PRODUCT_IMAGES_BUCKET;
 
 export async function POST(request: Request, { params }: { params: Promise<{ tenant: string }> }) {
@@ -31,10 +39,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
   }
   const extension = ALLOWED_EXTENSIONS[file.type];
   if (!extension) {
-    return NextResponse.json({ error: "Formato no soportado (usa JPG, PNG, WEBP, AVIF o SVG)" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Formato no soportado (usa JPG, PNG, WEBP, AVIF, SVG, MP4 o WEBM)" },
+      { status: 400 },
+    );
   }
-  if (file.size > MAX_SIZE) {
-    return NextResponse.json({ error: "La imagen supera 8MB" }, { status: 400 });
+  const isVideo = VIDEO_TYPES.has(file.type);
+  const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
+  if (file.size > maxSize) {
+    return NextResponse.json(
+      { error: isVideo ? "El video supera 25MB" : "La imagen supera 8MB" },
+      { status: 400 },
+    );
   }
 
   // Compression to ~500KB happens client-side before this request is even

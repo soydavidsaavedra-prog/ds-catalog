@@ -122,6 +122,18 @@ export interface ProductRow {
   updated_at: string;
 }
 
+export interface HeroSlideRow {
+  id: string;
+  tenant_id: string;
+  media_type: "image" | "video";
+  media_url: string;
+  position_x: number;
+  position_y: number;
+  order: number;
+  active: boolean;
+  created_at: string;
+}
+
 export interface BannerRow {
   id: string;
   tenant_id: string;
@@ -257,6 +269,7 @@ export interface Database {
       ns_categories: TableDef<CategoryRow>;
       ns_products: TableDef<ProductRow>;
       ns_banners: TableDef<BannerRow>;
+      ns_hero_slides: TableDef<HeroSlideRow>;
       ns_orders: TableDef<OrderRow>;
       ns_settings: TableDef<SettingsRow>;
     };

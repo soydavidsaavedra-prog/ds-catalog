@@ -189,7 +189,14 @@ export async function deleteTenant(tenantId: string): Promise<void> {
   const supabase = getSupabaseClient();
 
   const del = async (
-    table: "ns_products" | "ns_categories" | "ns_banners" | "ns_orders" | "ns_settings" | "subscriptions",
+    table:
+      | "ns_products"
+      | "ns_categories"
+      | "ns_banners"
+      | "ns_hero_slides"
+      | "ns_orders"
+      | "ns_settings"
+      | "subscriptions",
   ) => {
     const { error } = await supabase.from(table).delete().eq("tenant_id", tenantId);
     if (error) throw error;
@@ -198,6 +205,7 @@ export async function deleteTenant(tenantId: string): Promise<void> {
   await del("ns_products");
   await del("ns_categories");
   await del("ns_banners");
+  await del("ns_hero_slides");
   await del("ns_orders");
   await del("ns_settings");
   await del("subscriptions");

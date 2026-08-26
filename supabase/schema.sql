@@ -1041,3 +1041,31 @@ values (true, '584245210934', '+58 424 521 0934')
 on conflict (id) do nothing;
 
 commit;
+
+-- Hero dinámico: 0+ fotos/videos que rotan automáticamente detrás del
+-- mismo texto/CTA del hero (esos siguen viniendo de ns_settings.hero_*,
+-- sin cambios) — reemplaza al apartado "Banners", que nunca se llegó a
+-- mostrar en ningún catálogo público (CRUD sin ninguna pantalla que lo
+-- leyera). ns_banners no se toca ni se borra aquí — sigue existiendo,
+-- simplemente ya no tiene UI que lo alimente.
+--
+-- Un tenant sin filas aquí (todos hoy) sigue viendo exactamente el hero
+-- de una sola imagen de siempre — ver NSHero.tsx.
+
+begin;
+
+create table if not exists ns_hero_slides (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references ds_tenants(id),
+  media_type text not null default 'image' check (media_type in ('image', 'video')),
+  media_url text not null,
+  position_x integer not null default 50,
+  position_y integer not null default 50,
+  "order" integer not null default 0,
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists ns_hero_slides_tenant_id_idx on ns_hero_slides(tenant_id);
+
+commit;

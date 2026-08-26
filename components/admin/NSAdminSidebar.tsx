@@ -34,7 +34,7 @@ export function NSAdminSidebar({
     { href: `${base}/productos`, label: "Productos", icon: ProductIcon },
     { href: `${base}/categorias`, label: "Categorías", icon: CategoryIcon },
     { href: `${base}/pedidos`, label: "Pedidos", icon: OrderIcon },
-    { href: `${base}/banners`, label: "Banners", icon: BannerIcon },
+    { href: `${base}/hero`, label: "Hero", icon: HeroIcon },
     { href: `${base}/configuracion`, label: "Configuración", icon: SettingsIcon },
     { href: `${base}/cuenta`, label: "Mi cuenta", icon: AccountIcon },
   ];
@@ -177,8 +177,8 @@ function CategoryIcon({ className }: { className?: string }) {
 function OrderIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><path d="M4 3h12l-1 12H5L4 3Z" /><path d="M7 3a3 3 0 0 1 6 0M4 7h12" /></svg>;
 }
-function BannerIcon({ className }: { className?: string }) {
-  return <svg className={className} {...iconProps()} aria-hidden><rect x="2.5" y="4" width="15" height="10" rx="1" /><path d="M2.5 14 7 9.5l3 3 3-4L17.5 14" /></svg>;
+function HeroIcon({ className }: { className?: string }) {
+  return <svg className={className} {...iconProps()} aria-hidden><rect x="2.5" y="4" width="15" height="10" rx="1" /><path d="M2.5 14 7 9.5l3 3 3-4L17.5 14" /><circle cx="6" cy="7.5" r="1" fill="currentColor" stroke="none" /></svg>;
 }
 function SettingsIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><circle cx="10" cy="10" r="2.6" /><path d="M10 2.5v2M10 15.5v2M17.5 10h-2M4.5 10h-2M15.1 4.9l-1.4 1.4M6.3 13.7l-1.4 1.4M15.1 15.1l-1.4-1.4M6.3 6.3 4.9 4.9" /></svg>;

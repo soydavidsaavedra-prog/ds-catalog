@@ -23,7 +23,12 @@ import {
   listCategories,
   updateCategory,
 } from "@/lib/repositories/category-repository";
-import { createBanner, deleteBanner, getBannerById, updateBanner } from "@/lib/repositories/banner-repository";
+import {
+  createHeroSlide,
+  deleteHeroSlide,
+  getHeroSlideById,
+  updateHeroSlide,
+} from "@/lib/repositories/hero-slide-repository";
 import { updateOrderStatus } from "@/lib/repositories/order-repository";
 import { getSettings, updateSettings } from "@/lib/repositories/settings-repository";
 import { completeOnboarding } from "@/lib/repositories/tenant-repository";
@@ -363,47 +368,50 @@ export async function moveCategoryAction(
   revalidatePath(`/${tenantSlug}/admin/categorias`);
 }
 
-// ---------- Banners ----------
+// ---------- Hero slides ----------
 
-export async function createBannerAction(tenantId: string, tenantSlug: string, formData: FormData): Promise<void> {
-  await createBanner(tenantId, {
-    title: String(formData.get("title") ?? "").trim(),
-    subtitle: String(formData.get("subtitle") ?? "").trim(),
-    image: String(formData.get("image") ?? "placeholder:hero:1").trim(),
-    ctaLabel: String(formData.get("ctaLabel") ?? "").trim(),
-    ctaHref: String(formData.get("ctaHref") ?? "/catalogo").trim(),
+/**
+ * mediaType is trusted from the client here (it already picked the right
+ * file input / detected the upload's MIME type before submitting) — worth
+ * noting since nothing re-derives it from mediaUrl server-side, unlike
+ * most other fields on this action. A wrong value only affects which
+ * <video>/<img> tag the storefront renders it with, not access control.
+ */
+export async function createHeroSlideAction(tenantId: string, tenantSlug: string, formData: FormData): Promise<void> {
+  await createHeroSlide(tenantId, {
+    mediaType: formData.get("mediaType") === "video" ? "video" : "image",
+    mediaUrl: String(formData.get("mediaUrl") ?? "").trim(),
+    positionX: Number(formData.get("positionX") ?? 50),
+    positionY: Number(formData.get("positionY") ?? 50),
     active: formData.get("active") === "on",
     order: Number(formData.get("order") ?? 1),
   });
-  revalidatePath(`/${tenantSlug}/admin/banners`);
+  revalidatePath(`/${tenantSlug}`);
+  revalidatePath(`/${tenantSlug}/admin/hero`);
 }
 
-export async function updateBannerAction(
+export async function updateHeroSlideAction(
   tenantId: string,
   tenantSlug: string,
   id: string,
   formData: FormData,
 ): Promise<void> {
-  const image = String(formData.get("image") ?? "").trim();
-  const existing = await getBannerById(tenantId, id);
-  await updateBanner(tenantId, id, {
-    title: String(formData.get("title") ?? "").trim(),
-    subtitle: String(formData.get("subtitle") ?? "").trim(),
-    image,
-    ctaLabel: String(formData.get("ctaLabel") ?? "").trim(),
-    ctaHref: String(formData.get("ctaHref") ?? "").trim(),
+  await updateHeroSlide(tenantId, id, {
+    positionX: Number(formData.get("positionX") ?? 50),
+    positionY: Number(formData.get("positionY") ?? 50),
     active: formData.get("active") === "on",
     order: Number(formData.get("order") ?? 1),
   });
-  if (existing) await cleanupReplacedImages([existing.image], [image]);
-  revalidatePath(`/${tenantSlug}/admin/banners`);
+  revalidatePath(`/${tenantSlug}`);
+  revalidatePath(`/${tenantSlug}/admin/hero`);
 }
 
-export async function deleteBannerAction(tenantId: string, tenantSlug: string, id: string): Promise<void> {
-  const existing = await getBannerById(tenantId, id);
-  await deleteBanner(tenantId, id);
-  if (existing) await cleanupReplacedImages([existing.image], []);
-  revalidatePath(`/${tenantSlug}/admin/banners`);
+export async function deleteHeroSlideAction(tenantId: string, tenantSlug: string, id: string): Promise<void> {
+  const existing = await getHeroSlideById(tenantId, id);
+  await deleteHeroSlide(tenantId, id);
+  if (existing) await cleanupReplacedImages([existing.mediaUrl], []);
+  revalidatePath(`/${tenantSlug}`);
+  revalidatePath(`/${tenantSlug}/admin/hero`);
 }
 
 // ---------- Orders ----------

@@ -81,6 +81,19 @@ export interface Banner {
   order: number;
 }
 
+export type HeroMediaType = "image" | "video";
+
+/** One background slide of the storefront's hero carousel — see components/home/NSHero.tsx. Text/CTA stay static (SiteSettings.hero*); only the background media rotates between these. */
+export interface HeroSlide {
+  id: string;
+  mediaType: HeroMediaType;
+  mediaUrl: string;
+  positionX: number;
+  positionY: number;
+  order: number;
+  active: boolean;
+}
+
 export interface SiteSettings {
   brandName: string;
   slogan: string;
