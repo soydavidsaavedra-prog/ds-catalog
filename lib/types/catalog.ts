@@ -83,6 +83,9 @@ export interface Banner {
 
 export type HeroMediaType = "image" | "video";
 
+/** A background carousel only makes sense with a handful of slides — past this, "auto-advancing" starts feeling like an unrelated slideshow rather than a hero. */
+export const MAX_HERO_SLIDES = 5;
+
 /** One background slide of the storefront's hero carousel — see components/home/NSHero.tsx. Text/CTA stay static (SiteSettings.hero*); only the background media rotates between these. */
 export interface HeroSlide {
   id: string;

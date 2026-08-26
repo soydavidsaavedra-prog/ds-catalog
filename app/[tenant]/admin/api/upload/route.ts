@@ -21,8 +21,13 @@ const MAX_IMAGE_SIZE = 8 * 1024 * 1024;
 // Hero background videos are meant to be short, muted loops, not real
 // clips — this cap keeps that honest and keeps a single upload from
 // eating a big chunk of a tenant's plan storage (see the maxStorageMb
-// check below, which still applies on top of this).
-const MAX_VIDEO_SIZE = 25 * 1024 * 1024;
+// check below, which still applies on top of this). It's also a hard
+// ceiling imposed from outside this file: Vercel rejects request bodies
+// over ~4.5MB at the platform level, before this route's own code ever
+// runs, returning an HTML error page instead of JSON — so anything closer
+// to that limit than this breaks the client's res.json() call with a
+// confusing "Unexpected token" error rather than the size message below.
+const MAX_VIDEO_SIZE = 4 * 1024 * 1024;
 const BUCKET = PRODUCT_IMAGES_BUCKET;
 
 export async function POST(request: Request, { params }: { params: Promise<{ tenant: string }> }) {
@@ -48,7 +53,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
   const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
   if (file.size > maxSize) {
     return NextResponse.json(
-      { error: isVideo ? "El video supera 25MB" : "La imagen supera 8MB" },
+      { error: isVideo ? "El video supera 4MB" : "La imagen supera 8MB" },
       { status: 400 },
     );
   }

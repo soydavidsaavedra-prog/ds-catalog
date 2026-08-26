@@ -27,6 +27,7 @@ import {
   createHeroSlide,
   deleteHeroSlide,
   getHeroSlideById,
+  listHeroSlides,
   updateHeroSlide,
 } from "@/lib/repositories/hero-slide-repository";
 import { updateOrderStatus } from "@/lib/repositories/order-repository";
@@ -36,6 +37,7 @@ import { deleteStorageFilesByUrls } from "@/lib/repositories/storage-repository"
 import { slugify } from "@/lib/utils/slug";
 import { HEX_COLOR, readableForegroundFor } from "@/lib/utils/brand";
 import type { Availability, Audience, CardAspectRatio, ImageFit, ProductColor } from "@/lib/types/catalog";
+import { MAX_HERO_SLIDES } from "@/lib/types/catalog";
 import type { OrderStatus } from "@/lib/types/order";
 
 export type ActionState = { error?: string; success?: boolean };
@@ -378,6 +380,10 @@ export async function moveCategoryAction(
  * <video>/<img> tag the storefront renders it with, not access control.
  */
 export async function createHeroSlideAction(tenantId: string, tenantSlug: string, formData: FormData): Promise<void> {
+  const current = await listHeroSlides(tenantId);
+  if (current.length >= MAX_HERO_SLIDES) {
+    throw new Error(`Ya alcanzaste el máximo de ${MAX_HERO_SLIDES} fotos/videos para el hero.`);
+  }
   await createHeroSlide(tenantId, {
     mediaType: formData.get("mediaType") === "video" ? "video" : "image",
     mediaUrl: String(formData.get("mediaUrl") ?? "").trim(),
@@ -387,7 +393,7 @@ export async function createHeroSlideAction(tenantId: string, tenantSlug: string
     order: Number(formData.get("order") ?? 1),
   });
   revalidatePath(`/${tenantSlug}`);
-  revalidatePath(`/${tenantSlug}/admin/hero`);
+  revalidatePath(`/${tenantSlug}/admin/inicio`);
 }
 
 export async function updateHeroSlideAction(
@@ -403,7 +409,7 @@ export async function updateHeroSlideAction(
     order: Number(formData.get("order") ?? 1),
   });
   revalidatePath(`/${tenantSlug}`);
-  revalidatePath(`/${tenantSlug}/admin/hero`);
+  revalidatePath(`/${tenantSlug}/admin/inicio`);
 }
 
 export async function deleteHeroSlideAction(tenantId: string, tenantSlug: string, id: string): Promise<void> {
@@ -411,7 +417,7 @@ export async function deleteHeroSlideAction(tenantId: string, tenantSlug: string
   await deleteHeroSlide(tenantId, id);
   if (existing) await cleanupReplacedImages([existing.mediaUrl], []);
   revalidatePath(`/${tenantSlug}`);
-  revalidatePath(`/${tenantSlug}/admin/hero`);
+  revalidatePath(`/${tenantSlug}/admin/inicio`);
 }
 
 // ---------- Orders ----------

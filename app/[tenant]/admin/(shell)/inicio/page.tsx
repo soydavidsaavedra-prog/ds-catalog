@@ -1,5 +1,6 @@
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { getSettings } from "@/lib/repositories/settings-repository";
+import { listHeroSlides } from "@/lib/repositories/hero-slide-repository";
 import { NSHeroEditorForm } from "@/components/admin/NSHeroEditorForm";
 import { NSStoryEditorForm } from "@/components/admin/NSStoryEditorForm";
 import { NSStatementEditorForm } from "@/components/admin/NSStatementEditorForm";
@@ -11,7 +12,7 @@ export default async function AdminHomePage({
 }) {
   const { tenant: tenantSlug } = await params;
   const tenant = await resolveTenant(tenantSlug);
-  const settings = await getSettings(tenant.id);
+  const [settings, heroSlides] = await Promise.all([getSettings(tenant.id), listHeroSlides(tenant.id)]);
 
   return (
     <div className="flex flex-col gap-10">
@@ -26,7 +27,7 @@ export default async function AdminHomePage({
       <section className="flex flex-col gap-3">
         <h2 className="font-display text-xl uppercase tracking-wide text-accent-strong">Portada (Hero)</h2>
         <div className="rounded-card border border-border bg-surface-elevated p-6">
-          <NSHeroEditorForm tenantId={tenant.id} tenantSlug={tenantSlug} settings={settings} />
+          <NSHeroEditorForm tenantId={tenant.id} tenantSlug={tenantSlug} settings={settings} slides={heroSlides} />
         </div>
       </section>
 

@@ -1,17 +1,30 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
-import type { SiteSettings } from "@/lib/types/catalog";
+import { MAX_HERO_SLIDES, type HeroSlide, type SiteSettings } from "@/lib/types/catalog";
 import { updateHeroSettingsAction, type ActionState } from "@/app/[tenant]/admin/actions";
 import { NSInput, NSLabel } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSHero } from "@/components/home/NSHero";
+import { NSHeroSlideUploadForm } from "@/components/admin/NSHeroSlideUploadForm";
+import { NSHeroSlideList } from "@/components/admin/NSHeroSlideList";
 
 const initialState: ActionState = {};
 
 const PREVIEW_SCALE = 0.32;
 
-export function NSHeroEditorForm({ tenantId, tenantSlug, settings }: { tenantId: string; tenantSlug: string; settings: SiteSettings }) {
+export function NSHeroEditorForm({
+  tenantId,
+  tenantSlug,
+  settings,
+  slides,
+}: {
+  tenantId: string;
+  tenantSlug: string;
+  settings: SiteSettings;
+  /** Photos/videos that auto-rotate behind the static text below — see /admin/inicio's "Portada (Hero)" section. Empty means the storefront shows just the single image above, unchanged. */
+  slides: HeroSlide[];
+}) {
   const boundAction = updateHeroSettingsAction.bind(null, tenantId, tenantSlug);
   const [state, formAction, pending] = useActionState(boundAction, initialState);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -56,6 +69,7 @@ export function NSHeroEditorForm({ tenantId, tenantSlug, settings }: { tenantId:
   }
 
   return (
+    <div className="flex flex-col gap-8">
     <div className="flex flex-col gap-6 xl:flex-row xl:items-start">
       <form action={formAction} className="flex w-full flex-col gap-5 xl:max-w-md">
         {state.success ? (
@@ -207,6 +221,28 @@ export function NSHeroEditorForm({ tenantId, tenantSlug, settings }: { tenantId:
           </div>
         </div>
       </div>
+    </div>
+
+    <div className="border-t border-border pt-6">
+      <NSLabel>Fotos y videos que rotan (opcional, máximo {MAX_HERO_SLIDES})</NSLabel>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Si agregas más de una foto o video aquí, la portada los va mostrando uno tras otro en la tienda. El
+        título, subtítulo y botón de arriba se mantienen fijos — esto solo cambia lo que se ve detrás. Sin
+        nada aquí, se usa la imagen de portada de arriba, como siempre.
+      </p>
+      <div className="mt-4">
+        <NSHeroSlideUploadForm
+          tenantId={tenantId}
+          tenantSlug={tenantSlug}
+          nextOrder={slides.length + 1}
+          atCap={slides.length >= MAX_HERO_SLIDES}
+          maxSlides={MAX_HERO_SLIDES}
+        />
+      </div>
+      <div className="mt-4">
+        <NSHeroSlideList tenantId={tenantId} tenantSlug={tenantSlug} slides={slides} />
+      </div>
+    </div>
     </div>
   );
 }

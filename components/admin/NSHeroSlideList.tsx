@@ -44,59 +44,65 @@ function NSHeroSlideRow({ tenantId, tenantSlug, slide }: { tenantId: string; ten
         )}
       </div>
 
-      <form
-        action={updateHeroSlideAction.bind(null, tenantId, tenantSlug, slide.id)}
-        className="grid flex-1 gap-4 sm:grid-cols-2"
-      >
-        <div>
-          <NSLabel htmlFor={`posx-${slide.id}`}>Posición horizontal</NSLabel>
-          <input
-            id={`posx-${slide.id}`}
-            type="range"
-            min={0}
-            max={100}
-            value={positionX}
-            onChange={(e) => setPositionX(Number(e.target.value))}
-            className="w-full accent-[var(--accent)]"
-          />
-          <input type="hidden" name="positionX" value={positionX} />
-        </div>
-        <div>
-          <NSLabel htmlFor={`posy-${slide.id}`}>Posición vertical</NSLabel>
-          <input
-            id={`posy-${slide.id}`}
-            type="range"
-            min={0}
-            max={100}
-            value={positionY}
-            onChange={(e) => setPositionY(Number(e.target.value))}
-            className="w-full accent-[var(--accent)]"
-          />
-          <input type="hidden" name="positionY" value={positionY} />
-        </div>
-        <div>
-          <NSLabel htmlFor={`order-${slide.id}`}>Orden</NSLabel>
-          <NSInput id={`order-${slide.id}`} name="order" type="number" defaultValue={slide.order} />
-        </div>
-        <label className="flex items-center gap-2 self-end text-sm font-medium">
-          <input
-            type="checkbox"
-            name="active"
-            defaultChecked={slide.active}
-            className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
-          />
-          Activo
-        </label>
-        <div className="flex items-center gap-4 sm:col-span-2">
-          <NSButton type="submit" variant="outline" size="sm">
-            Guardar
-          </NSButton>
-          <NSAdminDeleteButton
-            action={deleteHeroSlideAction.bind(null, tenantId, tenantSlug, slide.id)}
-            confirmMessage="¿Eliminar esta foto/video del hero?"
-          />
-        </div>
-      </form>
+      <div className="flex flex-1 flex-col gap-4">
+        <form
+          action={updateHeroSlideAction.bind(null, tenantId, tenantSlug, slide.id)}
+          className="grid gap-4 sm:grid-cols-2"
+        >
+          <div>
+            <NSLabel htmlFor={`posx-${slide.id}`}>Posición horizontal</NSLabel>
+            <input
+              id={`posx-${slide.id}`}
+              type="range"
+              min={0}
+              max={100}
+              value={positionX}
+              onChange={(e) => setPositionX(Number(e.target.value))}
+              className="w-full accent-[var(--accent)]"
+            />
+            <input type="hidden" name="positionX" value={positionX} />
+          </div>
+          <div>
+            <NSLabel htmlFor={`posy-${slide.id}`}>Posición vertical</NSLabel>
+            <input
+              id={`posy-${slide.id}`}
+              type="range"
+              min={0}
+              max={100}
+              value={positionY}
+              onChange={(e) => setPositionY(Number(e.target.value))}
+              className="w-full accent-[var(--accent)]"
+            />
+            <input type="hidden" name="positionY" value={positionY} />
+          </div>
+          <div>
+            <NSLabel htmlFor={`order-${slide.id}`}>Orden</NSLabel>
+            <NSInput id={`order-${slide.id}`} name="order" type="number" defaultValue={slide.order} />
+          </div>
+          <label className="flex items-center gap-2 self-end text-sm font-medium">
+            <input
+              type="checkbox"
+              name="active"
+              defaultChecked={slide.active}
+              className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
+            />
+            Activo
+          </label>
+          <div className="sm:col-span-2">
+            <NSButton type="submit" variant="outline" size="sm">
+              Guardar
+            </NSButton>
+          </div>
+        </form>
+        {/* Sibling of the form above, not nested inside it — an <form> inside
+            another <form> is invalid HTML and browsers merge the two, which
+            silently broke this delete button (it was submitting the update
+            form's action instead of its own). */}
+        <NSAdminDeleteButton
+          action={deleteHeroSlideAction.bind(null, tenantId, tenantSlug, slide.id)}
+          confirmMessage="¿Eliminar esta foto/video del hero?"
+        />
+      </div>
     </div>
   );
 }
