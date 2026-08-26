@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { SiteSettings } from "@/lib/types/catalog";
 
 export const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
@@ -21,6 +22,29 @@ export function buildAccentOverrideCss(settings: SiteSettings): string | null {
   if (![accentColor, accentColorStrong, accentForeground].every((c) => HEX_COLOR.test(c))) return null;
 
   return `:root{--accent:${accentColor};--accent-strong:${accentColorStrong};--accent-foreground:${accentForeground};--focus-ring:${accentColorStrong};}`;
+}
+
+/**
+ * Same override, but as inline style vars for a scoped element (e.g. the
+ * `.tenant-preview` wrapper in app/globals.css) instead of a global
+ * :root <style> tag — for previewing a tenant's real accent from inside
+ * DS Catalog's own dark platform chrome (see app/[tenant]/admin/layout.tsx,
+ * which no longer applies the tenant's accent globally). Returns
+ * undefined (not an empty object) when the tenant has no override, so
+ * `.tenant-preview`'s own default teal (app/globals.css) shows through
+ * unless a caller spreads something else on top.
+ */
+export function buildAccentOverrideVars(settings: SiteSettings): CSSProperties | undefined {
+  const { accentColor, accentColorStrong, accentForeground } = settings;
+  if (!accentColor || !accentColorStrong || !accentForeground) return undefined;
+  if (![accentColor, accentColorStrong, accentForeground].every((c) => HEX_COLOR.test(c))) return undefined;
+
+  return {
+    "--accent": accentColor,
+    "--accent-strong": accentColorStrong,
+    "--accent-foreground": accentForeground,
+    "--focus-ring": accentColorStrong,
+  } as CSSProperties;
 }
 
 /**

@@ -85,6 +85,33 @@
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-emphasis: cubic-bezier(0.2, 0, 0, 1);
+
+  /*
+   * DS Catalog's OWN identity — the platform operator's brand, as opposed
+   * to any one tenant's (--accent/--surface/etc. above, which a tenant can
+   * override via Configuración — see buildAccentOverrideCss in
+   * lib/utils/brand.ts). Fixed values, not tied to prefers-color-scheme:
+   * the platform chrome (Super Admin, and the Tenant Admin panel's own
+   * structure) has one deliberate dark look regardless of the visitor's
+   * system theme, unlike the tenant-facing storefront which still follows
+   * it. Applied via the .ds-platform scope below, not :root, so it only
+   * ever affects platform chrome, never the storefront.
+   */
+  --ds-bg: #0a0a0a;
+  --ds-surface: #111311;
+  --ds-surface-elevated: #171a18;
+  --ds-surface-overlay: #1d211f;
+  --ds-border: rgba(247, 247, 246, 0.08);
+  --ds-border-strong: rgba(247, 247, 246, 0.16);
+  --ds-text: #f4f5f3;
+  --ds-text-secondary: #b7bab5;
+  --ds-muted: #82857f;
+  --ds-accent: #14b8ae;
+  --ds-accent-strong: #0d8a82;
+  --ds-accent-foreground: #04120f;
+  --ds-success: #22c55e;
+  --ds-warning: #f59e0b;
+  --ds-danger: #ef4444;
 }
 
 @theme inline {
@@ -142,6 +169,23 @@
   --color-denim-wash: var(--color-denim-wash);
   --color-denim-raw: var(--color-denim-raw);
 
+  /* DS Catalog platform palette as direct utilities (e.g. bg-ds-surface-elevated) — for the rare spot that needs the platform's own color even outside a .ds-platform scope. Most components should keep reading the semantic tokens above (bg-surface, text-foreground, ...), which already resolve to these inside .ds-platform. */
+  --color-ds-bg: var(--ds-bg);
+  --color-ds-surface: var(--ds-surface);
+  --color-ds-surface-elevated: var(--ds-surface-elevated);
+  --color-ds-surface-overlay: var(--ds-surface-overlay);
+  --color-ds-border: var(--ds-border);
+  --color-ds-border-strong: var(--ds-border-strong);
+  --color-ds-text: var(--ds-text);
+  --color-ds-text-secondary: var(--ds-text-secondary);
+  --color-ds-muted: var(--ds-muted);
+  --color-ds-accent: var(--ds-accent);
+  --color-ds-accent-strong: var(--ds-accent-strong);
+  --color-ds-accent-foreground: var(--ds-accent-foreground);
+  --color-ds-success: var(--ds-success);
+  --color-ds-warning: var(--ds-warning);
+  --color-ds-danger: var(--ds-danger);
+
   --font-sans: var(--font-body);
   --font-display: var(--font-display);
   --font-mono: var(--font-geist-mono);
@@ -177,6 +221,71 @@
     --denim-foreground: #0a0a09;
     --overlay: rgba(0, 0, 0, 0.72);
   }
+}
+
+/*
+ * Scopes DS Catalog's own dark identity onto the same semantic tokens
+ * every component already reads (bg-surface, text-foreground,
+ * bg-accent, ...) — see app/[tenant]/admin/layout.tsx (whole tenant
+ * admin panel: login, onboarding, shell) and app/superadmin/layout.tsx
+ * (all of Super Admin). No component needs to change: only what these
+ * variables resolve to changes, scoped to this subtree, and it wins over
+ * both the light default above and the prefers-color-scheme block above
+ * it (later in the cascade, plus a class beats a bare :root/media
+ * :root). Deliberately fixed regardless of system theme or the current
+ * tenant's own accentColor — that's the whole point: the platform's
+ * control surfaces look the same no matter which tenant you're in, or
+ * what the visitor's OS is set to.
+ */
+.ds-platform {
+  --background: var(--ds-bg);
+  --foreground: var(--ds-text);
+  --surface: var(--ds-surface);
+  --surface-elevated: var(--ds-surface-elevated);
+  --surface-inverted: #ffffff;
+  --muted: var(--ds-muted);
+  --muted-foreground: var(--ds-text-secondary);
+  --border: var(--ds-border);
+  --border-strong: var(--ds-border-strong);
+  --accent: var(--ds-accent);
+  --accent-strong: var(--ds-accent-strong);
+  --accent-foreground: var(--ds-accent-foreground);
+  --success: var(--ds-success);
+  --warning: var(--ds-warning);
+  --danger: var(--ds-danger);
+  --focus-ring: var(--ds-accent-strong);
+  --overlay: rgba(0, 0, 0, 0.72);
+  color-scheme: dark;
+}
+
+/*
+ * Re-opens a tenant-branded window inside an otherwise DS-platform-dark
+ * screen — the one place inside the admin that must show the tenant's
+ * REAL look: e.g. the Hero editor's live preview, which renders actual
+ * storefront components (NSHero) that expect the storefront's own light
+ * baseline, not the surrounding platform chrome's dark one. Resets back
+ * to the same light defaults as :root above; --accent/--accent-strong/
+ * --accent-foreground here are the storefront's own default (teal,
+ * matching :root) and get overridden further via an inline style on the
+ * specific element when the tenant has a custom accentColor — see
+ * lib/utils/brand.ts buildAccentOverrideCss and its callers.
+ */
+.tenant-preview {
+  --background: #ffffff;
+  --foreground: #0a0a09;
+  --surface: #f7f7f6;
+  --surface-elevated: #ffffff;
+  --surface-inverted: #0a0a09;
+  --muted: #615f59;
+  --muted-foreground: #615f59;
+  --border: #d9d9d6;
+  --border-strong: #b6b6b1;
+  --accent: #00a19a;
+  --accent-strong: #006e69;
+  --accent-foreground: #0a0a09;
+  --focus-ring: #006e69;
+  --overlay: rgba(10, 10, 9, 0.6);
+  color-scheme: light;
 }
 
 @keyframes reveal-up {

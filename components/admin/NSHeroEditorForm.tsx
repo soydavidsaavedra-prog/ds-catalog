@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { MAX_HERO_SLIDES, type HeroSlide, type SiteSettings } from "@/lib/types/catalog";
 import { updateHeroSettingsAction, type ActionState } from "@/app/[tenant]/admin/actions";
+import { buildAccentOverrideVars } from "@/lib/utils/brand";
 import { NSInput, NSLabel } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSHero } from "@/components/home/NSHero";
@@ -139,9 +140,12 @@ export function NSHeroEditorForm({
 
       <div className="w-full xl:flex-1">
         <NSLabel>Vista previa en vivo</NSLabel>
+        {/* tenant-preview: shows the tenant's real accent/light storefront
+            look, not DS Catalog's own dark chrome around it — see
+            app/globals.css and lib/utils/brand.ts buildAccentOverrideVars. */}
         <div
-          className="overflow-hidden rounded-card border border-border"
-          style={{ height: 640 * PREVIEW_SCALE }}
+          className="tenant-preview overflow-hidden rounded-card border border-border"
+          style={{ height: 640 * PREVIEW_SCALE, ...buildAccentOverrideVars(settings) }}
         >
           <div
             style={{
