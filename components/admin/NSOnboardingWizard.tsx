@@ -4,13 +4,16 @@ import { useActionState, useState } from "react";
 import { completeOnboardingAction, type ActionState } from "@/app/[tenant]/admin/actions";
 import { NSInput, NSLabel, NSTextarea } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
+import { NSPrice } from "@/components/ui/NSPrice";
 import { cn } from "@/lib/utils/cn";
+import type { Plan } from "@/lib/repositories/plans-repository";
 
 const initialState: ActionState = {};
 
 const STEPS = [
   { key: "marca", label: "Tu marca" },
   { key: "contacto", label: "Contacto y WhatsApp" },
+  { key: "plan", label: "Tu plan" },
 ] as const;
 
 /**
@@ -22,11 +25,21 @@ const STEPS = [
  * "Finalizar" is reachable again any time since /admin/onboarding stays
  * open until onboarding_completed is set.
  */
-export function NSOnboardingWizard({ tenantId, tenantSlug }: { tenantId: string; tenantSlug: string }) {
+export function NSOnboardingWizard({
+  tenantId,
+  tenantSlug,
+  plans,
+}: {
+  tenantId: string;
+  tenantSlug: string;
+  plans: Plan[];
+}) {
   const boundAction = completeOnboardingAction.bind(null, tenantId, tenantSlug);
   const [state, formAction, pending] = useActionState(boundAction, initialState);
   const [step, setStep] = useState(0);
+  const [planId, setPlanId] = useState<string>("");
   const isLastStep = step === STEPS.length - 1;
+  const canSubmit = !isLastStep || planId !== "";
 
   return (
     <form action={formAction} className="flex flex-col gap-6">
@@ -90,6 +103,42 @@ export function NSOnboardingWizard({ tenantId, tenantSlug }: { tenantId: string;
         </div>
       </div>
 
+      <div className={cn("flex flex-col gap-4", step !== 2 && "hidden")}>
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-wide text-ink-0">Elige tu plan</p>
+          <p className="mt-1 text-xs text-ink-400">
+            Tu cuenta queda en revisión hasta que la confirmemos — te avisamos apenas quede activa.
+          </p>
+        </div>
+        <input type="hidden" name="planId" value={planId} />
+        <div className="flex flex-col gap-3">
+          {plans.map((plan) => (
+            <label
+              key={plan.id}
+              className={cn(
+                "flex cursor-pointer flex-col gap-1 rounded-control border px-4 py-3 transition-colors",
+                planId === plan.id ? "border-accent bg-accent/10" : "border-ink-800 hover:border-ink-700",
+              )}
+            >
+              <span className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="planId-radio"
+                    checked={planId === plan.id}
+                    onChange={() => setPlanId(plan.id)}
+                    className="h-4 w-4 accent-[var(--accent)]"
+                  />
+                  <span className="text-sm font-semibold uppercase tracking-wide">{plan.name}</span>
+                </span>
+                <NSPrice amount={plan.priceCents / 100} size="sm" />
+              </span>
+              {plan.description ? <span className="pl-6 text-xs text-ink-400">{plan.description}</span> : null}
+            </label>
+          ))}
+        </div>
+      </div>
+
       <div className="flex items-center justify-between gap-3">
         {step > 0 ? (
           <NSButton type="button" variant="ghost" onClick={() => setStep((s) => s - 1)}>
@@ -99,7 +148,7 @@ export function NSOnboardingWizard({ tenantId, tenantSlug }: { tenantId: string;
           <span />
         )}
         {isLastStep ? (
-          <NSButton key="finalizar" type="submit" loading={pending}>
+          <NSButton key="finalizar" type="submit" loading={pending} disabled={!canSubmit}>
             Finalizar
           </NSButton>
         ) : (

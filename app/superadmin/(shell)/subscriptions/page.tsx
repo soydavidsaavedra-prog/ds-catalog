@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { listSubscriptionsWithDetails } from "@/lib/repositories/subscriptions-repository";
+import { cn } from "@/lib/utils/cn";
 
 export const metadata: Metadata = {
   title: "Suscripciones",
 };
 
 const STATUS_LABEL: Record<string, string> = {
+  pending: "Pendiente de aprobar",
   active: "Activa",
   trial: "Prueba",
   paused: "Pausada",
@@ -44,14 +46,19 @@ export default async function SuperadminSubscriptionsPage() {
             </thead>
             <tbody>
               {subscriptions.map((s) => (
-                <tr key={s.id} className="border-b border-border last:border-0">
+                <tr
+                  key={s.id}
+                  className={cn("border-b border-border last:border-0", s.status === "pending" && "bg-warning/10")}
+                >
                   <td className="px-4 py-3">
                     <Link href={`/superadmin/tenants/${s.tenantId}`} className="font-medium hover:text-accent-strong">
                       {s.tenantName}
                     </Link>
                   </td>
                   <td className="px-4 py-3">{s.plan?.name ?? "—"}</td>
-                  <td className="px-4 py-3">{STATUS_LABEL[s.status] ?? s.status}</td>
+                  <td className={cn("px-4 py-3", s.status === "pending" && "font-semibold text-warning")}>
+                    {STATUS_LABEL[s.status] ?? s.status}
+                  </td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">
                     {new Date(s.startedAt).toLocaleDateString("es")}
                   </td>

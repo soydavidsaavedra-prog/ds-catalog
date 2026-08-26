@@ -974,3 +974,31 @@ create table if not exists ds_app_users (
 create index if not exists ds_app_users_tenant_id_idx on ds_app_users(tenant_id);
 
 commit;
+
+-- Nuevo estado 'pending': un tenant recién autoregistrado (/registro) elige
+-- un plan en el onboarding y queda con una suscripción 'pending' — ni
+-- "activo e ilimitado" (el comportamiento de "sin suscripción" que
+-- conservan los tenants creados antes de este cambio) ni con acceso real,
+-- hasta que un Super Admin la revisa y la pasa a 'active' desde la ficha
+-- del cliente. Ver lib/tenant/plan-limits.ts (getFreezeReason) y
+-- app/[tenant]/admin/actions.ts (completeOnboardingAction).
+
+begin;
+
+do $$
+declare
+  conname text;
+begin
+  select con.conname into conname
+  from pg_constraint con
+  join pg_class rel on rel.oid = con.conrelid
+  where rel.relname = 'subscriptions' and con.contype = 'c' and pg_get_constraintdef(con.oid) ilike '%status%';
+  if conname is not null then
+    execute format('alter table subscriptions drop constraint %I', conname);
+  end if;
+end $$;
+
+alter table subscriptions add constraint subscriptions_status_check
+  check (status in ('pending', 'active', 'trial', 'paused', 'expired', 'cancelled'));
+
+commit;

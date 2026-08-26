@@ -13,7 +13,7 @@ import type { BusinessType, TenantStatus } from "@/lib/types/tenant";
  * Postgres column defaults/constraints.
  */
 
-export type SubscriptionStatus = "active" | "trial" | "paused" | "expired" | "cancelled";
+export type SubscriptionStatus = "pending" | "active" | "trial" | "paused" | "expired" | "cancelled";
 
 export interface PlanRow {
   id: string;

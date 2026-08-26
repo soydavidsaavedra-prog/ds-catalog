@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { listAllTenantsWithCounts, derivePlatformKpis } from "@/lib/repositories/superadmin-repository";
+import { listSubscriptionsWithDetails } from "@/lib/repositories/subscriptions-repository";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -17,12 +18,13 @@ function KpiCard({ label, value, tone }: { label: string; value: string | number
 }
 
 export default async function SuperadminDashboardPage() {
-  const tenants = await listAllTenantsWithCounts();
+  const [tenants, subscriptions] = await Promise.all([listAllTenantsWithCounts(), listSubscriptionsWithDetails()]);
   const kpis = derivePlatformKpis(tenants);
 
   const attentionTenants = tenants.filter(
     (t) => t.status === "active" && t.counts.products === 0 && t.onboardingCompleted,
   );
+  const pendingSubscriptions = subscriptions.filter((s) => s.status === "pending");
 
   return (
     <div className="flex flex-col gap-8">
@@ -33,6 +35,11 @@ export default async function SuperadminDashboardPage() {
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         <KpiCard label="Clientes" value={kpis.totalTenants} />
+        <KpiCard
+          label="Pendientes de aprobar"
+          value={pendingSubscriptions.length}
+          tone={pendingSubscriptions.length > 0 ? "warning" : undefined}
+        />
         <KpiCard label="Activos" value={kpis.activeTenants} />
         <KpiCard label="Pausados" value={kpis.pausedTenants} tone={kpis.pausedTenants > 0 ? "warning" : undefined} />
         <KpiCard
@@ -44,6 +51,29 @@ export default async function SuperadminDashboardPage() {
         <KpiCard label="Categorías" value={kpis.totalCategories.toLocaleString("es")} />
         <KpiCard label="Pedidos" value={kpis.totalOrders.toLocaleString("es")} />
         <KpiCard label="Archivados" value={kpis.archivedTenants} />
+      </div>
+
+      <div>
+        <h2 className="font-display text-lg uppercase tracking-wide">Solicitudes pendientes</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Clientes que ya se registraron y eligieron un plan — actívalos desde su ficha para que puedan entrar.
+        </p>
+        <div className="mt-3 flex flex-col gap-2">
+          {pendingSubscriptions.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No hay solicitudes esperando aprobación.</p>
+          ) : (
+            pendingSubscriptions.map((s) => (
+              <Link
+                key={s.id}
+                href={`/superadmin/tenants/${s.tenantId}`}
+                className="flex items-center justify-between gap-2 rounded-control border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning hover:border-warning/60"
+              >
+                <span>{s.tenantName}</span>
+                <span className="text-xs uppercase tracking-wide">Eligió: {s.plan?.name ?? "—"}</span>
+              </Link>
+            ))
+          )}
+        </div>
       </div>
 
       <div>

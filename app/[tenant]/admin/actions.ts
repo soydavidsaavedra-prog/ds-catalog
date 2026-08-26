@@ -13,6 +13,8 @@ import {
   type ProductInput,
 } from "@/lib/repositories/product-repository";
 import { getEffectivePlanForTenant } from "@/lib/tenant/plan-limits";
+import { getPlanById } from "@/lib/repositories/plans-repository";
+import { assignPlanToTenant } from "@/lib/repositories/subscriptions-repository";
 import {
   createCategory,
   deleteCategory,
@@ -70,6 +72,12 @@ export async function completeOnboardingAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const planId = String(formData.get("planId") ?? "");
+  const plan = planId ? await getPlanById(planId) : null;
+  if (!plan || !plan.active) {
+    return { error: "Elige un plan para continuar." };
+  }
+
   try {
     await updateSettings(tenantId, {
       slogan: String(formData.get("slogan") ?? "").trim(),
@@ -78,6 +86,11 @@ export async function completeOnboardingAction(
       whatsappDisplay: String(formData.get("whatsappDisplay") ?? "").trim(),
       contactEmail: String(formData.get("contactEmail") ?? "").trim(),
     });
+    // "pending", no "trial"/"active": un Super Admin tiene que revisar y
+    // activar esta solicitud antes de que el tenant pueda usar su panel o
+    // que su catálogo público sea visible — ver getFreezeReason en
+    // lib/tenant/plan-limits.ts.
+    await assignPlanToTenant(tenantId, plan.id, "pending", null);
     await completeOnboarding(tenantId);
   } catch (err) {
     return { error: friendlyDbErrorMessage(err) };

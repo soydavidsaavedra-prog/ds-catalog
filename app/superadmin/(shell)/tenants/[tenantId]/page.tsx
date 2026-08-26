@@ -21,6 +21,7 @@ import { NSAssignOwnerEmailForm } from "@/components/superadmin/NSAssignOwnerEma
 import { NSButton } from "@/components/ui/NSButton";
 import { NSLabel, NSSelect, NSInput } from "@/components/ui/NSInput";
 import { NSLogo } from "@/components/brand/NSLogo";
+import { cn } from "@/lib/utils/cn";
 import { BUSINESS_TYPE_OPTIONS } from "@/lib/tenant/business-type";
 import type { TenantStatus } from "@/lib/types/tenant";
 import type { SubscriptionStatus } from "@/lib/repositories/subscriptions-repository";
@@ -131,8 +132,18 @@ export default async function SuperadminTenantDetailPage({
 
       <div>
         <h2 className="font-display text-lg uppercase tracking-wide">Plan y suscripción</h2>
+        {subscription?.status === "pending" ? (
+          <p className="mt-1 text-sm text-warning">
+            Este cliente se registró y eligió este plan — actívalo abajo (o cámbialo primero) para darle acceso.
+          </p>
+        ) : null}
         {subscription ? (
-          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-card border border-border p-5 text-sm">
+          <div
+            className={cn(
+              "mt-3 flex flex-wrap items-center gap-3 rounded-card border p-5 text-sm",
+              subscription.status === "pending" ? "border-warning/40 bg-warning/10" : "border-border",
+            )}
+          >
             <div className="flex-1">
               <p className="font-display text-lg">{currentPlan?.name ?? "Plan eliminado"}</p>
               <p className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -141,7 +152,7 @@ export default async function SuperadminTenantDetailPage({
               </p>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {(["active", "trial", "paused", "expired", "cancelled"] as SubscriptionStatus[]).map((s) => (
+              {(["pending", "active", "trial", "paused", "expired", "cancelled"] as SubscriptionStatus[]).map((s) => (
                 <form key={s} action={updateSubscriptionStatusAction.bind(null, tenant.id, s)}>
                   <NSButton type="submit" variant={subscription.status === s ? "primary" : "outline"} size="sm">
                     {s}

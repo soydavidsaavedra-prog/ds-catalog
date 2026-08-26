@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { isAdminAuthenticated } from "@/lib/auth/admin-auth";
+import { listPlans } from "@/lib/repositories/plans-repository";
 import { NSOnboardingWizard } from "@/components/admin/NSOnboardingWizard";
 import { DSPlatformMark } from "@/components/brand/DSPlatformMark";
 
@@ -24,6 +25,7 @@ export default async function OnboardingPage({
   if (tenant.onboardingCompleted) {
     redirect(`/${tenantSlug}/admin`);
   }
+  const plans = (await listPlans()).filter((plan) => plan.active);
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-ink-950 px-4 py-16 text-ink-0">
@@ -34,7 +36,7 @@ export default async function OnboardingPage({
           <p className="text-xs text-ink-400">Un par de datos y tu catálogo estará listo.</p>
         </div>
         <div className="rounded-card border border-ink-800 bg-ink-900 p-6">
-          <NSOnboardingWizard tenantId={tenant.id} tenantSlug={tenantSlug} />
+          <NSOnboardingWizard tenantId={tenant.id} tenantSlug={tenantSlug} plans={plans} />
         </div>
       </div>
     </div>
