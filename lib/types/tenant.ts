@@ -27,6 +27,8 @@ export interface Tenant {
   status: TenantStatus;
   businessType: BusinessType;
   onboardingCompleted: boolean;
+  /** Set from /admin/cuenta's "solicitar eliminación de cuenta" — a request Super Admin reviews, not an immediate delete. Null = no pending request. */
+  deletionRequestedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

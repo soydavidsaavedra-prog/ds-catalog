@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { listAllTenantsWithCounts, derivePlatformKpis } from "@/lib/repositories/superadmin-repository";
-import { listSubscriptionsWithDetails } from "@/lib/repositories/subscriptions-repository";
+import { listSubscriptionsWithDetails, listPendingPlanChangeRequests } from "@/lib/repositories/subscriptions-repository";
+import { listPlans } from "@/lib/repositories/plans-repository";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -18,13 +19,20 @@ function KpiCard({ label, value, tone }: { label: string; value: string | number
 }
 
 export default async function SuperadminDashboardPage() {
-  const [tenants, subscriptions] = await Promise.all([listAllTenantsWithCounts(), listSubscriptionsWithDetails()]);
+  const [tenants, subscriptions, planChangeRequests, plans] = await Promise.all([
+    listAllTenantsWithCounts(),
+    listSubscriptionsWithDetails(),
+    listPendingPlanChangeRequests(),
+    listPlans(),
+  ]);
   const kpis = derivePlatformKpis(tenants);
+  const planById = new Map(plans.map((p) => [p.id, p]));
 
   const attentionTenants = tenants.filter(
     (t) => t.status === "active" && t.counts.products === 0 && t.onboardingCompleted,
   );
   const pendingSubscriptions = subscriptions.filter((s) => s.status === "pending");
+  const deletionRequests = tenants.filter((t) => t.deletionRequestedAt);
 
   return (
     <div className="flex flex-col gap-8">
@@ -75,6 +83,46 @@ export default async function SuperadminDashboardPage() {
           )}
         </div>
       </div>
+
+      {planChangeRequests.length > 0 ? (
+        <div>
+          <h2 className="font-display text-lg uppercase tracking-wide">Cambios de plan solicitados</h2>
+          <div className="mt-3 flex flex-col gap-2">
+            {planChangeRequests.map((r) => (
+              <Link
+                key={r.tenantId}
+                href={`/superadmin/tenants/${r.tenantId}`}
+                className="flex items-center justify-between gap-2 rounded-control border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning hover:border-warning/60"
+              >
+                <span>{r.tenantName}</span>
+                <span className="text-xs uppercase tracking-wide">
+                  {planById.get(r.planId)?.name ?? "—"} → {planById.get(r.requestedPlanId)?.name ?? "—"}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {deletionRequests.length > 0 ? (
+        <div>
+          <h2 className="font-display text-lg uppercase tracking-wide">Solicitudes de eliminación de cuenta</h2>
+          <div className="mt-3 flex flex-col gap-2">
+            {deletionRequests.map((t) => (
+              <Link
+                key={t.id}
+                href={`/superadmin/tenants/${t.id}`}
+                className="flex items-center justify-between gap-2 rounded-control border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger hover:border-danger/60"
+              >
+                <span>{t.name}</span>
+                <span className="text-xs uppercase tracking-wide">
+                  {new Date(t.deletionRequestedAt as string).toLocaleDateString("es")}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div>
         <h2 className="font-display text-lg uppercase tracking-wide">Alertas</h2>

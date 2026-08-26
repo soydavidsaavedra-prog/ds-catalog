@@ -25,6 +25,7 @@ function fromRow(row: TenantRow): Tenant {
     // about yet; "moda" is the original behavior every tenant had.
     businessType: row.business_type ?? "moda",
     onboardingCompleted: row.onboarding_completed,
+    deletionRequestedAt: row.deletion_requested_at ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

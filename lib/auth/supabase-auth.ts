@@ -49,6 +49,13 @@ export async function setUserPassword(userId: string, password: string): Promise
   if (error) throw error;
 }
 
+/** /admin/cuenta's "cambiar correo de inicio de sesión" — email_confirm: true skips Supabase's own confirmation-email step, same reasoning as createAuthUser: this is already an authenticated, password-verified change (see changeAccountEmailAction), not a self-service signup. */
+export async function updateAuthUserEmail(userId: string, newEmail: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.auth.admin.updateUserById(userId, { email: newEmail, email_confirm: true });
+  if (error) throw error;
+}
+
 /**
  * Triggers Supabase's own built-in recovery email (their template, their
  * mail sending — no SMTP/Google Cloud setup needed on our side). redirectTo

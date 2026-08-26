@@ -14,6 +14,9 @@ import {
   impersonateTenantAction,
   assignPlanAction,
   updateSubscriptionStatusAction,
+  approvePlanChangeAction,
+  dismissPlanChangeRequestAction,
+  dismissDeletionRequestAction,
 } from "@/app/superadmin/actions";
 import { NSTenantStatusBadge } from "@/components/superadmin/NSTenantStatusBadge";
 import { NSDeleteTenantForm } from "@/components/superadmin/NSDeleteTenantForm";
@@ -54,6 +57,7 @@ export default async function SuperadminTenantDetailPage({
     getAppUserByTenantId(tenant.id),
   ]);
   const currentPlan = subscription ? plans.find((p) => p.id === subscription.planId) : null;
+  const requestedPlan = subscription?.requestedPlanId ? plans.find((p) => p.id === subscription.requestedPlanId) : null;
 
   return (
     <div className="flex flex-col gap-8">
@@ -165,6 +169,26 @@ export default async function SuperadminTenantDetailPage({
           <p className="mt-1 text-sm text-muted-foreground">Sin plan asignado — el cliente sigue activo e ilimitado.</p>
         )}
 
+        {requestedPlan ? (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-control border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
+            <span>
+              El cliente pidió cambiar a <strong>{requestedPlan.name}</strong>.
+            </span>
+            <div className="flex gap-2">
+              <form action={approvePlanChangeAction.bind(null, tenant.id)}>
+                <NSButton type="submit" size="sm">
+                  Aprobar y activar
+                </NSButton>
+              </form>
+              <form action={dismissPlanChangeRequestAction.bind(null, tenant.id)}>
+                <NSButton type="submit" variant="outline" size="sm">
+                  Descartar
+                </NSButton>
+              </form>
+            </div>
+          </div>
+        ) : null}
+
         <form action={assignPlanAction.bind(null, tenant.id)} className="mt-4 flex flex-wrap items-end gap-3">
           <div>
             <NSLabel htmlFor="planId">{subscription ? "Cambiar plan" : "Asignar plan"}</NSLabel>
@@ -225,7 +249,21 @@ export default async function SuperadminTenantDetailPage({
 
       <div className="rounded-card border border-danger/30 p-5">
         <h2 className="font-display text-lg uppercase tracking-wide text-danger">Zona de peligro</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+
+        {tenant.deletionRequestedAt ? (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-control border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
+            <span>
+              El cliente pidió eliminar su cuenta el {new Date(tenant.deletionRequestedAt).toLocaleDateString("es")}.
+            </span>
+            <form action={dismissDeletionRequestAction.bind(null, tenant.id)}>
+              <NSButton type="submit" variant="outline" size="sm">
+                Descartar solicitud
+              </NSButton>
+            </form>
+          </div>
+        ) : null}
+
+        <p className="mt-3 text-sm text-muted-foreground">
           Elimina permanentemente este cliente: su catálogo, pedidos, configuración y todos sus archivos en Supabase
           Storage. Irreversible.
         </p>

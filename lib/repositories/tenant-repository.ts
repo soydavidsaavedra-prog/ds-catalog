@@ -14,6 +14,7 @@ function fromRow(row: TenantRow): Tenant {
     // about yet; "moda" is the original behavior every tenant had.
     businessType: row.business_type ?? "moda",
     onboardingCompleted: row.onboarding_completed,
+    deletionRequestedAt: row.deletion_requested_at ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -115,6 +116,22 @@ export async function createDefaultSettings(tenantId: string, brandName: string)
     statement_description: "",
     statement_image: "",
   });
+  if (error) throw error;
+}
+
+/** /admin/cuenta's "solicitar eliminación de cuenta" — sets a timestamp Super Admin sees on the tenant's own detail page; the actual hard-delete stays a separate, explicit action (deleteTenantAction) so nothing is ever destroyed just because a request exists. */
+export async function requestAccountDeletion(tenantId: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase
+    .from("ds_tenants")
+    .update({ deletion_requested_at: new Date().toISOString() })
+    .eq("id", tenantId);
+  if (error) throw error;
+}
+
+export async function cancelAccountDeletionRequest(tenantId: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from("ds_tenants").update({ deletion_requested_at: null }).eq("id", tenantId);
   if (error) throw error;
 }
 

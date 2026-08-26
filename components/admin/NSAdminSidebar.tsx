@@ -32,6 +32,7 @@ export function NSAdminSidebar({
     { href: `${base}/pedidos`, label: "Pedidos", icon: OrderIcon },
     { href: `${base}/banners`, label: "Banners", icon: BannerIcon },
     { href: `${base}/configuracion`, label: "Configuración", icon: SettingsIcon },
+    { href: `${base}/cuenta`, label: "Mi cuenta", icon: AccountIcon },
   ];
 
   // A route change (tapping a nav link) means the drawer already did its
@@ -167,6 +168,9 @@ function BannerIcon({ className }: { className?: string }) {
 }
 function SettingsIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><circle cx="10" cy="10" r="2.6" /><path d="M10 2.5v2M10 15.5v2M17.5 10h-2M4.5 10h-2M15.1 4.9l-1.4 1.4M6.3 13.7l-1.4 1.4M15.1 15.1l-1.4-1.4M6.3 6.3 4.9 4.9" /></svg>;
+}
+function AccountIcon({ className }: { className?: string }) {
+  return <svg className={className} {...iconProps()} aria-hidden><circle cx="10" cy="6.5" r="3" /><path d="M3.5 17c0-3.6 3-6 6.5-6s6.5 2.4 6.5 6" /></svg>;
 }
 function MenuIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><path strokeLinecap="round" d="M3 5.5h14M3 10h14M3 14.5h14" /></svg>;

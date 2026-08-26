@@ -53,6 +53,13 @@ export async function createAppUser(input: CreateAppUserInput): Promise<AppUser>
   return fromRow(data as AppUserRow);
 }
 
+/** /admin/cuenta's "cambiar correo de inicio de sesión" — caller updates the Supabase Auth user's email first (lib/auth/supabase-auth.ts updateAuthUserEmail), this just keeps the profile row in sync. */
+export async function updateAppUserEmail(id: string, email: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from("ds_app_users").update({ email: email.toLowerCase().trim() }).eq("id", id);
+  if (error) throw error;
+}
+
 /** Super Admin invite flow only — one owner profile per tenant, so replacing an existing one (rare: re-inviting after a mistyped email) means deleting the old row first. */
 export async function deleteAppUserByTenantId(tenantId: string): Promise<void> {
   const supabase = getSupabaseClient();

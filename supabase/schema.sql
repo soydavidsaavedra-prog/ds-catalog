@@ -1002,3 +1002,19 @@ alter table subscriptions add constraint subscriptions_status_check
   check (status in ('pending', 'active', 'trial', 'paused', 'expired', 'cancelled'));
 
 commit;
+
+-- Panel "Mi cuenta" del tenant: pedir un cambio de plan o pedir eliminar
+-- la cuenta son SOLICITUDES, no acciones inmediatas — ninguna de las dos
+-- cambia nada por sí sola. requested_plan_id no toca subscriptions.plan_id
+-- ni .status (el tenant sigue con acceso normal a su plan actual mientras
+-- espera), y deletion_requested_at es solo una marca de tiempo que Super
+-- Admin ve y decide: procede con el hard-delete ya existente
+-- (deleteTenantAction) o descarta la solicitud. Ver app/[tenant]/admin/
+-- actions.ts y app/superadmin/actions.ts.
+
+begin;
+
+alter table subscriptions add column if not exists requested_plan_id uuid references plans(id);
+alter table ds_tenants add column if not exists deletion_requested_at timestamptz;
+
+commit;

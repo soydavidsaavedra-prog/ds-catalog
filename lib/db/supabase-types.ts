@@ -35,6 +35,7 @@ export interface SubscriptionRow {
   tenant_id: string;
   plan_id: string;
   status: SubscriptionStatus;
+  requested_plan_id: string | null;
   started_at: string;
   expires_at: string | null;
   created_at: string;
@@ -68,6 +69,7 @@ export interface TenantRow {
   business_type: BusinessType;
   admin_password_hash: string | null;
   onboarding_completed: boolean;
+  deletion_requested_at: string | null;
   created_at: string;
   updated_at: string;
 }

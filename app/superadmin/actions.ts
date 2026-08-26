@@ -12,6 +12,7 @@ import {
   isAppUserEmailTaken,
 } from "@/lib/repositories/app-users-repository";
 import {
+  cancelAccountDeletionRequest,
   createDefaultSettings,
   createTenant,
   deleteTenant,
@@ -26,6 +27,9 @@ import { createPlan, updatePlan, setPlanActive, type PlanInput } from "@/lib/rep
 import {
   assignPlanToTenant,
   updateSubscriptionStatus,
+  getSubscriptionByTenantId,
+  approvePlanChangeRequest,
+  clearPlanChangeRequest,
   type SubscriptionStatus,
 } from "@/lib/repositories/subscriptions-repository";
 import { deleteAllFilesForTenant } from "@/lib/repositories/storage-repository";
@@ -291,6 +295,33 @@ export async function updateSubscriptionStatusAction(tenantId: string, status: S
   await updateSubscriptionStatus(tenantId, status);
   revalidatePath(`/superadmin/tenants/${tenantId}`);
   revalidatePath("/superadmin/subscriptions");
+}
+
+/** From /admin/cuenta's "solicitar cambio de plan" — moves the tenant onto the requested plan and marks it active in one step. No-op if there's no request (button shouldn't be reachable in that state, but never trust the client alone). */
+export async function approvePlanChangeAction(tenantId: string): Promise<void> {
+  await requireSuperadmin();
+  const subscription = await getSubscriptionByTenantId(tenantId);
+  if (!subscription?.requestedPlanId) return;
+  await approvePlanChangeRequest(tenantId, subscription.requestedPlanId);
+  revalidatePath(`/superadmin/tenants/${tenantId}`);
+  revalidatePath("/superadmin/subscriptions");
+  revalidatePath("/superadmin");
+}
+
+/** Keeps the tenant on their current plan — just clears the request without changing anything. */
+export async function dismissPlanChangeRequestAction(tenantId: string): Promise<void> {
+  await requireSuperadmin();
+  await clearPlanChangeRequest(tenantId);
+  revalidatePath(`/superadmin/tenants/${tenantId}`);
+  revalidatePath("/superadmin");
+}
+
+/** Clears a tenant's "solicitar eliminación de cuenta" flag without deleting anything — actually deleting still goes through deleteTenantAction's typed-slug confirmation below. */
+export async function dismissDeletionRequestAction(tenantId: string): Promise<void> {
+  await requireSuperadmin();
+  await cancelAccountDeletionRequest(tenantId);
+  revalidatePath(`/superadmin/tenants/${tenantId}`);
+  revalidatePath("/superadmin");
 }
 
 // ---------- Delete tenant (hard delete) ----------
