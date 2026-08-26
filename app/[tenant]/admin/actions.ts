@@ -390,7 +390,10 @@ export async function createHeroSlideAction(tenantId: string, tenantSlug: string
     positionX: Number(formData.get("positionX") ?? 50),
     positionY: Number(formData.get("positionY") ?? 50),
     active: formData.get("active") === "on",
-    order: Number(formData.get("order") ?? 1),
+    // Derived from the just-fetched count, not trusted from the client:
+    // two uploads submitted close together would otherwise both compute
+    // the same "next" order client-side and land on the same number.
+    order: current.length + 1,
   });
   revalidatePath(`/${tenantSlug}`);
   revalidatePath(`/${tenantSlug}/admin/inicio`);

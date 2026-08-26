@@ -3,7 +3,10 @@
 import { useRef, useState } from "react";
 import { createHeroSlideAction } from "@/app/[tenant]/admin/actions";
 import { compressImageBeforeUpload } from "@/lib/utils/image-compress";
+import { MAX_VIDEO_UPLOAD_BYTES } from "@/lib/media/upload-limits";
 import { NSLabel } from "@/components/ui/NSInput";
+
+const MAX_VIDEO_MB = MAX_VIDEO_UPLOAD_BYTES / (1024 * 1024);
 
 /**
  * A slide is created in one step (upload the file, then submit) rather
@@ -15,13 +18,11 @@ import { NSLabel } from "@/components/ui/NSInput";
 export function NSHeroSlideUploadForm({
   tenantId,
   tenantSlug,
-  nextOrder,
   atCap,
   maxSlides,
 }: {
   tenantId: string;
   tenantSlug: string;
-  nextOrder: number;
   /** True once the tenant already has `maxSlides` slides — hides the upload control instead of letting a request fail server-side. */
   atCap: boolean;
   maxSlides: number;
@@ -33,25 +34,41 @@ export function NSHeroSlideUploadForm({
   async function handleFile(files: FileList | null) {
     const file = files?.[0];
     if (!file) return;
+
+    const isVideo = file.type.startsWith("video/");
+    // Checked before the request is even sent: a video over this size
+    // gets rejected by Vercel's platform-level body-size limit before our
+    // own upload route ever runs, coming back as an HTML error page
+    // instead of JSON — the confusing "Unexpected token" error. Catching
+    // it here means the user gets the real reason instead.
+    if (isVideo && file.size > MAX_VIDEO_UPLOAD_BYTES) {
+      setError(`El video supera ${MAX_VIDEO_MB}MB. Comprímelo o usa uno más corto.`);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
     setUploading(true);
     setError(null);
 
     try {
-      const isVideo = file.type.startsWith("video/");
       const toUpload = isVideo ? file : await compressImageBeforeUpload(file);
 
       const uploadForm = new FormData();
       uploadForm.append("file", toUpload);
       const res = await fetch(`/${tenantSlug}/admin/api/upload`, { method: "POST", body: uploadForm });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Error al subir el archivo");
+      let data: { url?: string; error?: string };
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error("El archivo es demasiado grande para subir. Prueba con uno más liviano.");
+      }
+      if (!res.ok || !data.url) throw new Error(data.error ?? "Error al subir el archivo");
 
       const createForm = new FormData();
-      createForm.set("mediaUrl", data.url as string);
+      createForm.set("mediaUrl", data.url);
       createForm.set("mediaType", isVideo ? "video" : "image");
       createForm.set("positionX", "50");
       createForm.set("positionY", "50");
-      createForm.set("order", String(nextOrder));
       createForm.set("active", "on");
       await createHeroSlideAction(tenantId, tenantSlug, createForm);
     } catch (err) {
@@ -72,7 +89,7 @@ export function NSHeroSlideUploadForm({
 
   return (
     <div>
-      <p className="text-xs text-muted-foreground">JPG, PNG, WEBP, AVIF (hasta 8MB) o MP4/WEBM (hasta 4MB).</p>
+      <p className="text-xs text-muted-foreground">JPG, PNG, WEBP, AVIF (hasta 8MB) o MP4/WEBM (hasta {MAX_VIDEO_MB}MB).</p>
       <div className="mt-2 flex items-center gap-3">
         <NSLabel className="sr-only" htmlFor="hero-slide-file">
           Archivo
