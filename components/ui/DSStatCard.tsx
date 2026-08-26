@@ -21,7 +21,16 @@ interface DSStatCardProps {
   tone?: Tone;
   hint?: string;
   href?: string;
+  /** 0-100 — renders a thin animated fill bar under the value (e.g. storage or product-count usage against a plan limit). Omit for a plain KPI with no ceiling to show progress against. */
+  progress?: number;
 }
+
+const progressBarTone: Record<Tone, string> = {
+  default: "bg-accent",
+  warning: "bg-warning",
+  danger: "bg-danger",
+  success: "bg-success",
+};
 
 /**
  * A KPI tile with somewhere to look (icon), something to read at a
@@ -29,7 +38,7 @@ interface DSStatCardProps {
  * near-identical flat "number + label" cards previously hand-rolled
  * separately on the tenant dashboard and the Super Admin dashboard.
  */
-export function DSStatCard({ label, value, icon, tone = "default", hint, href }: DSStatCardProps) {
+export function DSStatCard({ label, value, icon, tone = "default", hint, href, progress }: DSStatCardProps) {
   const card = (
     <motion.div
       whileHover={{ y: -3 }}
@@ -45,6 +54,16 @@ export function DSStatCard({ label, value, icon, tone = "default", hint, href }:
         ) : null}
       </div>
       <p className={cn("font-display text-3xl leading-none", toneText[tone])}>{value}</p>
+      {typeof progress === "number" ? (
+        <div className="h-1.5 w-full overflow-hidden rounded-pill bg-surface">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+            transition={{ duration: 0.5, ease: [0.2, 0, 0, 1], delay: 0.1 }}
+            className={cn("h-full rounded-pill", progressBarTone[tone])}
+          />
+        </div>
+      ) : null}
       {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
     </motion.div>
   );

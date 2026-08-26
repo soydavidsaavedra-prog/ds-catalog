@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { getSubscriptionByTenantId } from "@/lib/repositories/subscriptions-repository";
 import { getPlanById, type Plan } from "@/lib/repositories/plans-repository";
 
@@ -58,7 +59,7 @@ export interface PlanStatusInfo {
  * whatever a Super Admin last set it to (cosmetic, until they renew it);
  * this function is the only thing anything else should trust.
  */
-export async function getPlanStatusInfo(tenantId: string): Promise<PlanStatusInfo> {
+export const getPlanStatusInfo = cache(async (tenantId: string): Promise<PlanStatusInfo> => {
   const subscription = await getSubscriptionByTenantId(tenantId);
   if (!subscription) return { freezeReason: null, expiresAt: null, daysUntilExpiry: null };
 
@@ -74,7 +75,7 @@ export async function getPlanStatusInfo(tenantId: string): Promise<PlanStatusInf
 
   const daysUntilExpiry = expiresAtMs !== null ? Math.ceil((expiresAtMs - Date.now()) / (1000 * 60 * 60 * 24)) : null;
   return { freezeReason: null, expiresAt: subscription.expiresAt, daysUntilExpiry };
-}
+});
 
 export async function getFreezeReason(tenantId: string): Promise<FreezeReason | null> {
   return (await getPlanStatusInfo(tenantId)).freezeReason;
