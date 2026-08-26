@@ -5,8 +5,8 @@ import { listCategories } from "@/lib/repositories/category-repository";
 import { listOrders } from "@/lib/repositories/order-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
 import { getEffectivePlanForTenant, getPlanStatusInfo } from "@/lib/tenant/plan-limits";
-import { getStorageUsageForSlug } from "@/lib/repositories/storage-repository";
-import { formatPrice, formatBytes } from "@/lib/utils/format";
+import { getSubscriptionByTenantId, type SubscriptionStatus } from "@/lib/repositories/subscriptions-repository";
+import { formatPrice } from "@/lib/utils/format";
 import { NSWelcomeBanner } from "@/components/admin/NSWelcomeBanner";
 import { DSPageHeader } from "@/components/ui/DSPageHeader";
 import { DSStatCard } from "@/components/ui/DSStatCard";
@@ -15,6 +15,23 @@ import { NSReveal } from "@/components/ui/NSReveal";
 import { NSButton } from "@/components/ui/NSButton";
 import type { Order } from "@/lib/types/order";
 import type { Product } from "@/lib/types/catalog";
+
+const SUBSCRIPTION_STATUS_LABEL: Record<SubscriptionStatus, string> = {
+  active: "Activo",
+  trial: "Prueba",
+  pending: "Pendiente de aprobación",
+  paused: "Pausado",
+  expired: "Vencido",
+  cancelled: "Cancelado",
+};
+const SUBSCRIPTION_STATUS_TONE: Record<SubscriptionStatus, string> = {
+  active: "text-success",
+  trial: "text-accent-strong",
+  pending: "text-warning",
+  paused: "text-muted-foreground",
+  expired: "text-danger",
+  cancelled: "text-danger",
+};
 
 export default async function AdminDashboardPage({
   params,
@@ -26,14 +43,14 @@ export default async function AdminDashboardPage({
   const { tenant: tenantSlug } = await params;
   const { bienvenida } = await searchParams;
   const tenant = await resolveTenant(tenantSlug);
-  const [products, categories, orders, settings, plan, planStatus, storage] = await Promise.all([
+  const [products, categories, orders, settings, plan, planStatus, subscription] = await Promise.all([
     listProducts(tenant.id),
     listCategories(tenant.id),
     listOrders(tenant.id),
     getSettings(tenant.id),
     getEffectivePlanForTenant(tenant.id),
     getPlanStatusInfo(tenant.id),
-    getStorageUsageForSlug(tenantSlug),
+    getSubscriptionByTenantId(tenant.id),
   ]);
   const base = `/${tenantSlug}/admin`;
   const outOfStockCount = products.filter((p) => p.availability === "out_of_stock").length;
@@ -72,9 +89,8 @@ export default async function AdminDashboardPage({
     .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
     .slice(0, 6);
 
-  const storageUsedMb = storage.totalBytes / (1024 * 1024);
-  const storagePercent = plan?.maxStorageMb ? Math.min(100, (storageUsedMb / plan.maxStorageMb) * 100) : null;
   const productsPercent = plan?.maxProducts ? Math.min(100, (products.length / plan.maxProducts) * 100) : null;
+  const productsRemaining = plan?.maxProducts ? Math.max(0, plan.maxProducts - products.length) : null;
 
   const alerts: { title: string; href: string; tone: "warning" | "danger" }[] = [];
   if (products.length === 0) {
@@ -86,8 +102,8 @@ export default async function AdminDashboardPage({
   if (!settings.whatsappNumber) {
     alerts.push({ title: "No configuraste tu WhatsApp para recibir pedidos", href: `${base}/configuracion`, tone: "danger" });
   }
-  if (storagePercent !== null && storagePercent >= 80) {
-    alerts.push({ title: "Estás cerca del límite de almacenamiento de tu plan", href: `${base}/cuenta`, tone: "danger" });
+  if (productsPercent !== null && productsPercent >= 80) {
+    alerts.push({ title: "Estás cerca del límite de productos de tu plan", href: `${base}/cuenta`, tone: "danger" });
   }
 
   return (
@@ -157,41 +173,35 @@ export default async function AdminDashboardPage({
 
         <div className="flex flex-col gap-6">
           <div className="rounded-card border border-border bg-surface-elevated p-5">
-            <h2 className="font-display text-sm uppercase tracking-wide text-muted-foreground">Plan y almacenamiento</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-sm uppercase tracking-wide text-muted-foreground">Tu plan</h2>
+              {subscription ? (
+                <span className={`text-[10px] font-semibold uppercase tracking-wide ${SUBSCRIPTION_STATUS_TONE[subscription.status]}`}>
+                  {SUBSCRIPTION_STATUS_LABEL[subscription.status]}
+                </span>
+              ) : null}
+            </div>
             <p className="mt-2 font-display text-2xl">{plan?.name ?? "Sin límite"}</p>
             {planStatus.daysUntilExpiry !== null ? (
               <p className="mt-1 text-xs text-muted-foreground">Se renueva en {planStatus.daysUntilExpiry} días</p>
             ) : null}
-            <div className="mt-4 flex flex-col gap-3">
-              <div>
+
+            {plan?.maxProducts ? (
+              <div className="mt-4">
                 <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Almacenamiento</span>
-                  <span>{plan?.maxStorageMb ? `${formatBytes(storage.totalBytes)} / ${plan.maxStorageMb} MB` : formatBytes(storage.totalBytes)}</span>
+                  <span className="font-semibold uppercase tracking-wide">Productos</span>
+                  <span>{products.length} / {plan.maxProducts}</span>
                 </div>
-                {storagePercent !== null ? (
-                  <div className="h-1.5 w-full overflow-hidden rounded-pill bg-surface">
-                    <div
-                      className={`h-full rounded-pill ${storagePercent >= 80 ? "bg-danger" : "bg-accent"}`}
-                      style={{ width: `${Math.max(2, storagePercent)}%` }}
-                    />
-                  </div>
-                ) : null}
+                <div className="h-1.5 w-full overflow-hidden rounded-pill bg-surface">
+                  <div
+                    className={`h-full rounded-pill ${productsPercent !== null && productsPercent >= 80 ? "bg-danger" : "bg-accent"}`}
+                    style={{ width: `${Math.max(2, productsPercent ?? 0)}%` }}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{productsRemaining} productos disponibles</p>
               </div>
-              {plan?.maxProducts ? (
-                <div>
-                  <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Productos</span>
-                    <span>{products.length} / {plan.maxProducts}</span>
-                  </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-pill bg-surface">
-                    <div
-                      className={`h-full rounded-pill ${productsPercent !== null && productsPercent >= 80 ? "bg-danger" : "bg-accent"}`}
-                      style={{ width: `${Math.max(2, productsPercent ?? 0)}%` }}
-                    />
-                  </div>
-                </div>
-              ) : null}
-            </div>
+            ) : null}
+
             <Link href={`${base}/cuenta`} className="mt-4 inline-block text-xs font-semibold uppercase tracking-wide text-accent-strong hover:underline">
               Ver mi plan →
             </Link>
