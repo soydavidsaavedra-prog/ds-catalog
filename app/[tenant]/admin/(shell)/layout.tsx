@@ -19,7 +19,7 @@ export default async function AdminShellLayout({
   const tenant = await resolveTenant(tenantSlug);
 
   if (!(await isAdminAuthenticated(tenantSlug))) {
-    redirect("/acceder");
+    redirect(`/acceder?tenant=${tenantSlug}`);
   }
   const impersonating = await isImpersonatedSession();
   const planStatus = await getPlanStatusInfo(tenant.id);

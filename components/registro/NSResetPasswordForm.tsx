@@ -30,9 +30,9 @@ export function NSResetPasswordForm() {
 
   if (accessToken === null) {
     return (
-      <p className="text-sm text-ink-300">
+      <p className="text-sm text-muted-foreground">
         Este enlace no es válido o ya expiró.{" "}
-        <Link href="/acceder/recuperar" className="font-semibold text-accent hover:underline">
+        <Link href="/acceder/recuperar" className="font-semibold text-accent-strong hover:underline">
           Solicita uno nuevo
         </Link>
         .

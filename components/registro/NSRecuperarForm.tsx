@@ -12,7 +12,7 @@ export function NSRecuperarForm() {
 
   if (state.success) {
     return (
-      <p className="text-sm text-ink-300">
+      <p className="text-sm text-muted-foreground">
         Si ese correo tiene una cuenta, te enviamos un enlace para restablecer tu contraseña. Revisa tu bandeja de
         entrada (y spam).
       </p>

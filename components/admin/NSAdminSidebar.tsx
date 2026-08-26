@@ -336,7 +336,7 @@ function SidebarInner({
             </button>
           </form>
         ) : (
-          <form action={logoutAction}>
+          <form action={logoutAction.bind(null, tenantSlug)}>
             <button
               type="submit"
               className={cn(

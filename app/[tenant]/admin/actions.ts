@@ -60,9 +60,9 @@ async function cleanupReplacedImages(
 
 // ---------- Auth ----------
 
-export async function logoutAction(): Promise<void> {
+export async function logoutAction(tenantSlug: string): Promise<void> {
   await destroyAdminSession();
-  redirect("/acceder");
+  redirect(`/acceder?tenant=${tenantSlug}`);
 }
 
 /** Distinct from logoutAction only in where it sends the browser back — the session teardown is identical (destroyAdminSession() already clears the impersonation marker too). */

@@ -26,6 +26,7 @@ async function tenantAdminMiddleware(request: NextRequest): Promise<NextResponse
 
   if (cookieValue !== expected) {
     const loginUrl = new URL("/acceder", request.url);
+    loginUrl.searchParams.set("tenant", tenant);
     return NextResponse.redirect(loginUrl);
   }
 

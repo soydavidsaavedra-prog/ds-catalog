@@ -38,7 +38,7 @@ export default async function AdminSuspendedPage({
   const tenant = await resolveTenant(tenantSlug);
 
   if (!(await isAdminAuthenticated(tenantSlug))) {
-    redirect("/acceder");
+    redirect(`/acceder?tenant=${tenantSlug}`);
   }
   // Redirect back to the normal panel the moment it's no longer frozen —
   // this page isn't where a healthy account should land.
@@ -50,7 +50,7 @@ export default async function AdminSuspendedPage({
   const copy = COPY[reason];
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-ink-950 px-4 text-center text-ink-0">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-4 text-center text-foreground">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3">
           <NSLogo
@@ -64,7 +64,7 @@ export default async function AdminSuspendedPage({
         </div>
         <div className="rounded-card border border-warning/30 bg-warning/10 p-6">
           <p className="font-display text-lg uppercase tracking-wide text-warning">{copy.title}</p>
-          <p className="mt-2 text-sm text-ink-300">{copy.body}</p>
+          <p className="mt-2 text-sm text-muted-foreground">{copy.body}</p>
         </div>
         {platformSettings.supportWhatsappNumber ? (
           <NSWhatsAppButton
@@ -75,8 +75,8 @@ export default async function AdminSuspendedPage({
             Contactar soporte
           </NSWhatsAppButton>
         ) : null}
-        <form action={logoutAction} className="mt-6">
-          <button type="submit" className="text-xs font-medium text-ink-400 hover:text-ink-0">
+        <form action={logoutAction.bind(null, tenantSlug)} className="mt-6">
+          <button type="submit" className="text-xs font-medium text-muted-foreground hover:text-foreground">
             Cerrar sesión
           </button>
         </form>

@@ -159,6 +159,21 @@ export async function getTenantById(tenantId: string): Promise<Tenant | null> {
   return data ? fromRow(data as TenantRow) : null;
 }
 
+/**
+ * Same lookup as resolveTenant, but returns null instead of calling
+ * notFound() — for a spot that wants to *try* showing a tenant's
+ * branding if the slug happens to be valid (e.g. /acceder's optional
+ * ?tenant= hint) without ever being allowed to break the page over a
+ * stale or mistyped slug. Deliberately doesn't filter by status: even a
+ * paused tenant's name/logo is harmless to show on a login screen.
+ */
+export async function getTenantBySlug(slug: string): Promise<Tenant | null> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.from("ds_tenants").select("*").eq("slug", slug).maybeSingle();
+  if (error) throw error;
+  return data ? fromRow(data as TenantRow) : null;
+}
+
 /** Super Admin only — changes reachability (see resolveTenant), never touches the tenant's rows in ns_*. */
 export async function updateTenantStatus(tenantId: string, status: TenantStatus): Promise<void> {
   const supabase = getSupabaseClient();

@@ -27,7 +27,7 @@ export function NSAccederForm() {
       <div>
         <div className="flex items-center justify-between">
           <NSLabel htmlFor="password">Contraseña</NSLabel>
-          <Link href="/acceder/recuperar" className="text-xs font-medium text-accent hover:underline">
+          <Link href="/acceder/recuperar" className="text-xs font-medium text-accent-strong hover:underline">
             ¿Olvidaste tu contraseña?
           </Link>
         </div>
