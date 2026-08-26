@@ -4,7 +4,9 @@ import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { isAdminAuthenticated } from "@/lib/auth/admin-auth";
 import { getFreezeReason, type FreezeReason } from "@/lib/tenant/plan-limits";
 import { getSettings } from "@/lib/repositories/settings-repository";
+import { getPlatformSettings } from "@/lib/repositories/platform-settings-repository";
 import { NSLogo } from "@/components/brand/NSLogo";
+import { NSWhatsAppButton } from "@/components/whatsapp/NSWhatsAppButton";
 import { logoutAction } from "@/app/[tenant]/admin/actions";
 
 export const metadata: Metadata = {
@@ -44,7 +46,7 @@ export default async function AdminSuspendedPage({
   if (!reason) {
     redirect(`/${tenantSlug}/admin`);
   }
-  const settings = await getSettings(tenant.id);
+  const [settings, platformSettings] = await Promise.all([getSettings(tenant.id), getPlatformSettings()]);
   const copy = COPY[reason];
 
   return (
@@ -64,6 +66,15 @@ export default async function AdminSuspendedPage({
           <p className="font-display text-lg uppercase tracking-wide text-warning">{copy.title}</p>
           <p className="mt-2 text-sm text-ink-300">{copy.body}</p>
         </div>
+        {platformSettings.supportWhatsappNumber ? (
+          <NSWhatsAppButton
+            whatsappNumber={platformSettings.supportWhatsappNumber}
+            message={`Hola, necesito ayuda con mi cuenta de DS Catalog (${tenantSlug}).`}
+            className="mt-4"
+          >
+            Contactar soporte
+          </NSWhatsAppButton>
+        ) : null}
         <form action={logoutAction} className="mt-6">
           <button type="submit" className="text-xs font-medium text-ink-400 hover:text-ink-0">
             Cerrar sesión

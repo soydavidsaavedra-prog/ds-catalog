@@ -33,6 +33,7 @@ import {
   type SubscriptionStatus,
 } from "@/lib/repositories/subscriptions-repository";
 import { deleteAllFilesForTenant } from "@/lib/repositories/storage-repository";
+import { updatePlatformSettings } from "@/lib/repositories/platform-settings-repository";
 import { randomBytes } from "node:crypto";
 import { siteConfig } from "@/lib/config/site";
 import { slugify } from "@/lib/utils/slug";
@@ -244,6 +245,7 @@ export async function createPlanAction(
   }
 
   revalidatePath("/superadmin/plans");
+  revalidatePath("/");
   redirect("/superadmin/plans");
 }
 
@@ -264,6 +266,7 @@ export async function updatePlanAction(
   }
 
   revalidatePath("/superadmin/plans");
+  revalidatePath("/");
   redirect("/superadmin/plans");
 }
 
@@ -271,6 +274,7 @@ export async function togglePlanActiveAction(planId: string, active: boolean): P
   await requireSuperadmin();
   await setPlanActive(planId, active);
   revalidatePath("/superadmin/plans");
+  revalidatePath("/");
 }
 
 // ---------- Subscriptions ----------
@@ -363,4 +367,33 @@ export async function deleteTenantAction(
   revalidatePath("/superadmin/tenants");
   revalidatePath("/superadmin");
   redirect("/superadmin/tenants");
+}
+
+// ---------- Configuración de plataforma ----------
+
+/**
+ * El único número de WhatsApp de soporte de toda la plataforma — se ve en
+ * la landing pública, en el panel de cada tenant y en su página de cuenta
+ * suspendida/pendiente. revalidatePath("/") porque la landing lo muestra
+ * y de otro modo quedaría cacheado con el valor viejo hasta el próximo
+ * deploy.
+ */
+export async function updatePlatformSettingsAction(
+  _prev: SuperadminActionState,
+  formData: FormData,
+): Promise<SuperadminActionState> {
+  await requireSuperadmin();
+
+  const supportWhatsappNumber = String(formData.get("supportWhatsappNumber") ?? "").replace(/[^0-9]/g, "");
+  const supportWhatsappDisplay = String(formData.get("supportWhatsappDisplay") ?? "").trim();
+
+  if (!supportWhatsappNumber) {
+    return { error: "Escribe el número de soporte (solo dígitos, con código de país)." };
+  }
+
+  await updatePlatformSettings({ supportWhatsappNumber, supportWhatsappDisplay });
+
+  revalidatePath("/superadmin/configuracion");
+  revalidatePath("/");
+  return {};
 }

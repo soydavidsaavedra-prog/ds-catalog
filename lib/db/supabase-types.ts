@@ -51,6 +51,13 @@ export interface SuperAdminUserRow {
   updated_at: string;
 }
 
+export interface PlatformSettingsRow {
+  id: boolean;
+  support_whatsapp_number: string;
+  support_whatsapp_display: string;
+  updated_at: string;
+}
+
 export type AppUserRole = "owner" | "superadmin";
 
 export interface AppUserRow {
@@ -231,6 +238,7 @@ export interface Database {
     Tables: {
       super_admin_users: TableDef<SuperAdminUserRow>;
       ds_app_users: TableDef<AppUserRow>;
+      platform_settings: TableDef<PlatformSettingsRow>;
       plans: TableDef<PlanRow>;
       subscriptions: TableDef<SubscriptionRow, SubscriptionsRelationships>;
       ds_tenants: TableDef<TenantRow>;

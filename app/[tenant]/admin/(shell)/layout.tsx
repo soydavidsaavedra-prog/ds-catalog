@@ -3,6 +3,7 @@ import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { isAdminAuthenticated, isImpersonatedSession } from "@/lib/auth/admin-auth";
 import { getSettings } from "@/lib/repositories/settings-repository";
 import { getPlanStatusInfo, EXPIRY_WARNING_DAYS } from "@/lib/tenant/plan-limits";
+import { getPlatformSettings } from "@/lib/repositories/platform-settings-repository";
 import { NSAdminSidebar } from "@/components/admin/NSAdminSidebar";
 import { NSPlanExpiryBanner } from "@/components/admin/NSPlanExpiryBanner";
 
@@ -28,7 +29,7 @@ export default async function AdminShellLayout({
   if (!impersonating && planStatus.freezeReason) {
     redirect(`/${tenantSlug}/admin/suspended`);
   }
-  const settings = await getSettings(tenant.id);
+  const [settings, platformSettings] = await Promise.all([getSettings(tenant.id), getPlatformSettings()]);
 
   return (
     <div className="flex min-h-dvh flex-col bg-surface lg:flex-row">
@@ -38,6 +39,7 @@ export default async function AdminShellLayout({
         brandName={settings.brandName}
         tagline={settings.heroSubtitle}
         impersonating={impersonating}
+        supportWhatsappNumber={platformSettings.supportWhatsappNumber}
       />
       <div className="min-w-0 flex-1 overflow-x-hidden">
         <main className="mx-auto max-w-6xl px-6 py-8 sm:px-10">

@@ -1018,3 +1018,26 @@ alter table subscriptions add column if not exists requested_plan_id uuid refere
 alter table ds_tenants add column if not exists deletion_requested_at timestamptz;
 
 commit;
+
+-- Un solo número de WhatsApp de soporte para toda la plataforma —
+-- distinto del WhatsApp propio de cada tenant (ns_settings.whatsapp_number,
+-- para que SUS clientes le compren). Este es el que ve un tenant cuando
+-- necesita contactar a la plataforma (panel administrativo, cuenta
+-- vencida/pendiente) y el que se promociona en la landing pública. Patrón
+-- de tabla singleton: id siempre 'true', el check garantiza que nunca haya
+-- una segunda fila. Editable desde /superadmin/configuracion.
+
+begin;
+
+create table if not exists platform_settings (
+  id boolean primary key default true check (id),
+  support_whatsapp_number text not null default '',
+  support_whatsapp_display text not null default '',
+  updated_at timestamptz not null default now()
+);
+
+insert into platform_settings (id, support_whatsapp_number, support_whatsapp_display)
+values (true, '584245210934', '+58 424 521 0934')
+on conflict (id) do nothing;
+
+commit;

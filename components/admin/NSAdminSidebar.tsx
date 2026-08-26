@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NSLogo } from "@/components/brand/NSLogo";
+import { NSWhatsAppButton } from "@/components/whatsapp/NSWhatsAppButton";
 import { logoutAction, endImpersonationAction } from "@/app/[tenant]/admin/actions";
 import { cn } from "@/lib/utils/cn";
 
@@ -13,6 +14,7 @@ export function NSAdminSidebar({
   brandName,
   tagline,
   impersonating = false,
+  supportWhatsappNumber,
 }: {
   tenantSlug: string;
   logoSrc?: string;
@@ -20,6 +22,8 @@ export function NSAdminSidebar({
   tagline: string;
   /** True when this session was opened via Super Admin's "Administrar catálogo" — see app/superadmin/actions.ts impersonateTenantAction. Swaps the footer for a clearly-labeled exit back to Super Admin instead of a normal logout, so no one mistakes this for the tenant's own session. */
   impersonating?: boolean;
+  /** Platform-wide support number (lib/repositories/platform-settings-repository.ts) — unrelated to this tenant's own WhatsApp for taking orders. Empty until a Super Admin sets one in /superadmin/configuracion. */
+  supportWhatsappNumber?: string;
 }) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
@@ -126,6 +130,16 @@ export function NSAdminSidebar({
           <Link href={`/${tenantSlug}`} className="block rounded-control px-3 py-2 text-xs font-medium text-ink-400 hover:text-ink-0">
             ← Ver sitio
           </Link>
+          {supportWhatsappNumber ? (
+            <NSWhatsAppButton
+              whatsappNumber={supportWhatsappNumber}
+              message={`Hola, necesito soporte con mi cuenta de DS Catalog (${tenantSlug}).`}
+              variant="inline"
+              className="w-full rounded-control px-3 py-2 text-ink-400 hover:text-ink-0"
+            >
+              Contactar soporte
+            </NSWhatsAppButton>
+          ) : null}
           {impersonating ? (
             <form action={endImpersonationAction}>
               <button type="submit" className="w-full rounded-control px-3 py-2 text-left text-xs font-semibold text-warning hover:text-accent-strong">

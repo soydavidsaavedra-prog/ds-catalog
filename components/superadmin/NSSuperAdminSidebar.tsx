@@ -13,6 +13,7 @@ const LINKS = [
   { href: "/superadmin/plans", label: "Planes", icon: PlansIcon },
   { href: "/superadmin/subscriptions", label: "Suscripciones", icon: SubscriptionsIcon },
   { href: "/superadmin/storage", label: "Storage", icon: StorageIcon },
+  { href: "/superadmin/configuracion", label: "Configuración", icon: SettingsIcon },
 ];
 
 export function NSSuperAdminSidebar({ email }: { email: string }) {
@@ -131,6 +132,9 @@ function SubscriptionsIcon({ className }: { className?: string }) {
 }
 function StorageIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><ellipse cx="10" cy="5" rx="7" ry="2.5" /><path d="M3 5v10c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V5" /><path d="M3 10c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5" /></svg>;
+}
+function SettingsIcon({ className }: { className?: string }) {
+  return <svg className={className} {...iconProps()} aria-hidden><circle cx="10" cy="10" r="2.6" /><path d="M10 2.5v2M10 15.5v2M17.5 10h-2M4.5 10h-2M15.1 4.9l-1.4 1.4M6.3 13.7l-1.4 1.4M15.1 15.1l-1.4-1.4M6.3 6.3 4.9 4.9" /></svg>;
 }
 function MenuIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><path strokeLinecap="round" d="M3 5.5h14M3 10h14M3 14.5h14" /></svg>;
