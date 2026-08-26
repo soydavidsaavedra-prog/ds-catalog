@@ -2,8 +2,9 @@ import { redirect } from "next/navigation";
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { isAdminAuthenticated, isImpersonatedSession } from "@/lib/auth/admin-auth";
 import { getSettings } from "@/lib/repositories/settings-repository";
-import { isSubscriptionFrozen } from "@/lib/tenant/plan-limits";
+import { getPlanStatusInfo, EXPIRY_WARNING_DAYS } from "@/lib/tenant/plan-limits";
 import { NSAdminSidebar } from "@/components/admin/NSAdminSidebar";
+import { NSPlanExpiryBanner } from "@/components/admin/NSPlanExpiryBanner";
 
 export default async function AdminShellLayout({
   children,
@@ -19,11 +20,12 @@ export default async function AdminShellLayout({
     redirect("/acceder");
   }
   const impersonating = await isImpersonatedSession();
+  const planStatus = await getPlanStatusInfo(tenant.id);
   // The tenant's own session is frozen out the moment its plan expires —
   // but a Super Admin impersonating in to fix things (renew the plan,
   // check on the account) must still get through. See
-  // lib/tenant/plan-limits.ts isSubscriptionFrozen.
-  if (!impersonating && (await isSubscriptionFrozen(tenant.id))) {
+  // lib/tenant/plan-limits.ts getPlanStatusInfo.
+  if (!impersonating && planStatus.freezeReason) {
     redirect(`/${tenantSlug}/admin/suspended`);
   }
   const settings = await getSettings(tenant.id);
@@ -38,7 +40,16 @@ export default async function AdminShellLayout({
         impersonating={impersonating}
       />
       <div className="min-w-0 flex-1 overflow-x-hidden">
-        <main className="mx-auto max-w-6xl px-6 py-8 sm:px-10">{children}</main>
+        <main className="mx-auto max-w-6xl px-6 py-8 sm:px-10">
+          {planStatus.daysUntilExpiry !== null && planStatus.daysUntilExpiry <= EXPIRY_WARNING_DAYS ? (
+            <NSPlanExpiryBanner
+              tenantSlug={tenantSlug}
+              daysUntilExpiry={planStatus.daysUntilExpiry}
+              expiresAt={planStatus.expiresAt}
+            />
+          ) : null}
+          {children}
+        </main>
       </div>
     </div>
   );

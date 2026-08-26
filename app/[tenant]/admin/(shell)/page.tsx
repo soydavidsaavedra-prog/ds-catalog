@@ -4,13 +4,17 @@ import { listProducts } from "@/lib/repositories/product-repository";
 import { listCategories } from "@/lib/repositories/category-repository";
 import { listOrders } from "@/lib/repositories/order-repository";
 import { formatPrice } from "@/lib/utils/format";
+import { NSWelcomeBanner } from "@/components/admin/NSWelcomeBanner";
 
 export default async function AdminDashboardPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ tenant: string }>;
+  searchParams: Promise<{ bienvenida?: string }>;
 }) {
   const { tenant: tenantSlug } = await params;
+  const { bienvenida } = await searchParams;
   const tenant = await resolveTenant(tenantSlug);
   const [products, categories, orders] = await Promise.all([
     listProducts(tenant.id),
@@ -28,6 +32,7 @@ export default async function AdminDashboardPage({
 
   return (
     <div className="flex flex-col gap-8">
+      {bienvenida === "1" ? <NSWelcomeBanner brandName={tenant.name} /> : null}
       <div>
         <h1 className="font-display text-3xl uppercase tracking-wide">Dashboard</h1>
         <p className="mt-1 text-sm text-muted-foreground">Resumen general de la tienda.</p>

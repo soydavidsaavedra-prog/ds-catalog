@@ -111,7 +111,7 @@ async function signInAndRedirect(appUserId: string): Promise<AccederActionState>
   }
 
   await createAdminSession(tenant.slug);
-  redirect(`/${tenant.slug}/admin`);
+  redirect(`/${tenant.slug}/admin?bienvenida=1`);
 }
 
 export type RecuperarActionState = { error?: string; success?: boolean };
