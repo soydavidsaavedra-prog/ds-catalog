@@ -212,14 +212,26 @@ type TableDef<Row, Relationships extends readonly unknown[] = []> = {
 
 // subscriptions is the only table queried with a PostgREST embed
 // (lib/repositories/subscriptions-repository.ts listSubscriptionsWithDetails
-// selects "*, plans(*), ds_tenants(name, slug)") — the generic client
-// needs these declared to type the embed's result instead of erroring
-// with SelectQueryError, since (unlike a real `supabase gen types` run)
-// this hand-written Database type has no other way to know the FKs exist.
+// selects "*, plans!subscriptions_plan_id_fkey(*), ds_tenants(name, slug)")
+// — the generic client needs these declared to type the embed's result
+// instead of erroring with SelectQueryError, since (unlike a real
+// `supabase gen types` run) this hand-written Database type has no other
+// way to know the FKs exist. The explicit `!subscriptions_plan_id_fkey`
+// hint in that query (rather than a bare `plans(*)`) is required at
+// runtime too, independent of this type: subscriptions has a SECOND FK
+// into plans (requested_plan_id, below) and PostgREST rejects an
+// unqualified embed once more than one relationship could match.
 type SubscriptionsRelationships = [
   {
     foreignKeyName: "subscriptions_plan_id_fkey";
     columns: ["plan_id"];
+    isOneToOne: false;
+    referencedRelation: "plans";
+    referencedColumns: ["id"];
+  },
+  {
+    foreignKeyName: "subscriptions_requested_plan_id_fkey";
+    columns: ["requested_plan_id"];
     isOneToOne: false;
     referencedRelation: "plans";
     referencedColumns: ["id"];

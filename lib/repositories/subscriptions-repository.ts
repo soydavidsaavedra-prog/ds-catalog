@@ -131,12 +131,21 @@ export interface SubscriptionWithDetails extends Subscription {
  * foreign keys, so this isn't the manual client-side-join workaround
  * PocketBase forced Horizon into (see docs/ANALISIS_HORIZON_REFERENCIA_SAAS.md
  * section 8) — Postgres does the join.
+ *
+ * `plans!subscriptions_plan_id_fkey(*)`, not a bare `plans(*)`: since
+ * requested_plan_id also references plans, PostgREST can no longer infer
+ * which foreign key an unqualified `plans(*)` embed means and errors with
+ * PGRST201 ("more than one relationship was found"). This explicit hint
+ * always resolves through plan_id — the tenant's *current* plan, which is
+ * what this list has always shown; requested_plan_id's own plan is looked
+ * up separately wherever it's needed (see listPendingPlanChangeRequests
+ * above, and the tenant detail page's own plans.find()).
  */
 export async function listSubscriptionsWithDetails(): Promise<SubscriptionWithDetails[]> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from("subscriptions")
-    .select("*, plans(*), ds_tenants(name, slug)")
+    .select("*, plans!subscriptions_plan_id_fkey(*), ds_tenants(name, slug)")
     .order("created_at", { ascending: false });
   if (error) throw error;
 
