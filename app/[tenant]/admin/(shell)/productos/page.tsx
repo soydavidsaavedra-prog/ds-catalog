@@ -3,6 +3,7 @@ import { listProducts } from "@/lib/repositories/product-repository";
 import { listCategories } from "@/lib/repositories/category-repository";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSProductsTable } from "@/components/admin/NSProductsTable";
+import { DSPageHeader } from "@/components/ui/DSPageHeader";
 
 export default async function AdminProductsPage({
   params,
@@ -18,13 +19,11 @@ export default async function AdminProductsPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-3xl uppercase tracking-wide">Productos</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{products.length} productos en catálogo.</p>
-        </div>
-        <NSButton href={`/${tenantSlug}/admin/productos/nuevo`} size="sm">+ Nuevo producto</NSButton>
-      </div>
+      <DSPageHeader
+        title="Productos"
+        description={`${products.length} productos en catálogo.`}
+        actions={<NSButton href={`/${tenantSlug}/admin/productos/nuevo`} size="sm">+ Nuevo producto</NSButton>}
+      />
 
       <NSProductsTable
         tenantId={tenant.id}

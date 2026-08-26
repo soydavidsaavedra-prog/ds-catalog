@@ -6,6 +6,8 @@ import { listAllTenantsWithCounts } from "@/lib/repositories/superadmin-reposito
 import { togglePlanActiveAction } from "@/app/superadmin/actions";
 import { NSPlanForm } from "@/components/superadmin/NSPlanForm";
 import { NSButton } from "@/components/ui/NSButton";
+import { DSPageHeader } from "@/components/ui/DSPageHeader";
+import { DSStatusBadge } from "@/components/ui/DSStatusBadge";
 
 export const metadata: Metadata = {
   title: "Planes",
@@ -28,13 +30,10 @@ export default async function SuperadminPlansPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="font-display text-2xl uppercase tracking-wide">Planes</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Estructura de planes — sin cobros automáticos todavía. Sirve para asignar límites y precio de referencia
-          a cada cliente.
-        </p>
-      </div>
+      <DSPageHeader
+        title="Planes"
+        description="Estructura de planes — sin cobros automáticos todavía. Sirve para asignar límites y precio de referencia a cada cliente."
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {plans.map((plan) => (
@@ -44,11 +43,7 @@ export default async function SuperadminPlansPage() {
                 <p className="font-display text-lg uppercase tracking-wide">{plan.name}</p>
                 <p className="text-xs text-muted-foreground">{plan.key}</p>
               </div>
-              <span
-                className={`rounded-pill border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${plan.active ? "border-success/30 bg-success/10 text-success" : "border-border-strong bg-muted/10 text-muted-foreground"}`}
-              >
-                {plan.active ? "Activo" : "Inactivo"}
-              </span>
+              <DSStatusBadge label={plan.active ? "Activo" : "Inactivo"} tone={plan.active ? "success" : "muted"} />
             </div>
             <p className="font-display text-2xl">{formatPriceUsd(plan.priceCents)}<span className="text-sm text-muted-foreground">/mes</span></p>
             {plan.description ? <p className="text-sm text-muted-foreground">{plan.description}</p> : null}

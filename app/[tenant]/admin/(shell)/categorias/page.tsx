@@ -1,8 +1,11 @@
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { listCategories, buildCategoryTree } from "@/lib/repositories/category-repository";
+import { listProducts } from "@/lib/repositories/product-repository";
 import { getBusinessTypeProfile } from "@/lib/tenant/business-type";
 import { NSInput, NSLabel, NSSelect, NSTextarea } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
+import { DSStatusBadge } from "@/components/ui/DSStatusBadge";
+import { DSPageHeader } from "@/components/ui/DSPageHeader";
 import { NSAdminDeleteButton } from "@/components/admin/NSAdminDeleteButton";
 import { NSSingleImageUploader } from "@/components/admin/NSSingleImageUploader";
 import {
@@ -19,6 +22,7 @@ function CategoryRow({
   tenantSlug,
   category,
   parents,
+  productCount,
   isFirst,
   isLast,
 }: {
@@ -26,12 +30,13 @@ function CategoryRow({
   tenantSlug: string;
   category: Category;
   parents: Category[];
+  productCount: number;
   isFirst: boolean;
   isLast: boolean;
 }) {
   return (
     <div className="rounded-card border border-border bg-surface-elevated p-5">
-      <div className="mb-3 flex items-center gap-2">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <form action={moveCategoryAction.bind(null, tenantId, tenantSlug, category.id, "up")}>
           <button
             type="submit"
@@ -55,6 +60,10 @@ function CategoryRow({
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Orden de visualización
         </span>
+        <div className="ml-auto flex items-center gap-2">
+          <DSStatusBadge label={`${productCount} producto${productCount === 1 ? "" : "s"}`} tone="accent" />
+          <DSStatusBadge label={category.active ? "Activa" : "Inactiva"} tone={category.active ? "success" : "muted"} />
+        </div>
       </div>
       <form action={updateCategoryAction.bind(null, tenantId, tenantSlug, category.id)} className="flex flex-col gap-4">
         <div className="grid gap-4 sm:grid-cols-[1fr_1fr_1fr_2fr_auto]">
@@ -90,8 +99,8 @@ function CategoryRow({
       </form>
       <div className="mt-3 flex items-center gap-4 border-t border-border pt-3">
         <form action={toggleCategoryActiveAction.bind(null, tenantId, tenantSlug, category.id, !category.active)}>
-          <button type="submit" className={"text-xs font-semibold uppercase " + (category.active ? "text-success" : "text-muted-foreground")}>
-            {category.active ? "● Activa" : "○ Inactiva"} — cambiar
+          <button type="submit" className="text-xs font-semibold uppercase text-muted-foreground hover:text-accent-strong">
+            {category.active ? "Desactivar" : "Activar"}
           </button>
         </form>
         <a href={`/${tenantSlug}/${category.slug}`} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold uppercase text-accent-strong hover:underline">
@@ -113,22 +122,22 @@ export default async function AdminCategoriesPage({
 }) {
   const { tenant: tenantSlug } = await params;
   const tenant = await resolveTenant(tenantSlug);
-  const categories = await listCategories(tenant.id);
+  const [categories, products] = await Promise.all([listCategories(tenant.id), listProducts(tenant.id)]);
   const tree = buildCategoryTree(categories);
   const parents = categories.filter((c) => c.parentId === null);
   const createAction = createCategoryAction.bind(null, tenant.id, tenantSlug);
   const { exampleParentCategory, exampleChildCategory } = getBusinessTypeProfile(tenant.businessType);
+  const productCountBySlug = new Map<string, number>();
+  for (const product of products) {
+    productCountBySlug.set(product.categorySlug, (productCountBySlug.get(product.categorySlug) ?? 0) + 1);
+  }
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="font-display text-3xl uppercase tracking-wide">Categorías</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {categories.length} categorías ({parents.length} principales). Se usan para las páginas /[categoría] y
-          los filtros del catálogo. Una categoría principal (ej. {exampleParentCategory.name}) agrupa las páginas
-          de sus subcategorías (ej. {exampleChildCategory.name}).
-        </p>
-      </div>
+      <DSPageHeader
+        title="Categorías"
+        description={`${categories.length} categorías (${parents.length} principales). Se usan para las páginas /[categoría] y los filtros del catálogo. Una categoría principal (ej. ${exampleParentCategory.name}) agrupa las páginas de sus subcategorías (ej. ${exampleChildCategory.name}).`}
+      />
 
       <section className="max-w-xl rounded-card border border-border bg-surface-elevated p-6">
         <h2 className="font-display text-lg uppercase tracking-wide">Nueva categoría</h2>
@@ -175,6 +184,7 @@ export default async function AdminCategoriesPage({
               tenantSlug={tenantSlug}
               category={parent}
               parents={parents}
+              productCount={productCountBySlug.get(parent.slug) ?? 0}
               isFirst={parentIndex === 0}
               isLast={parentIndex === tree.length - 1}
             />
@@ -187,6 +197,7 @@ export default async function AdminCategoriesPage({
                     tenantSlug={tenantSlug}
                     category={child}
                     parents={parents}
+                    productCount={productCountBySlug.get(child.slug) ?? 0}
                     isFirst={childIndex === 0}
                     isLast={childIndex === parent.children.length - 1}
                   />
