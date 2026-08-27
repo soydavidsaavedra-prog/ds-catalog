@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { resolveTenant, listActiveTenants } from "@/lib/tenant/resolve-tenant";
 import {
@@ -9,10 +8,8 @@ import {
 } from "@/lib/repositories/product-repository";
 import { getCategoryBySlug } from "@/lib/repositories/category-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
+import { resolveTheme } from "@/lib/themes/registry";
 import { absoluteUrl, formatPrice } from "@/lib/utils/format";
-import { NSProductGallery } from "@/components/storefront/themes/theme-01/NSProductGallery";
-import { NSProductPurchasePanel } from "@/components/storefront/themes/theme-01/NSProductPurchasePanel";
-import { NSRelatedProducts } from "@/components/storefront/themes/theme-01/NSRelatedProducts";
 
 export async function generateStaticParams() {
   const tenants = await listActiveTenants();
@@ -77,45 +74,15 @@ export default async function ProductPage({
     getCategoryBySlug(tenant.id, product.categorySlug),
     getSettings(tenant.id),
   ]);
-  const paymentBadge = { icon: settings.paymentBadgeIcon, label: settings.paymentBadgeLabel };
-  const base = `/${tenantSlug}`;
+  const theme = resolveTheme(tenant.theme);
 
   return (
-    <div>
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Link href={base} className="hover:text-foreground">Inicio</Link>
-          <span>/</span>
-          <Link href={`${base}/catalogo`} className="hover:text-foreground">Catálogo</Link>
-          {category ? (
-            <>
-              <span>/</span>
-              <Link href={`${base}/${category.slug}`} className="hover:text-foreground">{category.name}</Link>
-            </>
-          ) : null}
-          <span>/</span>
-          <span className="text-foreground">{product.name}</span>
-        </nav>
-
-        <div className="mt-6 grid gap-10 lg:grid-cols-2 lg:gap-16">
-          <NSProductGallery
-            images={product.images}
-            reference={product.reference}
-            name={product.name}
-            brandName={settings.brandName}
-            cardAspectRatio={product.cardAspectRatio}
-            imageFit={product.imageFit}
-          />
-          <NSProductPurchasePanel tenantSlug={tenantSlug} product={product} paymentBadge={paymentBadge} />
-        </div>
-      </div>
-
-      <NSRelatedProducts
-        tenantSlug={tenantSlug}
-        products={related}
-        paymentBadge={paymentBadge}
-        brandName={settings.brandName}
-      />
-    </div>
+    <theme.ProductDetail
+      tenantSlug={tenantSlug}
+      product={product}
+      category={category}
+      related={related}
+      settings={settings}
+    />
   );
 }

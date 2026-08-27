@@ -1,6 +1,6 @@
 import type { Audience, Availability, CardAspectRatio, ImageFit, ProductColor } from "@/lib/types/catalog";
 import type { OrderItem, OrderStatus } from "@/lib/types/order";
-import type { BusinessType, TenantStatus } from "@/lib/types/tenant";
+import type { BusinessType, TenantStatus, ThemeKey } from "@/lib/types/tenant";
 
 /**
  * Minimal hand-written Database type (row shapes only — see
@@ -74,6 +74,7 @@ export interface TenantRow {
   name: string;
   status: TenantStatus;
   business_type: BusinessType;
+  theme: ThemeKey;
   admin_password_hash: string | null;
   onboarding_completed: boolean;
   deletion_requested_at: string | null;

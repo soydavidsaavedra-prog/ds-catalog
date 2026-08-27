@@ -3,8 +3,7 @@ import { notFound } from "next/navigation";
 import { resolveTenant, listActiveTenants } from "@/lib/tenant/resolve-tenant";
 import { getCategoryBySlug, getDescendantSlugs, listCategories } from "@/lib/repositories/category-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
-import { NSCatalogView } from "@/components/storefront/themes/theme-01/NSCatalogView";
-import { NSCategoryHero } from "@/components/storefront/themes/theme-01/NSCategoryHero";
+import { resolveTheme } from "@/lib/themes/registry";
 import { parseCatalogSearchParams, type SearchParams } from "@/lib/search/catalog-params";
 
 export async function generateStaticParams() {
@@ -54,19 +53,16 @@ export default async function CategoryPage({
     getSettings(tenant.id),
   ]);
   const filters = parseCatalogSearchParams(resolvedParams);
+  const theme = resolveTheme(tenant.theme);
 
   return (
-    <div>
-      <NSCategoryHero category={category} brandName={settings.brandName} />
-      <NSCatalogView
-        tenantId={tenant.id}
-        tenantSlug={tenantSlug}
-        filters={filters}
-        forcedCategorySlugs={forcedCategorySlugs}
-        eyebrow="Colección"
-        title={category.name}
-        description={category.description}
-      />
-    </div>
+    <theme.Category
+      tenantId={tenant.id}
+      tenantSlug={tenantSlug}
+      category={category}
+      filters={filters}
+      forcedCategorySlugs={forcedCategorySlugs}
+      settings={settings}
+    />
   );
 }

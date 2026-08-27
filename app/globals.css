@@ -13,15 +13,17 @@
   --border-strong: #b6b6b1;
   /*
    * Platform default accent — teal, sampled from the DS Catalog mark
-   * (public/ds-catalog-mark.png, #00a19a). This is what every tenant gets
-   * unless it has its own accentColor/accentColorStrong/accentForeground
-   * set (see lib/utils/brand.ts buildAccentOverrideCss and the
-   * app/[tenant]/(storefront)/layout.tsx + app/[tenant]/admin/layout.tsx
-   * injection points). El Nuevo Sánchez is the one tenant pinned to its
-   * original gold (#f8c909/#e0b400) — see supabase/schema.sql's
+   * (public/ds-catalog-mark.png, #00a19a). This is Theme 01's accent
+   * unless a tenant has its own accentColor/accentColorStrong/
+   * accentForeground set (see lib/utils/brand.ts buildAccentOverrideVars,
+   * applied as an inline style by app/[tenant]/(storefront)/layout.tsx;
+   * app/[tenant]/admin/layout.tsx never applies a tenant's accent at all —
+   * see .ds-platform below). El Nuevo Sánchez is the one tenant pinned to
+   * its original gold (#f8c909/#e0b400) — see supabase/schema.sql's
    * "per-tenant accent color override" section — so demo and any new
    * self-registered tenant read as their own platform, not as El Nuevo
-   * Sánchez's brand.
+   * Sánchez's brand. A different storefront Theme (e.g. .theme-ferrecol
+   * below) can declare its own default accent instead of this one.
    */
   --accent: #00a19a;
   --accent-strong: #006e69;
@@ -286,6 +288,39 @@
   --focus-ring: #006e69;
   --overlay: rgba(10, 10, 9, 0.6);
   color-scheme: light;
+}
+
+/*
+ * Theme Ferrecol's own dark identity, scoped exactly like .ds-platform
+ * above but applied to the STOREFRONT (see the tenant.theme-keyed wrapper
+ * div in app/[tenant]/(storefront)/layout.tsx) instead of platform chrome.
+ * Every component keeps reading the same semantic tokens (bg-surface,
+ * text-foreground, bg-accent, ...) — only what they resolve to changes.
+ * --accent/--accent-strong/--accent-foreground here are Ferrecol's own
+ * DEFAULT (a vivid orange on carbon, its whole visual premise) — a tenant
+ * with a real accentColor override still wins, via an inline style on the
+ * very same element (see lib/utils/brand.ts buildAccentOverrideVars),
+ * since inline styles always out-rank a class's own declaration.
+ */
+.theme-ferrecol {
+  --background: #0b0b0a;
+  --foreground: #f5f4f2;
+  --surface: #141412;
+  --surface-elevated: #1c1c19;
+  --surface-inverted: #ffffff;
+  --muted: #86847d;
+  --muted-foreground: #9a988f;
+  --border: rgba(245, 244, 242, 0.1);
+  --border-strong: rgba(245, 244, 242, 0.18);
+  --accent: #f97316;
+  --accent-strong: #ea580c;
+  --accent-foreground: #0b0b0a;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --focus-ring: #ea580c;
+  --overlay: rgba(0, 0, 0, 0.75);
+  color-scheme: dark;
 }
 
 @keyframes reveal-up {

@@ -183,3 +183,9 @@ export interface CatalogFilters {
   maxPrice?: number;
   sort?: SortOption;
 }
+
+/** The site-wide payment-method badge (e.g. Cashea) shown on product cards/detail — a plain data shape, not tied to any one Theme's rendering of it. */
+export interface PaymentBadgeInfo {
+  icon: string;
+  label: string;
+}

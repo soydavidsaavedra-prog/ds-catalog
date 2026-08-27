@@ -11,6 +11,7 @@ import { formatBytes } from "@/lib/utils/format";
 import {
   updateTenantStatusAction,
   updateTenantBusinessTypeAction,
+  updateTenantThemeAction,
   impersonateTenantAction,
   assignPlanAction,
   updateSubscriptionStatusAction,
@@ -26,6 +27,7 @@ import { NSLabel, NSSelect, NSInput } from "@/components/ui/NSInput";
 import { NSLogo } from "@/components/brand/NSLogo";
 import { cn } from "@/lib/utils/cn";
 import { BUSINESS_TYPE_OPTIONS } from "@/lib/tenant/business-type";
+import { THEME_META } from "@/lib/themes/registry";
 import type { TenantStatus } from "@/lib/types/tenant";
 import type { SubscriptionStatus } from "@/lib/repositories/subscriptions-repository";
 
@@ -128,6 +130,23 @@ export default async function SuperadminTenantDetailPage({
                 size="sm"
               >
                 {profile.label}
+              </NSButton>
+            </form>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h2 className="font-display text-lg uppercase tracking-wide">Theme del catálogo público</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Controla la presentación/experiencia del catálogo público de este cliente. No afecta sus productos,
+          categorías, pedidos ni configuración.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {Object.values(THEME_META).map((meta) => (
+            <form key={meta.key} action={updateTenantThemeAction.bind(null, tenant.id, meta.key)}>
+              <NSButton type="submit" variant={tenant.theme === meta.key ? "primary" : "outline"} size="sm">
+                {meta.label}
               </NSButton>
             </form>
           ))}

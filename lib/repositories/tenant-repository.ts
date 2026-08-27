@@ -1,7 +1,7 @@
 import "server-only";
 import { getSupabaseClient } from "@/lib/db/supabaseClient";
 import type { TenantRow } from "@/lib/db/supabase-types";
-import type { BusinessType, Tenant, TenantStatus } from "@/lib/types/tenant";
+import type { BusinessType, Tenant, TenantStatus, ThemeKey } from "@/lib/types/tenant";
 
 function fromRow(row: TenantRow): Tenant {
   return {
@@ -13,6 +13,10 @@ function fromRow(row: TenantRow): Tenant {
     // applied — Supabase returns undefined for a column it doesn't know
     // about yet; "moda" is the original behavior every tenant had.
     businessType: row.business_type ?? "moda",
+    // Same reasoning as businessType above, for a row read before the
+    // theme migration was applied — "theme-01" is every tenant's original,
+    // unchanged storefront.
+    theme: row.theme ?? "theme-01",
     onboardingCompleted: row.onboarding_completed,
     deletionRequestedAt: row.deletion_requested_at ?? null,
     createdAt: row.created_at,
@@ -185,6 +189,13 @@ export async function updateTenantStatus(tenantId: string, status: TenantStatus)
 export async function updateTenantBusinessType(tenantId: string, businessType: BusinessType): Promise<void> {
   const supabase = getSupabaseClient();
   const { error } = await supabase.from("ds_tenants").update({ business_type: businessType }).eq("id", tenantId);
+  if (error) throw error;
+}
+
+/** Super Admin only — swaps which Theme (lib/themes/registry.ts) renders this tenant's public storefront; never touches products/categories/settings, which every Theme reads as-is. */
+export async function updateTenantTheme(tenantId: string, theme: ThemeKey): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from("ds_tenants").update({ theme }).eq("id", tenantId);
   if (error) throw error;
 }
 

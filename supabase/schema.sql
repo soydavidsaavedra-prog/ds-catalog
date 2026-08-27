@@ -1068,4 +1068,44 @@ create table if not exists ns_hero_slides (
 
 create index if not exists ns_hero_slides_tenant_id_idx on ns_hero_slides(tenant_id);
 
+-- =====================================================================
+-- DS Catalog — storefront Theme
+-- =====================================================================
+-- Which visual Theme renders this tenant's public storefront (see
+-- lib/themes/registry.ts) — separate from business_type above (which only
+-- affects the admin's own product form) and from branding/content in
+-- ns_settings (which every Theme still consumes as-is). Every tenant that
+-- existed before this concept did (El Nuevo Sánchez, demo) backfills to
+-- 'theme-01' — the original storefront, unchanged.
+--
+-- Safe to re-run: add-column-if-not-exists + backfill guarded by null +
+-- drop-and-recreate the same check constraint.
+
+begin;
+
+alter table ds_tenants add column if not exists theme text;
+
+update ds_tenants set theme = 'theme-01' where theme is null;
+
+alter table ds_tenants alter column theme set not null;
+alter table ds_tenants alter column theme set default 'theme-01';
+
+do $$
+declare
+  conname text;
+begin
+  select con.conname into conname
+  from pg_constraint con
+  join pg_class rel on rel.oid = con.conrelid
+  where rel.relname = 'ds_tenants' and con.contype = 'c' and pg_get_constraintdef(con.oid) ilike '%theme%' and pg_get_constraintdef(con.oid) not ilike '%business_type%';
+  if conname is not null then
+    execute format('alter table ds_tenants drop constraint %I', conname);
+  end if;
+end $$;
+
+alter table ds_tenants add constraint ds_tenants_theme_check
+  check (theme in ('theme-01', 'theme-ferrecol'));
+
+commit;
+
 commit;

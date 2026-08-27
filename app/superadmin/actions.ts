@@ -20,6 +20,7 @@ import {
   isTenantSlugTaken,
   updateTenantBusinessType,
   updateTenantStatus,
+  updateTenantTheme,
 } from "@/lib/repositories/tenant-repository";
 import { updateSettings } from "@/lib/repositories/settings-repository";
 import { seedStarterCategories } from "@/lib/repositories/category-repository";
@@ -39,7 +40,7 @@ import { siteConfig } from "@/lib/config/site";
 import { slugify } from "@/lib/utils/slug";
 import { RESERVED_SLUGS } from "@/lib/utils/reserved-slugs";
 import { BUSINESS_TYPE_PROFILES } from "@/lib/tenant/business-type";
-import type { BusinessType, TenantStatus } from "@/lib/types/tenant";
+import type { BusinessType, TenantStatus, ThemeKey } from "@/lib/types/tenant";
 
 export type SuperadminActionState = { error?: string };
 
@@ -79,6 +80,19 @@ export async function updateTenantStatusAction(tenantId: string, status: TenantS
 export async function updateTenantBusinessTypeAction(tenantId: string, businessType: BusinessType): Promise<void> {
   await requireSuperadmin();
   await updateTenantBusinessType(tenantId, businessType);
+  revalidatePath(`/superadmin/tenants/${tenantId}`);
+}
+
+/**
+ * Swaps which Theme (lib/themes/registry.ts) renders this tenant's public
+ * storefront. Same one-button-per-option pattern as
+ * updateTenantBusinessTypeAction above, for the same reason: React resets
+ * an uncontrolled field right after a plain Server Action succeeds, which
+ * makes a <select> here look like it silently reverted even on success.
+ */
+export async function updateTenantThemeAction(tenantId: string, theme: ThemeKey): Promise<void> {
+  await requireSuperadmin();
+  await updateTenantTheme(tenantId, theme);
   revalidatePath(`/superadmin/tenants/${tenantId}`);
 }
 

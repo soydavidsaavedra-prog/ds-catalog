@@ -24,6 +24,11 @@ function fromRow(row: TenantRow): Tenant {
     // applied — Supabase returns undefined for a column it doesn't know
     // about yet; "moda" is the original behavior every tenant had.
     businessType: row.business_type ?? "moda",
+    // Same reasoning as businessType above, for a row read before the
+    // theme migration was applied — "theme-01" is every tenant's original,
+    // unchanged storefront. See lib/themes/registry.ts's resolveTheme,
+    // which also falls back safely for any unrecognized value.
+    theme: row.theme ?? "theme-01",
     onboardingCompleted: row.onboarding_completed,
     deletionRequestedAt: row.deletion_requested_at ?? null,
     createdAt: row.created_at,

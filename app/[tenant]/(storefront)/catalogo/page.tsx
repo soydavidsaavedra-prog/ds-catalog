@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { getSettings } from "@/lib/repositories/settings-repository";
-import { NSCatalogView } from "@/components/storefront/themes/theme-01/NSCatalogView";
+import { resolveTheme } from "@/lib/themes/registry";
 import { parseCatalogSearchParams, type SearchParams } from "@/lib/search/catalog-params";
 
 const DEFAULT_CATALOG_DESCRIPTION = "Explora todo el catálogo y encuentra justo lo que buscas.";
@@ -32,9 +32,10 @@ export default async function CatalogoPage({
   const tenant = await resolveTenant(tenantSlug);
   const [settings, resolvedParams] = await Promise.all([getSettings(tenant.id), searchParams]);
   const filters = parseCatalogSearchParams(resolvedParams);
+  const theme = resolveTheme(tenant.theme);
 
   return (
-    <NSCatalogView
+    <theme.Catalog
       tenantId={tenant.id}
       tenantSlug={tenantSlug}
       filters={filters}

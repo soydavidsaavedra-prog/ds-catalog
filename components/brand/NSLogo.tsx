@@ -15,7 +15,7 @@ import { brandInitials } from "@/lib/utils/brand";
  * uploaded a logo yet still gets *its own* placeholder, not another
  * tenant's. The ring/text color reads from the semantic --accent token
  * (app/globals.css), so this fallback badge follows each tenant's own
- * accent color override (see lib/utils/brand.ts buildAccentOverrideCss)
+ * accent color override (see lib/utils/brand.ts buildAccentOverrideVars)
  * -- teal by default, gold only for El Nuevo Sánchez. Its shape was
  * modeled on El Nuevo Sánchez's original hand-built mark
  * (its own brandLogo is empty too, so it relies on this same fallback) —

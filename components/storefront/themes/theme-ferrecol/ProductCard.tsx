@@ -5,7 +5,6 @@ import { NSBadge } from "@/components/ui/NSBadge";
 import { NSPrice } from "@/components/ui/NSPrice";
 import { NSPaymentBadge } from "@/components/catalog/NSPaymentBadge";
 
-/** Shared with NSProductCardPreview (the admin's live preview) so both stay pixel-identical. */
 export const CARD_ASPECT_RATIO_CLASSES: Record<CardAspectRatio, string> = {
   portrait: "aspect-[4/5]",
   square: "aspect-square",
@@ -14,7 +13,13 @@ export const CARD_ASPECT_RATIO_CLASSES: Record<CardAspectRatio, string> = {
 
 export type { PaymentBadgeInfo };
 
-export function NSProductCard({
+/**
+ * Theme Ferrecol's product card — image-led, commercial, with a quick-add
+ * cart action surfaced on hover (desktop) or always-visible (mobile),
+ * matching the boutique-hardware reference. No star ratings/review counts:
+ * DS Catalog has no review system, so nothing fake is shown in its place.
+ */
+export function ProductCard({
   tenantSlug,
   product,
   priority = false,
@@ -33,11 +38,9 @@ export function NSProductCard({
   return (
     <Link
       href={`/${tenantSlug}/producto/${product.slug}`}
-      className="group flex flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-strong"
+      className="group flex flex-col overflow-hidden rounded-card border border-border bg-surface transition-colors hover:border-border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-strong"
     >
-      <div
-        className={`relative overflow-hidden rounded-card bg-ink-900 ${CARD_ASPECT_RATIO_CLASSES[product.cardAspectRatio]}`}
-      >
+      <div className={`relative overflow-hidden bg-background ${CARD_ASPECT_RATIO_CLASSES[product.cardAspectRatio]}`}>
         <div className="h-full w-full transition-transform duration-slower ease-out-ns group-hover:scale-105">
           <NSMedia
             src={product.images[0]}
@@ -62,39 +65,33 @@ export function NSProductCard({
         ) : null}
 
         {outOfStock ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-ink-950/60">
-            <NSBadge tone="outline" className="border-ink-0 text-ink-0">
-              Agotado
-            </NSBadge>
+          <div className="absolute inset-0 flex items-center justify-center bg-background/70">
+            <NSBadge tone="outline">Agotado</NSBadge>
           </div>
         ) : (
           <span
             aria-hidden
-            className="absolute bottom-2.5 right-2.5 flex h-9 w-9 items-center justify-center rounded-pill bg-ink-950/85 text-ink-0 opacity-0 shadow-card transition-opacity duration-normal group-hover:opacity-100"
+            className="absolute bottom-2.5 right-2.5 flex h-10 w-10 items-center justify-center rounded-pill bg-accent text-accent-foreground opacity-0 shadow-card transition-opacity duration-normal group-hover:opacity-100 sm:opacity-0"
           >
-            <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6">
+            <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h1.2l.4 2M6 12h8l2.4-6H5M6 12l-1.2-6M6 12l-1 3.5h10M8 18a.9.9 0 1 0 0-1.8.9.9 0 0 0 0 1.8Zm6.5 0a.9.9 0 1 0 0-1.8.9.9 0 0 0 0 1.8Z" />
             </svg>
           </span>
         )}
       </div>
 
-      <div className="mt-3 flex flex-col gap-1">
-        <p className="truncate text-sm font-medium text-foreground">{product.name}</p>
+      <div className="flex flex-1 flex-col gap-1.5 p-3.5">
+        <p className="line-clamp-2 text-sm font-semibold text-foreground">{product.name}</p>
         <p className="text-xs text-muted-foreground">{product.reference}</p>
-        <div className="mt-0.5 flex items-center justify-between">
-          <NSPrice amount={product.price} />
-          {product.colors.length > 0 ? (
-            <div className="flex items-center gap-1" aria-hidden>
-              {product.colors.slice(0, 4).map((c) => (
-                <span
-                  key={c.name}
-                  className="h-3 w-3 rounded-full border border-border-strong"
-                  style={{ backgroundColor: c.hex }}
-                />
-              ))}
-            </div>
-          ) : null}
+        <div className="mt-auto flex items-center justify-between pt-1.5">
+          <NSPrice amount={product.price} className="text-accent-strong" />
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${outOfStock ? "bg-danger" : product.availability === "low_stock" ? "bg-warning" : "bg-success"}`}
+              aria-hidden
+            />
+            {outOfStock ? "Agotado" : product.availability === "low_stock" ? "Pocas unidades" : "Disponible"}
+          </span>
         </div>
       </div>
     </Link>
