@@ -6,6 +6,7 @@ import { NSInput, NSLabel, NSSelect, NSTextarea } from "@/components/ui/NSInput"
 import { NSButton } from "@/components/ui/NSButton";
 import { DSStatusBadge } from "@/components/ui/DSStatusBadge";
 import { DSPageHeader } from "@/components/ui/DSPageHeader";
+import { DSCard } from "@/components/ui/DSCard";
 import { NSAdminDeleteButton } from "@/components/admin/NSAdminDeleteButton";
 import { NSSingleImageUploader } from "@/components/admin/NSSingleImageUploader";
 import {
@@ -35,7 +36,7 @@ function CategoryRow({
   isLast: boolean;
 }) {
   return (
-    <div className="rounded-card border border-border bg-surface-elevated p-5">
+    <DSCard className="p-5">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <form action={moveCategoryAction.bind(null, tenantId, tenantSlug, category.id, "up")}>
           <button
@@ -111,7 +112,7 @@ function CategoryRow({
           confirmMessage={`¿Eliminar la categoría "${category.name}"? Los productos existentes conservarán la categoría, pero la página /${category.slug} dejará de estar disponible.`}
         />
       </div>
-    </div>
+    </DSCard>
   );
 }
 
@@ -139,21 +140,22 @@ export default async function AdminCategoriesPage({
         description={`${categories.length} categorías (${parents.length} principales). Se usan para las páginas /[categoría] y los filtros del catálogo. Una categoría principal (ej. ${exampleParentCategory.name}) agrupa las páginas de sus subcategorías (ej. ${exampleChildCategory.name}).`}
       />
 
-      <section className="max-w-xl rounded-card border border-border bg-surface-elevated p-6">
-        <h2 className="font-display text-lg uppercase tracking-wide">Nueva categoría</h2>
-        <form action={createAction} className="mt-4 flex flex-col gap-4">
-          <div>
-            <NSLabel htmlFor="new-name">Nombre</NSLabel>
-            <NSInput id="new-name" name="name" required placeholder={`Ej. ${exampleChildCategory.name}`} />
+      <DSCard title="Nueva categoría" className="max-w-xl">
+        <form action={createAction} className="flex flex-col gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <NSLabel htmlFor="new-name">Nombre</NSLabel>
+              <NSInput id="new-name" name="name" required placeholder={`Ej. ${exampleChildCategory.name}`} />
+            </div>
+            <div>
+              <NSLabel htmlFor="new-slug">Slug (opcional, se genera del nombre)</NSLabel>
+              <NSInput id="new-slug" name="slug" placeholder="recto" />
+            </div>
           </div>
-          <div>
-            <NSLabel htmlFor="new-slug">Slug (opcional, se genera del nombre)</NSLabel>
-            <NSInput id="new-slug" name="slug" placeholder="recto" />
-            <p className="mt-1 text-xs text-muted-foreground">
-              Si eliges una categoría padre abajo, se le antepone automáticamente (ej. &quot;{exampleParentCategory.slug}-{exampleChildCategory.slug}&quot;)
-              para poder repetir el mismo nombre bajo distintas categorías principales.
-            </p>
-          </div>
+          <p className="-mt-2 text-xs text-muted-foreground">
+            Si eliges una categoría padre abajo, se le antepone automáticamente (ej. &quot;{exampleParentCategory.slug}-{exampleChildCategory.slug}&quot;)
+            para poder repetir el mismo nombre bajo distintas categorías principales.
+          </p>
           <div>
             <NSLabel htmlFor="new-parent">Categoría padre</NSLabel>
             <NSSelect id="new-parent" name="parentId" defaultValue="">
@@ -173,7 +175,7 @@ export default async function AdminCategoriesPage({
           </div>
           <NSButton type="submit" size="sm" className="self-start">Crear categoría</NSButton>
         </form>
-      </section>
+      </DSCard>
 
       <section className="flex flex-col gap-8">
         {tree.map((parent, parentIndex) => (

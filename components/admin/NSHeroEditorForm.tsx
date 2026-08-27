@@ -161,7 +161,7 @@ export function NSHeroEditorForm({
       </div>
     </div>
 
-    <div className="border-t border-border pt-6">
+    <div className="rounded-card border border-border bg-surface p-5">
       <NSLabel>Fotos y videos de la portada (máximo {MAX_HERO_SLIDES})</NSLabel>
       <p className="mt-1 text-xs text-muted-foreground">
         Esto es lo que se ve de fondo en la portada. Con una sola foto o video, se queda fija; con varias, la
