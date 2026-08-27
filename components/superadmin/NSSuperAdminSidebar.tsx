@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { DSPlatformMark } from "@/components/brand/DSPlatformMark";
+import { NSThemeToggle } from "@/components/ui/NSThemeToggle";
 import { superadminLogoutAction } from "@/app/superadmin/actions";
 import { cn } from "@/lib/utils/cn";
 
@@ -213,6 +214,11 @@ function SidebarInner({
           </button>
         ) : null}
         {!collapsed ? <p className="truncate px-3 py-1 text-xs text-muted-foreground">{email}</p> : null}
+        {collapsed ? (
+          <NSThemeToggle className="mx-auto text-muted-foreground hover:text-foreground" />
+        ) : (
+          <NSThemeToggle variant="row" />
+        )}
         <form action={superadminLogoutAction}>
           <button
             type="submit"

@@ -207,8 +207,20 @@
   --animate-marquee: marquee 28s linear infinite;
 }
 
+/*
+ * Storefront dark mode — from the visitor's OS/browser preference by
+ * default, or forced either way by the toggle (see components/ui/
+ * NSThemeToggle.tsx, which sets/clears documentElement[data-theme]).
+ * `:not([data-theme="light"])` lets an explicit light choice win even when
+ * the system prefers dark; `[data-theme="dark"]` below forces the same
+ * values even when the system prefers light. Never applies to .ds-platform
+ * or .theme-02 (see their own blocks) — those keep their own fixed dark
+ * identity by default, independent of this toggle, since it targets
+ * :root's own tokens, and a scope's own declaration always wins over an
+ * inherited one regardless of which the toggle is set to.
+ */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --background: #0a0a09;
     --foreground: #f7f7f6;
     --surface: #121110;
@@ -225,6 +237,22 @@
   }
 }
 
+:root[data-theme="dark"] {
+  --background: #0a0a09;
+  --foreground: #f7f7f6;
+  --surface: #121110;
+  --surface-elevated: #1c1b1a;
+  --surface-inverted: #ffffff;
+  --muted: #8a8a84;
+  --muted-foreground: #8a8a84;
+  --border: #302e2c;
+  --border-strong: #454340;
+  --accent-foreground: #0a0a09;
+  --denim: #5c81ab;
+  --denim-foreground: #0a0a09;
+  --overlay: rgba(0, 0, 0, 0.72);
+}
+
 /*
  * Scopes DS Catalog's own dark identity onto the same semantic tokens
  * every component already reads (bg-surface, text-foreground,
@@ -234,10 +262,10 @@
  * variables resolve to changes, scoped to this subtree, and it wins over
  * both the light default above and the prefers-color-scheme block above
  * it (later in the cascade, plus a class beats a bare :root/media
- * :root). Deliberately fixed regardless of system theme or the current
- * tenant's own accentColor — that's the whole point: the platform's
- * control surfaces look the same no matter which tenant you're in, or
- * what the visitor's OS is set to.
+ * :root). This is the DEFAULT for the platform chrome regardless of the
+ * visitor's OS — dark stays dark even on a light-system browser — but see
+ * the light override right below: the toggle (NSThemeToggle) can still
+ * flip it explicitly, unlike before this existed.
  */
 .ds-platform {
   --background: var(--ds-bg);
@@ -258,6 +286,35 @@
   --focus-ring: var(--ds-accent-strong);
   --overlay: rgba(0, 0, 0, 0.72);
   color-scheme: dark;
+}
+
+/*
+ * The platform chrome's light alternative — only active when a person
+ * explicitly picks "claro" via NSThemeToggle (there's no dark platform ->
+ * system-light auto-switch; the whole point of .ds-platform above is to
+ * ignore the visitor's OS). Reuses DS Catalog's own teal accent (readable
+ * on white same as on carbon) rather than a light-specific color, so the
+ * platform's identity stays recognizable in either mode.
+ */
+:root[data-theme="light"] .ds-platform {
+  --background: #ffffff;
+  --foreground: #0a0a09;
+  --surface: #f7f7f6;
+  --surface-elevated: #ffffff;
+  --surface-inverted: #0a0a09;
+  --muted: #615f59;
+  --muted-foreground: #615f59;
+  --border: #d9d9d6;
+  --border-strong: #b6b6b1;
+  --accent: var(--ds-accent);
+  --accent-strong: var(--ds-accent-strong);
+  --accent-foreground: #ffffff;
+  --success: var(--ds-success);
+  --warning: var(--ds-warning);
+  --danger: var(--ds-danger);
+  --focus-ring: var(--ds-accent-strong);
+  --overlay: rgba(10, 10, 9, 0.6);
+  color-scheme: light;
 }
 
 /*

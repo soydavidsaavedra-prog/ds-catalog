@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { NSLogo } from "@/components/brand/NSLogo";
 import { DSPlatformMark } from "@/components/brand/DSPlatformMark";
 import { NSWhatsAppButton } from "@/components/whatsapp/NSWhatsAppButton";
+import { NSThemeToggle } from "@/components/ui/NSThemeToggle";
 import { logoutAction, endImpersonationAction } from "@/app/[tenant]/admin/actions";
 import { cn } from "@/lib/utils/cn";
 
@@ -310,6 +311,11 @@ function SidebarInner({
           <ExternalIcon className="h-4 w-4 shrink-0" />
           {!collapsed ? "Ver sitio" : null}
         </Link>
+        {collapsed ? (
+          <NSThemeToggle className="mx-auto text-muted-foreground hover:text-foreground" />
+        ) : (
+          <NSThemeToggle variant="row" />
+        )}
         {supportWhatsappNumber ? (
           <NSWhatsAppButton
             whatsappNumber={supportWhatsappNumber}
