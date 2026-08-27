@@ -4,7 +4,7 @@ import { NSMedia } from "@/components/ui/NSMedia";
 import { NSBadge } from "@/components/ui/NSBadge";
 import { NSPrice } from "@/components/ui/NSPrice";
 import { NSPaymentBadge } from "@/components/catalog/NSPaymentBadge";
-import { CARD_ASPECT_RATIO_CLASSES } from "@/components/catalog/NSProductCard";
+import { CARD_ASPECT_RATIO_CLASSES } from "@/components/storefront/themes/theme-01/NSProductCard";
 import type { CardAspectRatio, ImageFit } from "@/lib/types/catalog";
 
 /**

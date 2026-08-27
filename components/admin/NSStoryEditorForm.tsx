@@ -6,7 +6,7 @@ import { updateStorySettingsAction, type ActionState } from "@/app/[tenant]/admi
 import { NSInput, NSLabel, NSTextarea } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSSingleImageUploader } from "@/components/admin/NSSingleImageUploader";
-import { NSFactoryStory, DEFAULT_STEP_LABELS } from "@/components/home/NSFactoryStory";
+import { NSFactoryStory, DEFAULT_STEP_LABELS } from "@/components/storefront/themes/theme-01/NSFactoryStory";
 
 const initialState: ActionState = {};
 

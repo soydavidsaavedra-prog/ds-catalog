@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCartStore, useCartTotal } from "@/lib/cart/cart-store";
 import { cartItemKey } from "@/lib/types/cart";
-import { NSCartItemRow } from "@/components/cart/NSCartItemRow";
+import { NSCartItemRow } from "./NSCartItemRow";
 import { NSButton } from "@/components/ui/NSButton";
 import { formatPrice } from "@/lib/utils/format";
 import { buildWhatsAppOrderUrl } from "@/lib/whatsapp/order-message";

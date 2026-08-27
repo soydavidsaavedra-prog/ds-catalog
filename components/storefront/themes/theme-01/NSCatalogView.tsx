@@ -9,7 +9,7 @@ import {
 } from "@/lib/search/catalog-engine";
 import { NSFilterBar } from "@/components/catalog/NSFilterBar";
 import { NSCatalogSearchInput } from "@/components/catalog/NSCatalogSearchInput";
-import { NSProductGrid } from "@/components/catalog/NSProductGrid";
+import { NSProductGrid } from "./NSProductGrid";
 import { NSSectionHeading } from "@/components/ui/NSSectionHeading";
 
 interface NSCatalogViewProps {

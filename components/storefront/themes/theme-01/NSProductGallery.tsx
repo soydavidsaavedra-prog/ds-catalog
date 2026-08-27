@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { NSMedia } from "@/components/ui/NSMedia";
-import { CARD_ASPECT_RATIO_CLASSES } from "@/components/catalog/NSProductCard";
+import { CARD_ASPECT_RATIO_CLASSES } from "./NSProductCard";
 import type { CardAspectRatio, ImageFit } from "@/lib/types/catalog";
 import { cn } from "@/lib/utils/cn";
 

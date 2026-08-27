@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { getSettings } from "@/lib/repositories/settings-repository";
-import { NSCatalogView } from "@/components/catalog/NSCatalogView";
+import { NSCatalogView } from "@/components/storefront/themes/theme-01/NSCatalogView";
 import { parseCatalogSearchParams, type SearchParams } from "@/lib/search/catalog-params";
 
 const DEFAULT_CATALOG_DESCRIPTION = "Explora todo el catálogo y encuentra justo lo que buscas.";

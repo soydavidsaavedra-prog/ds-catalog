@@ -5,11 +5,11 @@ import { listProducts } from "@/lib/repositories/product-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
 import { listHeroSlides } from "@/lib/repositories/hero-slide-repository";
 import { siteConfig } from "@/lib/config/site";
-import { NSHero } from "@/components/home/NSHero";
-import { NSFactoryStory, DEFAULT_STEP_LABELS } from "@/components/home/NSFactoryStory";
-import { NSCollections } from "@/components/home/NSCollections";
-import { NSFeaturedProducts } from "@/components/home/NSFeaturedProducts";
-import { NSBrandStatement } from "@/components/home/NSBrandStatement";
+import { NSHero } from "@/components/storefront/themes/theme-01/NSHero";
+import { NSFactoryStory, DEFAULT_STEP_LABELS } from "@/components/storefront/themes/theme-01/NSFactoryStory";
+import { NSCollections } from "@/components/storefront/themes/theme-01/NSCollections";
+import { NSFeaturedProducts } from "@/components/storefront/themes/theme-01/NSFeaturedProducts";
+import { NSBrandStatement } from "@/components/storefront/themes/theme-01/NSBrandStatement";
 
 export async function generateMetadata({
   params,

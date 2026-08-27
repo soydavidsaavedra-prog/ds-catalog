@@ -6,7 +6,7 @@ import { updateHeroSettingsAction, type ActionState } from "@/app/[tenant]/admin
 import { buildAccentOverrideVars } from "@/lib/utils/brand";
 import { NSInput, NSLabel } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
-import { NSHero } from "@/components/home/NSHero";
+import { NSHero } from "@/components/storefront/themes/theme-01/NSHero";
 import { NSHeroSlideUploadForm } from "@/components/admin/NSHeroSlideUploadForm";
 import { NSHeroSlideList } from "@/components/admin/NSHeroSlideList";
 

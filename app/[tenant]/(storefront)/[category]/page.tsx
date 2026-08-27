@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { resolveTenant, listActiveTenants } from "@/lib/tenant/resolve-tenant";
 import { getCategoryBySlug, getDescendantSlugs, listCategories } from "@/lib/repositories/category-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
-import { NSCatalogView } from "@/components/catalog/NSCatalogView";
-import { NSCategoryHero } from "@/components/catalog/NSCategoryHero";
+import { NSCatalogView } from "@/components/storefront/themes/theme-01/NSCatalogView";
+import { NSCategoryHero } from "@/components/storefront/themes/theme-01/NSCategoryHero";
 import { parseCatalogSearchParams, type SearchParams } from "@/lib/search/catalog-params";
 
 export async function generateStaticParams() {

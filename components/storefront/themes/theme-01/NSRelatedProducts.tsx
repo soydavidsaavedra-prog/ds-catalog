@@ -1,7 +1,7 @@
 import type { Product } from "@/lib/types/catalog";
 import { NSSectionHeading } from "@/components/ui/NSSectionHeading";
-import { NSProductGrid } from "@/components/catalog/NSProductGrid";
-import type { PaymentBadgeInfo } from "@/components/catalog/NSProductCard";
+import { NSProductGrid } from "./NSProductGrid";
+import type { PaymentBadgeInfo } from "./NSProductCard";
 
 export function NSRelatedProducts({
   tenantSlug,

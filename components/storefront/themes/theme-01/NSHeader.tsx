@@ -1,7 +1,7 @@
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { listCategories, buildCategoryTree } from "@/lib/repositories/category-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
-import { NSHeaderClient } from "@/components/layout/NSHeaderClient";
+import { NSHeaderClient } from "./NSHeaderClient";
 
 export async function NSHeader({ tenantSlug }: { tenantSlug: string }) {
   const tenant = await resolveTenant(tenantSlug);

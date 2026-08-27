@@ -1,5 +1,5 @@
 import type { Product } from "@/lib/types/catalog";
-import { NSProductCard, type PaymentBadgeInfo } from "@/components/catalog/NSProductCard";
+import { NSProductCard, type PaymentBadgeInfo } from "./NSProductCard";
 import { NSButton } from "@/components/ui/NSButton";
 
 export function NSProductGrid({

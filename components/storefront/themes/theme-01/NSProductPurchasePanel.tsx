@@ -11,7 +11,7 @@ import { absoluteUrl } from "@/lib/utils/format";
 import { shareProduct } from "@/lib/utils/share";
 import { cn } from "@/lib/utils/cn";
 import { NSPaymentBadge } from "@/components/catalog/NSPaymentBadge";
-import type { PaymentBadgeInfo } from "@/components/catalog/NSProductCard";
+import type { PaymentBadgeInfo } from "./NSProductCard";
 
 export function NSProductPurchasePanel({
   tenantSlug,

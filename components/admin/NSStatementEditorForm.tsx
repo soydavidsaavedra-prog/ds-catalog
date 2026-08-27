@@ -6,7 +6,7 @@ import { updateStatementSettingsAction, type ActionState } from "@/app/[tenant]/
 import { NSInput, NSLabel, NSTextarea } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSSingleImageUploader } from "@/components/admin/NSSingleImageUploader";
-import { NSBrandStatement } from "@/components/home/NSBrandStatement";
+import { NSBrandStatement } from "@/components/storefront/themes/theme-01/NSBrandStatement";
 
 const initialState: ActionState = {};
 const PREVIEW_SCALE = 0.4;

@@ -3,10 +3,10 @@
 import { useState } from "react";
 import type { Product } from "@/lib/types/catalog";
 import { NSSectionHeading } from "@/components/ui/NSSectionHeading";
-import { NSProductGrid } from "@/components/catalog/NSProductGrid";
+import { NSProductGrid } from "./NSProductGrid";
 import { NSButton } from "@/components/ui/NSButton";
 import { cn } from "@/lib/utils/cn";
-import type { PaymentBadgeInfo } from "@/components/catalog/NSProductCard";
+import type { PaymentBadgeInfo } from "./NSProductCard";
 
 type TabKey = "nuevos" | "destacados" | "ofertas";
 

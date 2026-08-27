@@ -10,9 +10,9 @@ import {
 import { getCategoryBySlug } from "@/lib/repositories/category-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
 import { absoluteUrl, formatPrice } from "@/lib/utils/format";
-import { NSProductGallery } from "@/components/product/NSProductGallery";
-import { NSProductPurchasePanel } from "@/components/product/NSProductPurchasePanel";
-import { NSRelatedProducts } from "@/components/product/NSRelatedProducts";
+import { NSProductGallery } from "@/components/storefront/themes/theme-01/NSProductGallery";
+import { NSProductPurchasePanel } from "@/components/storefront/themes/theme-01/NSProductPurchasePanel";
+import { NSRelatedProducts } from "@/components/storefront/themes/theme-01/NSRelatedProducts";
 
 export async function generateStaticParams() {
   const tenants = await listActiveTenants();

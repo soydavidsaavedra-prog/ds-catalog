@@ -2,9 +2,9 @@ import { notFound } from "next/navigation";
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { getSettings } from "@/lib/repositories/settings-repository";
 import { isSubscriptionFrozen } from "@/lib/tenant/plan-limits";
-import { NSHeader } from "@/components/layout/NSHeader";
-import { NSFooter } from "@/components/layout/NSFooter";
-import { NSCartDrawer } from "@/components/cart/NSCartDrawer";
+import { NSHeader } from "@/components/storefront/themes/theme-01/NSHeader";
+import { NSFooter } from "@/components/storefront/themes/theme-01/NSFooter";
+import { NSCartDrawer } from "@/components/storefront/themes/theme-01/NSCartDrawer";
 import { NSWhatsAppButton } from "@/components/whatsapp/NSWhatsAppButton";
 import { buildAccentOverrideCss } from "@/lib/utils/brand";
 
