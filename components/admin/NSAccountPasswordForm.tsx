@@ -12,8 +12,8 @@ export function NSAccountPasswordForm({ tenantId, tenantSlug }: { tenantId: stri
   const [state, formAction, pending] = useActionState(boundAction, initialState);
 
   return (
-    <section>
-      <h2 className="font-display text-lg uppercase tracking-wide">Contraseña</h2>
+    <div>
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">Contraseña</h3>
       <form action={formAction} className="mt-4 flex max-w-md flex-col gap-4">
         {state.error ? (
           <div className="rounded-control border border-danger bg-danger/10 px-4 py-3 text-sm text-danger">{state.error}</div>
@@ -39,6 +39,6 @@ export function NSAccountPasswordForm({ tenantId, tenantSlug }: { tenantId: stri
           Cambiar contraseña
         </NSButton>
       </form>
-    </section>
+    </div>
   );
 }

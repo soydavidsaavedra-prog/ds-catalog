@@ -6,45 +6,88 @@ import {
   cancelPlanChangeRequestAction,
   type AccountActionState,
 } from "@/app/[tenant]/admin/cuenta/actions";
-import type { Subscription } from "@/lib/repositories/subscriptions-repository";
+import type { Subscription, SubscriptionStatus } from "@/lib/repositories/subscriptions-repository";
 import type { Plan } from "@/lib/repositories/plans-repository";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSPrice } from "@/components/ui/NSPrice";
+import { DSCard } from "@/components/ui/DSCard";
+import { DSStatusBadge } from "@/components/ui/DSStatusBadge";
 import { cn } from "@/lib/utils/cn";
 
 const initialState: AccountActionState = {};
+
+const STATUS_LABEL: Record<SubscriptionStatus, string> = {
+  active: "Activo",
+  trial: "Prueba",
+  pending: "Pendiente de aprobación",
+  paused: "Pausado",
+  expired: "Vencido",
+  cancelled: "Cancelado",
+};
+const STATUS_TONE: Record<SubscriptionStatus, "success" | "warning" | "danger" | "muted" | "accent"> = {
+  active: "success",
+  trial: "accent",
+  pending: "warning",
+  paused: "muted",
+  expired: "danger",
+  cancelled: "danger",
+};
 
 export function NSAccountPlanCard({
   tenantId,
   tenantSlug,
   subscription,
   plans,
+  productsUsed,
 }: {
   tenantId: string;
   tenantSlug: string;
   subscription: Subscription | null;
   plans: Plan[];
+  /** Real count from listProducts — the only usage metric shown here. Deliberately no storage/MB/DB numbers: those are Super Admin's, not the tenant's, to see. */
+  productsUsed: number;
 }) {
   const currentPlan = subscription ? plans.find((p) => p.id === subscription.planId) : null;
   const requestedPlan = subscription?.requestedPlanId ? plans.find((p) => p.id === subscription.requestedPlanId) : null;
+  const maxProducts = currentPlan?.maxProducts ?? null;
+  const productsPercent = maxProducts ? Math.min(100, (productsUsed / maxProducts) * 100) : null;
+  const productsRemaining = maxProducts ? Math.max(0, maxProducts - productsUsed) : null;
 
   return (
-    <section>
-      <h2 className="font-display text-lg uppercase tracking-wide">Tu plan</h2>
-
+    <DSCard title="Plan">
       {!subscription ? (
-        <p className="mt-3 text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Todavía no tienes un plan asignado — contáctanos para elegir uno.
         </p>
       ) : (
         <>
-          <div className="mt-3 rounded-card border border-border bg-surface-elevated p-5">
-            <p className="font-display text-xl">{currentPlan?.name ?? "Plan eliminado"}</p>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">
-              Estado: {subscription.status}
-              {subscription.expiresAt ? ` · vence ${new Date(subscription.expiresAt).toLocaleDateString("es")}` : ""}
-            </p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="font-display text-xl">{currentPlan?.name ?? "Plan eliminado"}</p>
+              {subscription.expiresAt ? (
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Renueva el {new Date(subscription.expiresAt).toLocaleDateString("es")}
+                </p>
+              ) : null}
+            </div>
+            <DSStatusBadge label={STATUS_LABEL[subscription.status]} tone={STATUS_TONE[subscription.status]} />
           </div>
+
+          {maxProducts ? (
+            <div className="mt-4">
+              <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+                <span className="font-semibold uppercase tracking-wide">Productos</span>
+                <span>{productsUsed} / {maxProducts}</span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-pill bg-surface">
+                <div
+                  className={`h-full rounded-pill ${productsPercent !== null && productsPercent >= 80 ? "bg-danger" : "bg-accent"}`}
+                  style={{ width: `${Math.max(2, productsPercent ?? 0)}%` }}
+                />
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">{productsRemaining} productos disponibles</p>
+            </div>
+          ) : null}
 
           {requestedPlan ? (
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-control border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-warning">
@@ -60,7 +103,7 @@ export function NSAccountPlanCard({
           )}
         </>
       )}
-    </section>
+    </DSCard>
   );
 }
 

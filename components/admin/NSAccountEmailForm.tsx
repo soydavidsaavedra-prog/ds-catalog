@@ -20,8 +20,8 @@ export function NSAccountEmailForm({
   const [state, formAction, pending] = useActionState(boundAction, initialState);
 
   return (
-    <section>
-      <h2 className="font-display text-lg uppercase tracking-wide">Correo de inicio de sesión</h2>
+    <div>
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">Correo de inicio de sesión</h3>
       <p className="mt-1 text-sm text-muted-foreground">Actual: {currentEmail}</p>
       <form action={formAction} className="mt-4 flex max-w-md flex-col gap-4">
         {state.error ? (
@@ -44,6 +44,6 @@ export function NSAccountEmailForm({
           Cambiar correo
         </NSButton>
       </form>
-    </section>
+    </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   cancelAccountDeletionRequestAction,
 } from "@/app/[tenant]/admin/cuenta/actions";
 import { NSButton } from "@/components/ui/NSButton";
+import { DSCard } from "@/components/ui/DSCard";
 
 export function NSAccountDangerZone({
   tenantId,
@@ -19,7 +20,7 @@ export function NSAccountDangerZone({
   const [confirming, setConfirming] = useState(false);
 
   return (
-    <section className="rounded-card border border-danger/30 p-5">
+    <DSCard className="border-danger/30">
       <h2 className="font-display text-lg uppercase tracking-wide text-danger">Zona de peligro</h2>
 
       {deletionRequestedAt ? (
@@ -66,6 +67,6 @@ export function NSAccountDangerZone({
           </NSButton>
         </>
       )}
-    </section>
+    </DSCard>
   );
 }
