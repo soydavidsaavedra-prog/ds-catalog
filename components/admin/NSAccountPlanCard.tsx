@@ -54,7 +54,15 @@ export function NSAccountPlanCard({
   const productsRemaining = maxProducts ? Math.max(0, maxProducts - productsUsed) : null;
 
   return (
-    <DSCard title="Plan">
+    <DSCard
+      title="Plan y uso"
+      description="Información comercial de tu plan — sin datos técnicos de infraestructura."
+      actions={
+        <NSButton href="/" target="_blank" rel="noopener noreferrer" variant="outline" size="sm">
+          Ver planes y precios
+        </NSButton>
+      }
+    >
       {!subscription ? (
         <p className="text-sm text-muted-foreground">
           Todavía no tienes un plan asignado — contáctanos para elegir uno.
@@ -74,10 +82,12 @@ export function NSAccountPlanCard({
           </div>
 
           {maxProducts ? (
-            <div className="mt-4">
+            <div className="mt-5">
               <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
                 <span className="font-semibold uppercase tracking-wide">Productos</span>
-                <span>{productsUsed} / {maxProducts}</span>
+                <span>
+                  {productsUsed} / {maxProducts} · {Math.round(productsPercent ?? 0)}%
+                </span>
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-pill bg-surface">
                 <div
@@ -85,12 +95,16 @@ export function NSAccountPlanCard({
                   style={{ width: `${Math.max(2, productsPercent ?? 0)}%` }}
                 />
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">{productsRemaining} productos disponibles</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {productsRemaining === 0
+                  ? "Alcanzaste el límite de productos de tu plan"
+                  : `Queda espacio para ${productsRemaining} producto${productsRemaining === 1 ? "" : "s"}`}
+              </p>
             </div>
           ) : null}
 
           {requestedPlan ? (
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-control border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-warning">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-control border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-warning">
               <span>Pediste cambiar a {requestedPlan.name} — en revisión.</span>
               <CancelRequestButton tenantId={tenantId} tenantSlug={tenantSlug} />
             </div>

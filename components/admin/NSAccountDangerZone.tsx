@@ -20,12 +20,20 @@ export function NSAccountDangerZone({
   const [confirming, setConfirming] = useState(false);
 
   return (
-    <DSCard className="border-danger/30">
-      <h2 className="font-display text-lg uppercase tracking-wide text-danger">Zona de peligro</h2>
+    <DSCard className="border-danger/25">
+      <div className="flex items-center gap-2.5">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control bg-danger/10 text-danger">
+          <WarningIcon className="h-4 w-4" />
+        </span>
+        <div>
+          <h2 className="font-display text-lg uppercase tracking-wide text-danger">Zona de peligro</h2>
+          <p className="text-xs text-muted-foreground">Estas acciones pueden afectar permanentemente tu cuenta y catálogo.</p>
+        </div>
+      </div>
 
       {deletionRequestedAt ? (
         <>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-4 text-sm text-muted-foreground">
             Pediste eliminar tu cuenta el {new Date(deletionRequestedAt).toLocaleDateString("es")}. Nos pondremos en
             contacto contigo antes de proceder.
           </p>
@@ -59,7 +67,7 @@ export function NSAccountDangerZone({
         </div>
       ) : (
         <>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-4 text-sm text-muted-foreground">
             Envía una solicitud para eliminar tu cuenta y tu catálogo permanentemente.
           </p>
           <NSButton type="button" variant="outline" size="sm" className="mt-4" onClick={() => setConfirming(true)}>
@@ -68,5 +76,15 @@ export function NSAccountDangerZone({
         </>
       )}
     </DSCard>
+  );
+}
+
+function WarningIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M10 3 2.5 16h15L10 3Z" />
+      <path d="M10 8.5v3.5" />
+      <circle cx="10" cy="14.5" r="0.5" fill="currentColor" stroke="none" />
+    </svg>
   );
 }
