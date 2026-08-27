@@ -4,6 +4,8 @@ import type { ThemeHomeProps } from "@/lib/themes/types";
 import { NSMedia } from "@/components/ui/NSMedia";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSReveal } from "@/components/ui/NSReveal";
+import { Hero } from "./Hero";
+import { BrandStatement } from "./BrandStatement";
 import { ProductGrid } from "./ProductGrid";
 
 const TRUST_BAR: { title: string; description: string; icon: ReactNode }[] = [
@@ -25,7 +27,11 @@ const TRUST_STRIP = [
  * hero card, bordered trust panel, tile-grid categories) rather than Theme
  * 01's full-bleed editorial one; that boxed language is Theme 02's whole
  * visual identity, not a color swap over the same shapes. Every section
- * reads real tenant data; nothing here is fixed to any one brand.
+ * reads real tenant data; nothing here is fixed to any one brand. Nuevos
+ * ingresos, the brand-statement split, and Ofertas each render only when
+ * there's real content behind them (a product actually marked "Nuevo"/
+ * "Oferta", or the tenant having filled in /admin/inicio's statement
+ * fields) — never shown empty just to fill space.
  */
 export function Home({ tenantSlug, settings, categories, products, heroSlides }: ThemeHomeProps) {
   const base = `/${tenantSlug}`;
@@ -35,48 +41,28 @@ export function Home({ tenantSlug, settings, categories, products, heroSlides }:
 
   const topLevelCategories = categories.filter((c) => c.parentId === null && c.featured);
   const destacados = products.filter((p) => p.featured);
+  const nuevos = products.filter((p) => p.isNew);
   const ofertas = products.filter((p) => p.onSale);
   const paymentBadge = { icon: settings.paymentBadgeIcon, label: settings.paymentBadgeLabel };
+  const hasStatement = Boolean(settings.statementTitleLine1 || settings.statementDescription);
 
   return (
     <>
       {/* Hero — an inset, rounded photo card (not full-bleed), text overlaid on its own gradient. */}
       <section className="bg-background px-4 pt-5 sm:px-6 sm:pt-7 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <div className="relative flex min-h-[440px] items-end overflow-hidden rounded-3xl border border-border bg-surface sm:min-h-[560px] sm:items-center">
-            <div className="absolute inset-0">
-              <NSMedia
-                src={heroMedia}
-                alt={`${settings.heroTitleLine1} ${settings.heroTitleLine2}`}
-                priority
-                className="h-full w-full"
-                objectPosition={`${heroPositionX}% ${heroPositionY}%`}
-                brandName={settings.brandName}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/75 to-transparent sm:bg-gradient-to-r sm:from-background sm:via-background/75 sm:to-transparent" />
-            </div>
-
-            <div className="relative z-10 max-w-xl p-6 sm:p-12 lg:p-16">
-              {settings.heroEyebrow ? (
-                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-accent">{settings.heroEyebrow}</p>
-              ) : null}
-              <h1 className="text-4xl font-extrabold leading-[0.95] tracking-tight text-foreground sm:text-6xl">
-                <span className="block">{settings.heroTitleLine1}</span>
-                <span className="block text-accent">{settings.heroTitleLine2}</span>
-              </h1>
-              {settings.heroSubtitle ? (
-                <p className="mt-4 max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">{settings.heroSubtitle}</p>
-              ) : null}
-              <div className="mt-7 flex flex-wrap gap-3">
-                <NSButton href={settings.heroCtaHref.startsWith("/") ? `${base}${settings.heroCtaHref}` : settings.heroCtaHref} size="lg">
-                  {settings.heroCtaLabel || "Ver productos"}
-                </NSButton>
-                <NSButton href="#categorias" variant="outline" size="lg">
-                  Ver categorías
-                </NSButton>
-              </div>
-            </div>
-          </div>
+          <Hero
+            eyebrow={settings.heroEyebrow}
+            titleLine1={settings.heroTitleLine1}
+            titleLine2={settings.heroTitleLine2}
+            subtitle={settings.heroSubtitle}
+            ctaLabel={settings.heroCtaLabel}
+            ctaHref={settings.heroCtaHref.startsWith("/") ? `${base}${settings.heroCtaHref}` : settings.heroCtaHref}
+            image={heroMedia}
+            imagePositionX={heroPositionX}
+            imagePositionY={heroPositionY}
+            brandName={settings.brandName}
+          />
 
           {/* Trust bar — its own bordered panel directly under the hero card, hairline dividers between cells. */}
           <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-4">
@@ -146,6 +132,38 @@ export function Home({ tenantSlug, settings, categories, products, heroSlides }:
           </div>
         </div>
       </section>
+
+      {/* Nuevos ingresos — only shown when there's a real product marked "Nuevo" */}
+      {nuevos.length > 0 ? (
+        <section className="bg-background py-16 sm:py-20">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex items-end justify-between">
+              <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                Nuevos <span className="text-accent">ingresos</span>
+              </h2>
+              <Link href={`${base}/catalogo`} className="text-xs font-semibold uppercase tracking-wide text-accent hover:underline">
+                Ver catálogo →
+              </Link>
+            </div>
+            <div className="mt-8">
+              <ProductGrid tenantSlug={tenantSlug} products={nuevos.slice(0, 8)} paymentBadge={paymentBadge} brandName={settings.brandName} />
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {/* Declaración de marca — real per-tenant content (editable en /admin/inicio), only shown when the tenant actually filled it in. */}
+      {hasStatement ? (
+        <section className="border-t border-border bg-surface">
+          <BrandStatement
+            titleLine1={settings.statementTitleLine1}
+            titleLine2={settings.statementTitleLine2}
+            description={settings.statementDescription}
+            image={settings.statementImage}
+            brandName={settings.brandName}
+          />
+        </section>
+      ) : null}
 
       {/* Ofertas — only shown when there's a real discounted product behind it */}
       {ofertas.length > 0 ? (

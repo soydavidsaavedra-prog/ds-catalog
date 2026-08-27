@@ -2,11 +2,13 @@
 
 import { useActionState, useState } from "react";
 import { MAX_HERO_SLIDES, type HeroSlide, type SiteSettings } from "@/lib/types/catalog";
+import type { ThemeKey } from "@/lib/types/tenant";
 import { updateHeroSettingsAction, type ActionState } from "@/app/[tenant]/admin/actions";
 import { buildAccentOverrideVars } from "@/lib/utils/brand";
 import { NSInput, NSLabel } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSHero } from "@/components/storefront/themes/theme-01/NSHero";
+import { Hero as Theme02Hero } from "@/components/storefront/themes/theme-02/Hero";
 import { NSHeroSlideUploadForm } from "@/components/admin/NSHeroSlideUploadForm";
 import { NSHeroSlideList } from "@/components/admin/NSHeroSlideList";
 
@@ -17,11 +19,14 @@ const PREVIEW_SCALE = 0.32;
 export function NSHeroEditorForm({
   tenantId,
   tenantSlug,
+  theme,
   settings,
   slides,
 }: {
   tenantId: string;
   tenantSlug: string;
+  /** Which Theme actually renders this tenant's storefront — the preview below must match it, not always show Theme 01. */
+  theme: ThemeKey;
   settings: SiteSettings;
   /** Photos/videos that auto-rotate behind the static text below — see /admin/inicio's "Portada (Hero)" section. Empty means the storefront shows just the single image above, unchanged. */
   slides: HeroSlide[];
@@ -155,7 +160,22 @@ export function NSHeroEditorForm({
               height: `${100 / PREVIEW_SCALE}%`,
             }}
           >
-            <NSHero {...draft} slides={slides} />
+            {theme === "theme-02" ? (
+              <Theme02Hero
+                eyebrow={draft.eyebrow}
+                titleLine1={draft.titleLine1}
+                titleLine2={draft.titleLine2}
+                subtitle={draft.subtitle}
+                ctaLabel={draft.ctaLabel}
+                ctaHref={draft.ctaHref}
+                image={slides[0]?.mediaUrl ?? draft.image}
+                imagePositionX={slides[0]?.positionX ?? draft.imagePositionX}
+                imagePositionY={slides[0]?.positionY ?? draft.imagePositionY}
+                brandName={settings.brandName}
+              />
+            ) : (
+              <NSHero {...draft} slides={slides} brandName={settings.brandName} />
+            )}
           </div>
         </div>
       </div>

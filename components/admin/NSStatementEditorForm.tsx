@@ -2,16 +2,29 @@
 
 import { useActionState, useState } from "react";
 import type { SiteSettings } from "@/lib/types/catalog";
+import type { ThemeKey } from "@/lib/types/tenant";
 import { updateStatementSettingsAction, type ActionState } from "@/app/[tenant]/admin/actions";
 import { NSInput, NSLabel, NSTextarea } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSSingleImageUploader } from "@/components/admin/NSSingleImageUploader";
 import { NSBrandStatement } from "@/components/storefront/themes/theme-01/NSBrandStatement";
+import { BrandStatement as Theme02BrandStatement } from "@/components/storefront/themes/theme-02/BrandStatement";
 
 const initialState: ActionState = {};
 const PREVIEW_SCALE = 0.4;
 
-export function NSStatementEditorForm({ tenantId, tenantSlug, settings }: { tenantId: string; tenantSlug: string; settings: SiteSettings }) {
+export function NSStatementEditorForm({
+  tenantId,
+  tenantSlug,
+  theme,
+  settings,
+}: {
+  tenantId: string;
+  tenantSlug: string;
+  /** Which Theme actually renders this tenant's storefront — the preview below must match it, not always show Theme 01. */
+  theme: ThemeKey;
+  settings: SiteSettings;
+}) {
   const boundAction = updateStatementSettingsAction.bind(null, tenantId, tenantSlug);
   const [state, formAction, pending] = useActionState(boundAction, initialState);
 
@@ -98,12 +111,23 @@ export function NSStatementEditorForm({ tenantId, tenantSlug, settings }: { tena
               height: `${100 / PREVIEW_SCALE}%`,
             }}
           >
-            <NSBrandStatement
-              titleLine1={draft.titleLine1}
-              titleLine2={draft.titleLine2}
-              description={draft.description}
-              image={draft.image}
-            />
+            {theme === "theme-02" ? (
+              <Theme02BrandStatement
+                titleLine1={draft.titleLine1}
+                titleLine2={draft.titleLine2}
+                description={draft.description}
+                image={draft.image}
+                brandName={settings.brandName}
+              />
+            ) : (
+              <NSBrandStatement
+                titleLine1={draft.titleLine1}
+                titleLine2={draft.titleLine2}
+                description={draft.description}
+                image={draft.image}
+                brandName={settings.brandName}
+              />
+            )}
           </div>
         </div>
       </div>

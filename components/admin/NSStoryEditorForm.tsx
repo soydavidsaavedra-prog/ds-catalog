@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import type { SiteSettings } from "@/lib/types/catalog";
+import type { ThemeKey } from "@/lib/types/tenant";
 import { updateStorySettingsAction, type ActionState } from "@/app/[tenant]/admin/actions";
 import { NSInput, NSLabel, NSTextarea } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
@@ -12,7 +13,18 @@ const initialState: ActionState = {};
 
 const PREVIEW_SCALE = 0.4;
 
-export function NSStoryEditorForm({ tenantId, tenantSlug, settings }: { tenantId: string; tenantSlug: string; settings: SiteSettings }) {
+export function NSStoryEditorForm({
+  tenantId,
+  tenantSlug,
+  theme,
+  settings,
+}: {
+  tenantId: string;
+  tenantSlug: string;
+  /** Theme 02 has no equivalent to this "proceso" section at all — its real storefront never renders these fields, so the preview says so instead of showing Theme 01's rendering as if it applied. */
+  theme: ThemeKey;
+  settings: SiteSettings;
+}) {
   const boundAction = updateStorySettingsAction.bind(null, tenantId, tenantSlug);
   const [state, formAction, pending] = useActionState(boundAction, initialState);
 
@@ -131,24 +143,32 @@ export function NSStoryEditorForm({ tenantId, tenantSlug, settings }: { tenantId
 
       <div className="w-full xl:flex-1">
         <NSLabel>Vista previa en vivo</NSLabel>
-        <div className="overflow-hidden rounded-card border border-border" style={{ height: 620 * PREVIEW_SCALE }}>
-          <div
-            style={{
-              transform: `scale(${PREVIEW_SCALE})`,
-              transformOrigin: "top left",
-              width: `${100 / PREVIEW_SCALE}%`,
-              height: `${100 / PREVIEW_SCALE}%`,
-            }}
-          >
-            <NSFactoryStory
-              eyebrow={draft.eyebrow}
-              title={draft.title}
-              description={draft.description}
-              stepImages={draft.stepImages}
-              stepLabels={draft.stepLabels}
-            />
+        {theme === "theme-01" ? (
+          <div className="overflow-hidden rounded-card border border-border" style={{ height: 620 * PREVIEW_SCALE }}>
+            <div
+              style={{
+                transform: `scale(${PREVIEW_SCALE})`,
+                transformOrigin: "top left",
+                width: `${100 / PREVIEW_SCALE}%`,
+                height: `${100 / PREVIEW_SCALE}%`,
+              }}
+            >
+              <NSFactoryStory
+                eyebrow={draft.eyebrow}
+                title={draft.title}
+                description={draft.description}
+                stepImages={draft.stepImages}
+                stepLabels={draft.stepLabels}
+                brandName={settings.brandName}
+              />
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex h-40 flex-col items-center justify-center gap-1 rounded-card border border-dashed border-border px-6 text-center">
+            <p className="text-sm font-medium text-foreground">El Theme actual de tu catálogo no muestra esta sección.</p>
+            <p className="text-xs text-muted-foreground">Puedes guardar el contenido igual — se usará si más adelante cambias a un Theme que sí la incluya.</p>
+          </div>
+        )}
       </div>
     </div>
   );

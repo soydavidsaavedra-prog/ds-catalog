@@ -24,15 +24,15 @@ export default async function AdminHomePage({
       />
 
       <DSCard title="Portada (Hero)">
-        <NSHeroEditorForm tenantId={tenant.id} tenantSlug={tenantSlug} settings={settings} slides={heroSlides} />
+        <NSHeroEditorForm tenantId={tenant.id} tenantSlug={tenantSlug} theme={tenant.theme} settings={settings} slides={heroSlides} />
       </DSCard>
 
       <DSCard title="Historia de marca">
-        <NSStoryEditorForm tenantId={tenant.id} tenantSlug={tenantSlug} settings={settings} />
+        <NSStoryEditorForm tenantId={tenant.id} tenantSlug={tenantSlug} theme={tenant.theme} settings={settings} />
       </DSCard>
 
       <DSCard title="Frase destacada">
-        <NSStatementEditorForm tenantId={tenant.id} tenantSlug={tenantSlug} settings={settings} />
+        <NSStatementEditorForm tenantId={tenant.id} tenantSlug={tenantSlug} theme={tenant.theme} settings={settings} />
       </DSCard>
     </div>
   );

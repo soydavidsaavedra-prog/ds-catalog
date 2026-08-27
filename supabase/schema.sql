@@ -209,9 +209,20 @@ alter table ns_settings enable row level security;
 -- Bootstrap the single settings row so getSettings() always finds one, even
 -- before the seed script runs. Real values (WhatsApp number, etc.) can be
 -- edited any time from /admin/configuracion.
+--
+-- Guarded by "table is still empty" (not "on conflict (id)") because this
+-- statement predates ns_settings.tenant_id/the multi-tenant migration
+-- further below: on an already-migrated database, id is no longer pinned
+-- to 1 (see the ns_settings_id_seq section), so "on conflict (id)" no
+-- longer matches anything and this insert would otherwise fire again on
+-- every full re-run of this file, creating a fresh row with no tenant_id —
+-- which then fails the migration's own "alter column tenant_id set not
+-- null" a few sections down. This file is a running history, not a script
+-- meant to be replayed from the top on a live database — see the header
+-- comment — but this guard makes that specific footgun impossible either way.
 insert into ns_settings (id, brand_name, slogan, whatsapp_number, currency)
-values (1, 'El Nuevo Sánchez', 'De la fábrica a tus manos', '584121234567', 'USD')
-on conflict (id) do nothing;
+select 1, 'El Nuevo Sánchez', 'De la fábrica a tus manos', '584121234567', 'USD'
+where not exists (select 1 from ns_settings);
 
 -- ---------- storage: product image uploads ----------
 -- Public bucket: product photos need to be viewable by any visitor via a
