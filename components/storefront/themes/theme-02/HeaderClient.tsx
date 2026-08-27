@@ -18,11 +18,11 @@ interface NavParentCategory extends NavCategory {
 }
 
 /**
- * Theme Ferrecol's header — a flat, boutique-style nav (no mega-menu):
+ * Theme 02's header — a flat, boutique-style nav (no mega-menu):
  * Inicio, a single "Categorías" dropdown built from the tenant's real
  * category tree, and Catálogo. Search/cart/mobile drawer follow the same
  * interaction pattern as Theme 01's header (proven UX, not brand-specific)
- * but with Ferrecol's own dark-carbon/orange visual language.
+ * but with Theme 02's own dark-carbon/orange visual language.
  */
 export function HeaderClient({
   tenantSlug,
@@ -74,7 +74,7 @@ export function HeaderClient({
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-20 sm:px-6 lg:px-8">
         <Link href={base} className="flex items-center gap-3" aria-label="Inicio">
-          <NSLogo id="ferrecol-header" variant="mark" className="h-10 w-10 sm:h-11 sm:w-11" src={logoSrc} brandName={brandName} tagline={tagline} />
+          <NSLogo id="theme02-header" variant="mark" className="h-10 w-10 sm:h-11 sm:w-11" src={logoSrc} brandName={brandName} tagline={tagline} />
           <span className="hidden text-lg font-semibold tracking-tight sm:block">{brandName}</span>
         </Link>
 
@@ -159,7 +159,7 @@ export function HeaderClient({
             className="fixed inset-0 z-50 flex flex-col bg-background text-foreground lg:hidden"
           >
             <div className="flex h-16 items-center justify-between border-b border-border px-4">
-              <NSLogo id="ferrecol-mobile" variant="mark" className="h-9 w-9" src={logoSrc} brandName={brandName} tagline={tagline} />
+              <NSLogo id="theme02-mobile" variant="mark" className="h-9 w-9" src={logoSrc} brandName={brandName} tagline={tagline} />
               <button
                 type="button"
                 aria-label="Cerrar menú"
@@ -218,7 +218,7 @@ export function HeaderClient({
                 setSearchOpen(false);
               }}
             >
-              <label htmlFor="ferrecol-search-input" className="mb-3 block text-xs font-semibold uppercase tracking-widest text-accent">
+              <label htmlFor="theme02-search-input" className="mb-3 block text-xs font-semibold uppercase tracking-widest text-accent">
                 Buscar productos
               </label>
               <div className="flex items-center gap-3 border-b-2 border-border-strong pb-3 focus-within:border-accent">
@@ -227,7 +227,7 @@ export function HeaderClient({
                   <path strokeLinecap="round" d="m17 17-3.5-3.5" />
                 </svg>
                 <input
-                  id="ferrecol-search-input"
+                  id="theme02-search-input"
                   autoFocus
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}

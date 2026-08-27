@@ -1090,6 +1090,11 @@ update ds_tenants set theme = 'theme-01' where theme is null;
 alter table ds_tenants alter column theme set not null;
 alter table ds_tenants alter column theme set default 'theme-01';
 
+-- Drop any existing theme check constraint FIRST (before the rename below),
+-- since an earlier version of this migration allowed 'theme-ferrecol' — a
+-- client name that was never meant to be the public theme key — and a row
+-- already set to it would violate the new constraint if it were added
+-- before the rename runs.
 do $$
 declare
   conname text;
@@ -1103,8 +1108,12 @@ begin
   end if;
 end $$;
 
+-- Renames any tenant already set to the old 'theme-ferrecol' key (from
+-- testing before this rename) to its permanent name, 'theme-02'.
+update ds_tenants set theme = 'theme-02' where theme = 'theme-ferrecol';
+
 alter table ds_tenants add constraint ds_tenants_theme_check
-  check (theme in ('theme-01', 'theme-ferrecol'));
+  check (theme in ('theme-01', 'theme-02'));
 
 commit;
 

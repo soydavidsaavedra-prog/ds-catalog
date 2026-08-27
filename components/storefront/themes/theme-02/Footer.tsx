@@ -4,7 +4,7 @@ import { listCategories } from "@/lib/repositories/category-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
 import { NSLogo } from "@/components/brand/NSLogo";
 
-/** Theme Ferrecol's footer — same real data as Theme 01's (categories, contact, socials), fresh dark-carbon composition using only semantic tokens (no raw ink-* classes), so a tenant's own accent override always reads correctly here too. */
+/** Theme 02's footer — same real data as Theme 01's (categories, contact, socials), fresh dark-carbon composition using only semantic tokens (no raw ink-* classes), so a tenant's own accent override always reads correctly here too. */
 export async function Footer({ tenantSlug }: { tenantSlug: string }) {
   const tenant = await resolveTenant(tenantSlug);
   const [categories, settings] = await Promise.all([
@@ -18,7 +18,7 @@ export async function Footer({ tenantSlug }: { tenantSlug: string }) {
     <footer id="contacto" className="border-t border-border bg-surface">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr] lg:px-8">
         <div>
-          <NSLogo id="ferrecol-footer" variant="full" src={settings.brandLogo} brandName={settings.brandName} tagline={settings.heroSubtitle} />
+          <NSLogo id="theme02-footer" variant="full" src={settings.brandLogo} brandName={settings.brandName} tagline={settings.heroSubtitle} />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">{settings.brandDescription}</p>
           <div className="mt-5 flex gap-4">
             {settings.instagram ? (

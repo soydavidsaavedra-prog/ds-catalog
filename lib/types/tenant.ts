@@ -29,7 +29,7 @@ export type BusinessType = "moda" | "ferreteria" | "restaurante" | "belleza" | "
  * is the default for every tenant, including every one that existed before
  * this concept did — unchanged storefront.
  */
-export type ThemeKey = "theme-01" | "theme-ferrecol";
+export type ThemeKey = "theme-01" | "theme-02";
 
 export interface Tenant {
   id: string;

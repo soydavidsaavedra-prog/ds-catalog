@@ -22,7 +22,7 @@
    * its original gold (#f8c909/#e0b400) — see supabase/schema.sql's
    * "per-tenant accent color override" section — so demo and any new
    * self-registered tenant read as their own platform, not as El Nuevo
-   * Sánchez's brand. A different storefront Theme (e.g. .theme-ferrecol
+   * Sánchez's brand. A different storefront Theme (e.g. .theme-02
    * below) can declare its own default accent instead of this one.
    */
   --accent: #00a19a;
@@ -291,18 +291,18 @@
 }
 
 /*
- * Theme Ferrecol's own dark identity, scoped exactly like .ds-platform
+ * Theme 02's own dark identity, scoped exactly like .ds-platform
  * above but applied to the STOREFRONT (see the tenant.theme-keyed wrapper
  * div in app/[tenant]/(storefront)/layout.tsx) instead of platform chrome.
  * Every component keeps reading the same semantic tokens (bg-surface,
  * text-foreground, bg-accent, ...) — only what they resolve to changes.
- * --accent/--accent-strong/--accent-foreground here are Ferrecol's own
+ * --accent/--accent-strong/--accent-foreground here are Theme 02's own
  * DEFAULT (a vivid orange on carbon, its whole visual premise) — a tenant
  * with a real accentColor override still wins, via an inline style on the
  * very same element (see lib/utils/brand.ts buildAccentOverrideVars),
  * since inline styles always out-rank a class's own declaration.
  */
-.theme-ferrecol {
+.theme-02 {
   --background: #0b0b0a;
   --foreground: #f5f4f2;
   --surface: #141412;

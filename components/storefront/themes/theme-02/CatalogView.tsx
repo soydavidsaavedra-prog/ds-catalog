@@ -11,7 +11,7 @@ interface CatalogViewProps extends ThemeCatalogProps {
   forcedCategorySlugs?: string[];
 }
 
-/** Theme Ferrecol's catalog engine view — same filtering/faceting logic as Theme 01's (lib/search/catalog-engine.ts, shared), fresh premium-ecommerce layout. */
+/** Theme 02's catalog engine view — same filtering/faceting logic as Theme 01's (lib/search/catalog-engine.ts, shared), fresh premium-ecommerce layout. */
 export async function CatalogView({
   tenantId,
   tenantSlug,

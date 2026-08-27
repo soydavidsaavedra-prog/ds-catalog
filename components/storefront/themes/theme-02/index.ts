@@ -1,9 +1,9 @@
 /**
- * Theme Ferrecol — boutique-hardware-store premium presentation over the
+ * Theme 02 — boutique-hardware-store premium presentation over the
  * exact same catalog engine, cart, and WhatsApp logic every Theme shares.
  * CartDrawer is Theme 01's own: it's already fully token-driven with no
  * Theme-01-specific branding, so it reskins correctly under the
- * .theme-ferrecol scope (app/globals.css) with zero changes — genuine
+ * .theme-02 scope (app/globals.css) with zero changes — genuine
  * reuse, not a placeholder.
  */
 export { Header } from "./Header";

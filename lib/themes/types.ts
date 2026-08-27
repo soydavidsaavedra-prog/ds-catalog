@@ -7,7 +7,7 @@ import type { ThemeKey } from "@/lib/types/tenant";
  * page-level composition — not a fixed slot machine of interchangeable
  * sub-components — because different Themes legitimately want a different
  * set/order of home sections (see components/storefront/themes/theme-01's
- * Home vs. theme-ferrecol's). A Theme owns PRESENTATION + LAYOUT +
+ * Home vs. theme-02's). A Theme owns PRESENTATION + LAYOUT +
  * COMPOSITION; it always receives the same real tenant data (settings,
  * categories, products) — never a data shape of its own.
  *

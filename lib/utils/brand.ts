@@ -12,7 +12,7 @@ export const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
  * `.tenant-preview` wrapper in app/globals.css. An inline style always
  * wins over a class's own CSS custom-property declaration on the same
  * element, which is what lets a storefront Theme that defines its own
- * scope (e.g. app/globals.css's `.theme-ferrecol`) declare a DEFAULT
+ * scope (e.g. app/globals.css's `.theme-02`) declare a DEFAULT
  * accent while still deferring to a tenant's real color when set. Theme
  * 01 has no scope of its own — it simply IS the :root default (teal,
  * gold for El Nuevo Sánchez's inline override) — so this also covers it.

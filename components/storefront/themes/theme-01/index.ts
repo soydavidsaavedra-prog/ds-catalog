@@ -1,7 +1,7 @@
 /**
  * Theme 01's public contract (see lib/themes/types.ts's ThemeModule) — the
  * storefront's original look, frozen as the reference implementation. Every
- * other Theme (see ../theme-ferrecol) implements this same export surface.
+ * other Theme (see ../theme-02) implements this same export surface.
  */
 export { NSHeader as Header } from "./NSHeader";
 export { NSFooter as Footer } from "./NSFooter";

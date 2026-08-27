@@ -23,7 +23,7 @@ export default async function StorefrontLayout({
   const theme = resolveTheme(tenant.theme);
 
   return (
-    // `tenant.theme` doubles as the CSS scope class (see .theme-ferrecol in
+    // `tenant.theme` doubles as the CSS scope class (see .theme-02 in
     // app/globals.css) — a Theme with no scope rule of its own (e.g.
     // "theme-01", which IS the :root default) simply matches nothing, so
     // this is a no-op for it. bg-background/text-foreground here (not just

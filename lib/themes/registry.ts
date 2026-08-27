@@ -1,7 +1,7 @@
 import type { ThemeMeta, ThemeModule } from "@/lib/themes/types";
 import type { ThemeKey } from "@/lib/types/tenant";
 import * as Theme01 from "@/components/storefront/themes/theme-01";
-import * as ThemeFerrecol from "@/components/storefront/themes/theme-ferrecol";
+import * as Theme02 from "@/components/storefront/themes/theme-02";
 
 /**
  * Every registered Theme, keyed by the string stored in ds_tenants.theme
@@ -14,7 +14,7 @@ import * as ThemeFerrecol from "@/components/storefront/themes/theme-ferrecol";
  */
 export const THEME_REGISTRY: Record<ThemeKey, ThemeModule> = {
   "theme-01": Theme01,
-  "theme-ferrecol": ThemeFerrecol,
+  "theme-02": Theme02,
 };
 
 export const DEFAULT_THEME_KEY: ThemeKey = "theme-01";
@@ -25,10 +25,10 @@ export const THEME_META: Record<ThemeKey, ThemeMeta> = {
     label: "Theme 01 — Original",
     description: "El diseño original de DS Catalog: editorial, cálido, orientado a moda y catálogos generales.",
   },
-  "theme-ferrecol": {
-    key: "theme-ferrecol",
-    label: "Theme Ferrecol",
-    description: "Ferretería boutique: carbón/negro con acentos naranja, orientado a herramientas, materiales y construcción.",
+  "theme-02": {
+    key: "theme-02",
+    label: "Theme 02 — Ferretería y construcción",
+    description: "Boutique de herramientas premium: carbón/negro con acentos naranja, orientado a ferreterías, materiales y construcción.",
   },
 };
 
