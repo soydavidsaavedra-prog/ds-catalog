@@ -4,6 +4,7 @@ import { listPlans } from "@/lib/repositories/plans-repository";
 import { getStorageUsageByTenant, deriveGlobalStorageUsage } from "@/lib/repositories/storage-repository";
 import { listAllTenantsWithCounts } from "@/lib/repositories/superadmin-repository";
 import { togglePlanActiveAction } from "@/app/superadmin/actions";
+import { THEME_META } from "@/lib/themes/registry";
 import { NSPlanForm } from "@/components/superadmin/NSPlanForm";
 import { NSButton } from "@/components/ui/NSButton";
 import { DSPageHeader } from "@/components/ui/DSPageHeader";
@@ -51,6 +52,9 @@ export default async function SuperadminPlansPage() {
               <li>Productos: {plan.maxProducts ?? "Sin límite"}</li>
               <li>Storage: {plan.maxStorageMb ? `${plan.maxStorageMb} MB` : "Sin límite"}</li>
               <li>Imágenes: {plan.maxImages ?? "Sin límite"}</li>
+              <li>
+                Temas: {plan.allowedThemes ? plan.allowedThemes.map((key) => THEME_META[key].label).join(", ") : "Todos"}
+              </li>
             </ul>
             {plan.features.length > 0 ? (
               <ul className="flex flex-col gap-1 border-t border-border pt-3 text-sm">
@@ -78,7 +82,7 @@ export default async function SuperadminPlansPage() {
       <div className="border-t border-border pt-8">
         <h2 className="font-display text-lg uppercase tracking-wide">Nuevo plan</h2>
         <div className="mt-4">
-          <NSPlanForm avgBytesPerProduct={avgBytesPerProduct} />
+          <NSPlanForm avgBytesPerProduct={avgBytesPerProduct} themeOptions={Object.values(THEME_META)} />
         </div>
       </div>
     </div>

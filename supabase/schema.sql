@@ -1128,4 +1128,29 @@ alter table ds_tenants add constraint ds_tenants_theme_check
 
 commit;
 
+-- =====================================================================
+-- DS Catalog — plan-gated Themes
+-- =====================================================================
+-- Which storefront Themes (see lib/themes/registry.ts) a plan's tenants
+-- may switch to from their own /admin/tema, same shape/semantics as
+-- max_products/max_storage_mb/max_images above: null means "no
+-- restriction" (every registered Theme available), not "none allowed" —
+-- so every existing plan keeps working exactly as before this migration
+-- (every tenant can already use either Theme) until a Super Admin
+-- deliberately restricts one from /superadmin/plans. A plan's own tenants
+-- already on a Theme their (now-restricted) plan doesn't list keep
+-- rendering it as-is — this only gates picking a NEW one going forward,
+-- same "existing usage isn't retroactively broken" rule the other limits
+-- follow.
+--
+-- jsonb (not a native text[]) to match this table's own existing
+-- convention for a list-of-strings column — see `features` above.
+--
+-- Safe to re-run: add-column-if-not-exists only, no backfill needed since
+-- null is already the correct value for every plan that existed before.
+
+begin;
+
+alter table plans add column if not exists allowed_themes jsonb;
+
 commit;

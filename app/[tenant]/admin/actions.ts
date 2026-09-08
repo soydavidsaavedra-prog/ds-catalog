@@ -600,16 +600,25 @@ export async function updateStatementSettingsAction(
 }
 
 /**
- * Lets the tenant pick their own Theme from whatever's registered (see
- * lib/themes/registry.ts) — no plan-based gating yet (every tenant can use
- * any Theme for now; restricting which ones a plan allows is a separate,
- * not-yet-built feature). Never touches products/categories/settings —
- * every Theme reads those the same way, only presentation changes.
- * `revalidatePath(..., "layout")` covers every storefront route at once
- * (home, catalogo, category, product) since they all resolve the Theme
- * from the same layout-level tenant lookup.
+ * Lets the tenant pick their own Theme from whatever their plan allows
+ * (Plan.allowedThemes — null means every registered Theme, see
+ * lib/themes/registry.ts). NSThemeSelector already hides the "Usar este
+ * tema" button for a Theme the plan doesn't include, same as
+ * createHeroSlideAction's MAX_HERO_SLIDES check above — this is the
+ * server-side backstop for a request the real UI never sends, not the
+ * primary defense. A tenant with no subscription/plan at all is
+ * unrestricted, matching every other plan-based limit in this file.
+ * Never touches products/categories/settings — every Theme reads those
+ * the same way, only presentation changes. `revalidatePath(...,
+ * "layout")` covers every storefront route at once (home, catalogo,
+ * category, product) since they all resolve the Theme from the same
+ * layout-level tenant lookup.
  */
 export async function updateTenantThemeAction(tenantId: string, tenantSlug: string, theme: ThemeKey): Promise<void> {
+  const plan = await getEffectivePlanForTenant(tenantId);
+  if (plan?.allowedThemes && !plan.allowedThemes.includes(theme)) {
+    throw new Error("Este tema no está disponible en tu plan actual.");
+  }
   await updateTenantTheme(tenantId, theme);
   revalidatePath(`/${tenantSlug}`, "layout");
   revalidatePath(`/${tenantSlug}/admin/tema`);

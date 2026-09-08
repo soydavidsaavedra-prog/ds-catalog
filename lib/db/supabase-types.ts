@@ -25,6 +25,8 @@ export interface PlanRow {
   max_storage_mb: number | null;
   max_images: number | null;
   features: string[];
+  /** null = every registered Theme available (see lib/themes/registry.ts) — same "unrestricted" semantics as the max_* columns above. */
+  allowed_themes: string[] | null;
   active: boolean;
   created_at: string;
   updated_at: string;

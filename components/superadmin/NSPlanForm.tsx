@@ -5,19 +5,39 @@ import { createPlanAction, updatePlanAction, type SuperadminActionState } from "
 import { NSInput, NSLabel, NSTextarea } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import type { Plan } from "@/lib/repositories/plans-repository";
+import type { ThemeMeta } from "@/lib/themes/types";
 
 const initialState: SuperadminActionState = {};
 
 interface NSPlanFormProps {
   /** Real platform-wide average (totalStorageBytes / totalProducts) — null if there are no products yet to derive one from. Never a guessed constant. */
   avgBytesPerProduct: number | null;
+  /** Every registered Theme's label/description (lib/themes/registry.ts's THEME_META, resolved server-side by the caller) — not imported directly here, since that registry also pulls in each Theme's component tree, which isn't safe to bundle into a Client Component. */
+  themeOptions: ThemeMeta[];
   plan?: Plan;
 }
 
-export function NSPlanForm({ avgBytesPerProduct, plan }: NSPlanFormProps) {
+export function NSPlanForm({ avgBytesPerProduct, themeOptions, plan }: NSPlanFormProps) {
   const boundAction = plan ? updatePlanAction.bind(null, plan.id) : createPlanAction;
   const [state, formAction, pending] = useActionState(boundAction, initialState);
   const [maxStorageMb, setMaxStorageMb] = useState(plan?.maxStorageMb?.toString() ?? "");
+  // Unrestricted by default for a NEW plan (matches "sin límite" being the
+  // default for maxProducts/maxStorageMb/maxImages too) — existing plans
+  // keep whatever was actually saved (null = unrestricted, an array = only
+  // those checked).
+  const [themesUnrestricted, setThemesUnrestricted] = useState(plan ? plan.allowedThemes === null : true);
+  const [selectedThemes, setSelectedThemes] = useState<Set<string>>(
+    new Set(plan?.allowedThemes ?? themeOptions.map((t) => t.key)),
+  );
+
+  function toggleTheme(key: string) {
+    setSelectedThemes((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   const estimatedProducts = (() => {
     if (!avgBytesPerProduct || avgBytesPerProduct <= 0) return null;
@@ -95,6 +115,43 @@ export function NSPlanForm({ avgBytesPerProduct, plan }: NSPlanFormProps) {
           aplica es el de productos, arriba.
         </p>
       ) : null}
+
+      <div className="border-t border-border pt-5">
+        <NSLabel>Temas disponibles</NSLabel>
+        <p className="-mt-2.5 text-xs text-muted-foreground">
+          Qué Themes de catálogo puede elegir un cliente con este plan desde su propio panel.
+        </p>
+        <label className="mt-3 flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="themesUnrestricted"
+            checked={themesUnrestricted}
+            onChange={(e) => setThemesUnrestricted(e.target.checked)}
+            className="h-4 w-4 accent-[var(--accent)]"
+          />
+          Sin restricción (todos los temas actuales y futuros)
+        </label>
+        {!themesUnrestricted ? (
+          <div className="mt-3 flex flex-col gap-2">
+            {themeOptions.map((theme) => (
+              <label key={theme.key} className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="allowedThemes"
+                  value={theme.key}
+                  checked={selectedThemes.has(theme.key)}
+                  onChange={() => toggleTheme(theme.key)}
+                  className="mt-0.5 h-4 w-4 accent-[var(--accent)]"
+                />
+                <span>
+                  <span className="font-medium text-foreground">{theme.label}</span>
+                  <span className="block text-xs text-muted-foreground">{theme.description}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        ) : null}
+      </div>
 
       <div>
         <NSLabel htmlFor="features">Características (una por línea)</NSLabel>

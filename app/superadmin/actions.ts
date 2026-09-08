@@ -40,6 +40,7 @@ import { siteConfig } from "@/lib/config/site";
 import { slugify } from "@/lib/utils/slug";
 import { RESERVED_SLUGS } from "@/lib/utils/reserved-slugs";
 import { BUSINESS_TYPE_PROFILES } from "@/lib/tenant/business-type";
+import { THEME_META } from "@/lib/themes/registry";
 import type { BusinessType, TenantStatus, ThemeKey } from "@/lib/types/tenant";
 
 export type SuperadminActionState = { error?: string };
@@ -223,6 +224,15 @@ function parseOptionalInt(value: FormDataEntryValue | null): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+const VALID_THEME_KEYS = Object.keys(THEME_META) as ThemeKey[];
+
+/** null = "Sin restricción" checked (every registered Theme available) — the same semantics as a blank maxProducts/maxStorageMb/maxImages input meaning "sin límite". Otherwise, exactly the checked subset of THEME_META's keys. */
+function parseAllowedThemes(formData: FormData): ThemeKey[] | null {
+  if (formData.get("themesUnrestricted") === "on") return null;
+  const submitted = formData.getAll("allowedThemes").map(String);
+  return VALID_THEME_KEYS.filter((key) => submitted.includes(key));
+}
+
 function parsePlanFormFields(formData: FormData): Omit<PlanInput, "key"> {
   return {
     name: String(formData.get("name") ?? "").trim(),
@@ -235,6 +245,7 @@ function parsePlanFormFields(formData: FormData): Omit<PlanInput, "key"> {
       .split("\n")
       .map((f) => f.trim())
       .filter(Boolean),
+    allowedThemes: parseAllowedThemes(formData),
   };
 }
 
@@ -247,6 +258,9 @@ export async function createPlanAction(
   const key = slugify(String(formData.get("key") ?? "").trim());
   const fields = parsePlanFormFields(formData);
   if (!key || !fields.name) return { error: "Clave y nombre son obligatorios." };
+  if (fields.allowedThemes !== null && fields.allowedThemes.length === 0) {
+    return { error: "Selecciona al menos un tema para este plan, o marca \"Sin restricción\"." };
+  }
 
   try {
     await createPlan({ key, ...fields });
@@ -272,6 +286,9 @@ export async function updatePlanAction(
 
   const fields = parsePlanFormFields(formData);
   if (!fields.name) return { error: "El nombre es obligatorio." };
+  if (fields.allowedThemes !== null && fields.allowedThemes.length === 0) {
+    return { error: "Selecciona al menos un tema para este plan, o marca \"Sin restricción\"." };
+  }
 
   try {
     await updatePlan(planId, fields);
