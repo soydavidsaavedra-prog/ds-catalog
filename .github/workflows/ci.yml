@@ -1,18 +1,23 @@
 name: CI
 
-# Runs on every push (any branch) and every pull request. Vercel already
-# builds and deploys a full preview on each of these (see the "Vercel"
-# check on any PR) — that's this project's real build/deploy verification,
-# already wired via GitHub's Vercel integration and already exercising
-# real Supabase credentials. What was missing, and what this workflow
-# adds, are the fast, secret-free checks a contributor is expected to run
-# locally before pushing: lint, typecheck, and the unit test suite.
+# pull_request covers every commit on a branch with an open PR; push is
+# restricted to main so merges still get checked without double-running
+# every PR commit under both events (push + pull_request would otherwise
+# fire two full, redundant sets of jobs per commit on a branch that already
+# has a PR open). Vercel already builds and deploys a full preview on each
+# of these (see the "Vercel" check on any PR) — that's this project's real
+# build/deploy verification, already wired via GitHub's Vercel integration
+# and already exercising real Supabase credentials. What was missing, and
+# what this workflow adds, are the fast, secret-free checks a contributor
+# is expected to run locally before pushing: lint, typecheck, and the unit
+# test suite.
 on:
   push:
+    branches: [main]
   pull_request:
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
