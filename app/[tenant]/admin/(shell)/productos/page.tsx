@@ -22,7 +22,14 @@ export default async function AdminProductsPage({
       <DSPageHeader
         title="Productos"
         description={`${products.length} productos en catálogo.`}
-        actions={<NSButton href={`/${tenantSlug}/admin/productos/nuevo`} size="sm">+ Nuevo producto</NSButton>}
+        actions={
+          <>
+            <NSButton href={`/${tenantSlug}/admin/productos/importar`} variant="outline" size="sm">
+              Importar CSV
+            </NSButton>
+            <NSButton href={`/${tenantSlug}/admin/productos/nuevo`} size="sm">+ Nuevo producto</NSButton>
+          </>
+        }
       />
 
       <NSProductsTable
