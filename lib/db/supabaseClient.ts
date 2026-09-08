@@ -63,3 +63,27 @@ export function getSupabaseAuthClient(): SupabaseClient<Database> {
 
   return cachedAuthClient;
 }
+
+/**
+ * A fresh, UNCACHED client — unlike getSupabaseAuthClient()'s process-wide
+ * singleton, required whenever a caller needs `auth.setSession(...)` to
+ * operate on one specific already-signed-in session (Super Admin's TOTP
+ * enroll/challenge/verify/unenroll in lib/auth/supabase-auth.ts).
+ * setSession mutates the client instance's own ambient session state, so
+ * reusing the shared singleton for that would risk one request's
+ * setSession leaking into a concurrent request's calls on the very same
+ * object — a real correctness/security risk for a security-sensitive flow
+ * like MFA, even though this app's login volume is low. Every other
+ * Supabase Auth call (signInWithPassword, resetPasswordForEmail,
+ * getUser(token)) is self-contained via its own explicit arguments and
+ * never depends on ambient session state, which is why those safely keep
+ * sharing getSupabaseAuthClient() instead.
+ */
+export function createSupabaseAuthSessionClient(): SupabaseClient<Database> {
+  const url = getEnv("NEXT_PUBLIC_SUPABASE_URL");
+  const anonKey = getEnv("SUPABASE_ANON_KEY");
+
+  return createClient<Database>(url, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}

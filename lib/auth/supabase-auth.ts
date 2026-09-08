@@ -1,5 +1,5 @@
 import "server-only";
-import { getSupabaseClient, getSupabaseAuthClient } from "@/lib/db/supabaseClient";
+import { createSupabaseAuthSessionClient, getSupabaseClient, getSupabaseAuthClient } from "@/lib/db/supabaseClient";
 
 /**
  * Thin wrappers over Supabase Auth — this is where every call to
@@ -89,4 +89,103 @@ export async function deleteAuthUser(userId: string): Promise<void> {
   const supabase = getSupabaseClient();
   const { error } = await supabase.auth.admin.deleteUser(userId);
   if (error) throw error;
+}
+
+// ---------- TOTP (Super Admin two-factor authentication) ----------
+//
+// Every call below (past the first) needs a LIVE, already-authenticated
+// Supabase Auth session for the specific user it acts on — GoTrue's MFA
+// API is deliberately self-service-only (not delegable via the
+// service_role key, unlike everything else in this file), so there is no
+// admin-side shortcut to enroll/verify/unenroll on someone else's behalf.
+// That session is obtained once via verifyEmailPasswordWithSession, then
+// its tokens are threaded through the caller's own multi-step flow
+// (Server Action bound args for login's TOTP challenge, same for
+// enrollment) and restored here via setSession() on a fresh, uncached
+// client (see createSupabaseAuthSessionClient's own comment for why not
+// the shared singleton).
+
+export interface AuthSession {
+  accessToken: string;
+  refreshToken: string;
+}
+
+/** Like verifyEmailPassword, but also returns the session's own tokens — needed only by callers (accederAction's TOTP step, TOTP enrollment) that must carry this exact session forward into a follow-up MFA call. */
+export async function verifyEmailPasswordWithSession(
+  email: string,
+  password: string,
+): Promise<{ user: AuthUser; session: AuthSession } | null> {
+  const supabase = getSupabaseAuthClient();
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error || !data.user || !data.session) return null;
+  return {
+    user: { id: data.user.id, email: data.user.email ?? email },
+    session: { accessToken: data.session.access_token, refreshToken: data.session.refresh_token },
+  };
+}
+
+async function sessionClient(session: AuthSession) {
+  const supabase = createSupabaseAuthSessionClient();
+  const { error } = await supabase.auth.setSession({
+    access_token: session.accessToken,
+    refresh_token: session.refreshToken,
+  });
+  if (error) throw error;
+  return supabase;
+}
+
+export interface TotpEnrollment {
+  factorId: string;
+  /** Inline SVG markup (Supabase's own QR rendering) — render directly, no QR library needed. */
+  qrCodeSvg: string;
+  /** Manual-entry fallback for an authenticator app that can't scan the QR code. */
+  secret: string;
+}
+
+/**
+ * Starts TOTP enrollment. The returned factor stays unverified — useless
+ * for actually gating login — until confirmTotpEnrollment succeeds with a
+ * real code from the user's authenticator app.
+ */
+export async function enrollTotpFactor(session: AuthSession): Promise<TotpEnrollment> {
+  const supabase = await sessionClient(session);
+  const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", issuer: "DS Catalog" });
+  if (error) throw error;
+  return { factorId: data.id, qrCodeSvg: data.totp.qr_code, secret: data.totp.secret };
+}
+
+/** Confirms a factor from enrollTotpFactor with the first code from the authenticator app — only after this does it actually protect login. */
+export async function confirmTotpEnrollment(session: AuthSession, factorId: string, code: string): Promise<boolean> {
+  const supabase = await sessionClient(session);
+  const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId, code });
+  return !error;
+}
+
+/** Verifies a login-time TOTP code against an already-verified factor. Returns false (never throws) for a wrong/expired code — mirrors verifyEmailPassword's own null-for-wrong-credentials convention; only a real infra error throws. */
+export async function verifyTotpCode(session: AuthSession, factorId: string, code: string): Promise<boolean> {
+  const supabase = await sessionClient(session);
+  const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId, code });
+  return !error;
+}
+
+/** Disables 2FA — removes the factor. Requires the same live re-authenticated session as enrolling one (see the section comment above). */
+export async function unenrollTotpFactor(session: AuthSession, factorId: string): Promise<void> {
+  const supabase = await sessionClient(session);
+  const { error } = await supabase.auth.mfa.unenroll({ factorId });
+  if (error) throw error;
+}
+
+/**
+ * Reads a user's enrolled TOTP factors via the Admin API — no live session
+ * needed, since this is a read our own server performs (to show current
+ * 2FA status, and at login time to decide whether a challenge is even
+ * required), not a self-service action the user is performing themselves.
+ */
+export async function listTotpFactors(userId: string): Promise<{ id: string; verified: boolean }[]> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.auth.admin.getUserById(userId);
+  if (error) throw error;
+  return (data.user.factors ?? [])
+    .filter((f) => f.factor_type === "totp")
+    .map((f) => ({ id: f.id, verified: f.status === "verified" }));
 }

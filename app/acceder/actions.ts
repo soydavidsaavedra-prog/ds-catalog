@@ -6,10 +6,13 @@ import { createAdminSession } from "@/lib/auth/admin-auth";
 import { createSuperadminSession, verifySuperadminCredentials } from "@/lib/auth/superadmin-auth";
 import {
   createAuthUser,
-  verifyEmailPassword,
+  verifyEmailPasswordWithSession,
+  verifyTotpCode,
+  listTotpFactors,
   sendPasswordResetEmail,
   getUserFromAccessToken,
   setUserPassword,
+  type AuthSession,
 } from "@/lib/auth/supabase-auth";
 import {
   checkLoginRateLimit,
@@ -21,7 +24,14 @@ import { getAppUserById, getAppUserByEmail, createAppUser } from "@/lib/reposito
 import { getTenantById } from "@/lib/repositories/tenant-repository";
 import { siteConfig } from "@/lib/config/site";
 
-export type AccederActionState = { error?: string };
+export interface TotpChallenge {
+  appUserId: string;
+  factorId: string;
+  accessToken: string;
+  refreshToken: string;
+}
+
+export type AccederActionState = { error?: string; totpChallenge?: TotpChallenge };
 
 const GENERIC_ERROR = "Correo o contraseña incorrectos.";
 
@@ -77,11 +87,13 @@ export async function accederAction(_prev: AccederActionState, formData: FormDat
   }
 
   let resolvedUserId: string | null = null;
+  let session: AuthSession | null = null;
 
   try {
-    const authUser = await verifyEmailPassword(email, password);
-    if (authUser) {
-      resolvedUserId = authUser.id;
+    const verified = await verifyEmailPasswordWithSession(email, password);
+    if (verified) {
+      resolvedUserId = verified.user.id;
+      session = verified.session;
     } else {
       // Auto-migración de una sola vez: cuentas de Super Admin creadas
       // antes de este cambio (scripts/create-superadmin.ts, tabla
@@ -89,7 +101,9 @@ export async function accederAction(_prev: AccederActionState, formData: FormDat
       // intento contra Supabase Auth falló pero esta contraseña coincide
       // con la cuenta legada, provisionamos la identidad real ahora mismo
       // con la MISMA contraseña — el resto de logins de esta persona ya
-      // nunca vuelven a tocar esta rama.
+      // nunca vuelven a tocar esta rama. Nunca tiene 2FA activo todavía:
+      // es un usuario de Supabase Auth recién creado, así que no hace
+      // falta (ni es posible) revisar factores TOTP en esta rama.
       const legacySuperadmin = await verifySuperadminCredentials(email, password);
       if (legacySuperadmin) {
         const migrated = await createAuthUser(legacySuperadmin.email, password);
@@ -106,8 +120,104 @@ export async function accederAction(_prev: AccederActionState, formData: FormDat
     return { error: GENERIC_ERROR };
   }
 
+  // Super Admin two-factor: only checked when we actually have a live
+  // session to carry into the verify step (the legacy-migration path
+  // above has none, but per the comment there it can't have 2FA yet
+  // anyway). Tenant admins never get this prompt — see the "solo Super
+  // Admin" scope decision this was built against.
+  if (session) {
+    let appUser;
+    try {
+      appUser = await getAppUserById(resolvedUserId);
+    } catch (err) {
+      return { error: authErrorMessage(err) };
+    }
+
+    if (appUser?.role === "superadmin") {
+      let factors;
+      try {
+        factors = await listTotpFactors(appUser.id);
+      } catch (err) {
+        return { error: authErrorMessage(err) };
+      }
+      const verifiedFactor = factors.find((f) => f.verified);
+      if (verifiedFactor) {
+        // Neither clears the failure counter nor mints a session cookie
+        // yet — both wait for verifyTotpLoginAction to succeed.
+        return {
+          totpChallenge: {
+            appUserId: appUser.id,
+            factorId: verifiedFactor.id,
+            accessToken: session.accessToken,
+            refreshToken: session.refreshToken,
+          },
+        };
+      }
+    }
+  }
+
   await clearFailedLoginAttempts(email).catch((err) => console.error("[acceder] failed to clear login attempts:", err));
   return signInAndRedirect(resolvedUserId);
+}
+
+/**
+ * Step 2 of login for a Super Admin with 2FA enabled — bound with the
+ * TotpChallenge accederAction returned (see NSAccederForm), which Next.js
+ * encrypts as part of the Server Action reference, the same way this
+ * project already threads a bound tenantId/planId through other actions;
+ * the raw access/refresh tokens never appear in the page's HTML or a URL.
+ */
+export async function verifyTotpLoginAction(
+  challenge: TotpChallenge,
+  _prev: AccederActionState,
+  formData: FormData,
+): Promise<AccederActionState> {
+  const code = String(formData.get("code") ?? "").trim();
+  if (!code) {
+    return { error: "Escribe el código de 6 dígitos.", totpChallenge: challenge };
+  }
+
+  let appUser;
+  try {
+    appUser = await getAppUserById(challenge.appUserId);
+  } catch (err) {
+    return { error: authErrorMessage(err) };
+  }
+  if (!appUser) {
+    return { error: GENERIC_ERROR };
+  }
+
+  const ip = extractClientIp(await headers());
+
+  try {
+    const rateLimit = await checkLoginRateLimit(appUser.email, ip);
+    if (rateLimit.blocked) {
+      return {
+        error: `Demasiados intentos fallidos. Intenta de nuevo en ${rateLimit.retryAfterMinutes} minuto${rateLimit.retryAfterMinutes === 1 ? "" : "s"}.`,
+      };
+    }
+  } catch (err) {
+    console.error("[acceder] rate limit check failed, allowing attempt:", err);
+  }
+
+  let ok: boolean;
+  try {
+    ok = await verifyTotpCode(
+      { accessToken: challenge.accessToken, refreshToken: challenge.refreshToken },
+      challenge.factorId,
+      code,
+    );
+  } catch (err) {
+    return { error: authErrorMessage(err) };
+  }
+
+  if (!ok) {
+    await recordFailedLoginAttempt(appUser.email, ip).catch((err) => console.error("[acceder] failed to record login attempt:", err));
+    return { error: "Código incorrecto o expirado.", totpChallenge: challenge };
+  }
+
+  await clearFailedLoginAttempts(appUser.email).catch((err) => console.error("[acceder] failed to clear login attempts:", err));
+  return signInAndRedirect(challenge.appUserId);
 }
 
 /** Shared by a normal login and the legacy-migration path above — looks up the ds_app_users profile and starts the right kind of session. Never returns on success (redirect() throws). */

@@ -38,6 +38,7 @@ const GROUPS: NavGroup[] = [
     label: "Sistema",
     links: [
       { href: "/superadmin/storage", label: "Storage", icon: StorageIcon },
+      { href: "/superadmin/seguridad", label: "Seguridad", icon: SecurityIcon },
       { href: "/superadmin/configuracion", label: "Configuración", icon: SettingsIcon },
     ],
   },
@@ -296,6 +297,9 @@ function StorageIcon({ className }: { className?: string }) {
 }
 function SettingsIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><circle cx="10" cy="10" r="2.6" /><path d="M10 2.5v2M10 15.5v2M17.5 10h-2M4.5 10h-2M15.1 4.9l-1.4 1.4M6.3 13.7l-1.4 1.4M15.1 15.1l-1.4-1.4M6.3 6.3 4.9 4.9" /></svg>;
+}
+function SecurityIcon({ className }: { className?: string }) {
+  return <svg className={className} {...iconProps()} aria-hidden><path d="M10 2.5 3 5v5c0 4 3 6.8 7 8 4-1.2 7-4 7-8V5l-7-2.5Z" /><path d="M7 10l2 2 4-4" /></svg>;
 }
 function MenuIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><path d="M3 5.5h14M3 10h14M3 14.5h14" /></svg>;
