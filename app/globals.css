@@ -2,7 +2,8 @@
 
 :root {
   /* Semantic — light (default storefront theme) */
-  --background: #ffffff;
+  /* Page canvas sits a hair below pure white so a bordered card (bg-surface-elevated) reads as a raised surface instead of blending into the page — see the identical fix note on .ds-platform's light block below. */
+  --background: #fafaf9;
   --foreground: #0a0a09;
   --surface: #f7f7f6;
   --surface-elevated: #ffffff;
@@ -297,7 +298,14 @@
  * platform's identity stays recognizable in either mode.
  */
 :root[data-theme="light"] .ds-platform {
-  --background: #ffffff;
+  /*
+   * Page canvas sits a hair below pure white so bordered cards
+   * (bg-surface-elevated, e.g. DSCard) actually read as raised surfaces
+   * instead of blending into the page with only their border visible —
+   * background was identical to surface-elevated here before, which made
+   * every admin section look flat/undefined in light mode.
+   */
+  --background: #fafaf9;
   --foreground: #0a0a09;
   --surface: #f7f7f6;
   --surface-elevated: #ffffff;
@@ -330,7 +338,7 @@
  * lib/utils/brand.ts buildAccentOverrideCss and its callers.
  */
 .tenant-preview {
-  --background: #ffffff;
+  --background: #fafaf9;
   --foreground: #0a0a09;
   --surface: #f7f7f6;
   --surface-elevated: #ffffff;
