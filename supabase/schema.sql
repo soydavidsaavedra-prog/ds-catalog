@@ -1154,3 +1154,32 @@ begin;
 alter table plans add column if not exists allowed_themes jsonb;
 
 commit;
+
+-- =====================================================================
+-- DS Catalog — login rate limiting
+-- =====================================================================
+-- Records every FAILED login attempt at /acceder (tenant admins and
+-- Super Admin go through the same form — see app/acceder/actions.ts) so
+-- lib/auth/login-rate-limit.ts can lock out an email, and separately an
+-- IP, after too many failures in a short window. No `success` column:
+-- only failures are ever inserted here, so counting rows in a time
+-- window IS the failure count. A successful login clears that email's
+-- own rows (see clearFailedLoginAttempts) instead of leaving them to
+-- expire on their own, so a legitimate user who mistyped a few times
+-- isn't left half-locked right after finally getting in.
+--
+-- Safe to re-run: create-if-not-exists only.
+
+begin;
+
+create table if not exists ds_login_attempts (
+  id uuid primary key default gen_random_uuid(),
+  identifier text not null,
+  ip text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists ds_login_attempts_identifier_idx on ds_login_attempts (identifier, created_at desc);
+create index if not exists ds_login_attempts_ip_idx on ds_login_attempts (ip, created_at desc);
+
+commit;

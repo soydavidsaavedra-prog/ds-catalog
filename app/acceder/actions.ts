@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createAdminSession } from "@/lib/auth/admin-auth";
 import { createSuperadminSession, verifySuperadminCredentials } from "@/lib/auth/superadmin-auth";
@@ -10,6 +11,12 @@ import {
   getUserFromAccessToken,
   setUserPassword,
 } from "@/lib/auth/supabase-auth";
+import {
+  checkLoginRateLimit,
+  clearFailedLoginAttempts,
+  extractClientIp,
+  recordFailedLoginAttempt,
+} from "@/lib/auth/login-rate-limit";
 import { getAppUserById, getAppUserByEmail, createAppUser } from "@/lib/repositories/app-users-repository";
 import { getTenantById } from "@/lib/repositories/tenant-repository";
 import { siteConfig } from "@/lib/config/site";
@@ -51,6 +58,24 @@ export async function accederAction(_prev: AccederActionState, formData: FormDat
     return { error: "Escribe tu correo y tu contraseña." };
   }
 
+  const ip = extractClientIp(await headers());
+
+  // Fails OPEN, not closed: if ds_login_attempts isn't reachable (e.g. the
+  // migration in supabase/schema.sql hasn't been run yet on this project),
+  // login must keep working exactly as it did before this existed — a
+  // broken rate-limit check should never become a total login outage for
+  // every tenant and Super Admin at once.
+  try {
+    const rateLimit = await checkLoginRateLimit(email, ip);
+    if (rateLimit.blocked) {
+      return {
+        error: `Demasiados intentos fallidos. Intenta de nuevo en ${rateLimit.retryAfterMinutes} minuto${rateLimit.retryAfterMinutes === 1 ? "" : "s"}.`,
+      };
+    }
+  } catch (err) {
+    console.error("[acceder] rate limit check failed, allowing attempt:", err);
+  }
+
   let resolvedUserId: string | null = null;
 
   try {
@@ -77,9 +102,11 @@ export async function accederAction(_prev: AccederActionState, formData: FormDat
   }
 
   if (!resolvedUserId) {
+    await recordFailedLoginAttempt(email, ip).catch((err) => console.error("[acceder] failed to record login attempt:", err));
     return { error: GENERIC_ERROR };
   }
 
+  await clearFailedLoginAttempts(email).catch((err) => console.error("[acceder] failed to clear login attempts:", err));
   return signInAndRedirect(resolvedUserId);
 }
 

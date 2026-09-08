@@ -60,6 +60,13 @@ export interface PlatformSettingsRow {
   updated_at: string;
 }
 
+export interface LoginAttemptRow {
+  id: string;
+  identifier: string;
+  ip: string | null;
+  created_at: string;
+}
+
 export type AppUserRole = "owner" | "superadmin";
 
 export interface AppUserRow {
@@ -275,6 +282,7 @@ export interface Database {
       ns_hero_slides: TableDef<HeroSlideRow>;
       ns_orders: TableDef<OrderRow>;
       ns_settings: TableDef<SettingsRow>;
+      ds_login_attempts: TableDef<LoginAttemptRow>;
     };
     Views: Record<string, never>;
     Functions: {
