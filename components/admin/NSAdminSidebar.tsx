@@ -59,7 +59,13 @@ export function NSAdminSidebar({
       ],
     },
     { label: "Ventas", links: [{ href: `${base}/pedidos`, label: "Pedidos", icon: OrderIcon }] },
-    { label: "Personalización", links: [{ href: `${base}/inicio`, label: "Inicio", icon: HomeIcon }] },
+    {
+      label: "Personalización",
+      links: [
+        { href: `${base}/tema`, label: "Tema", icon: ThemeIcon },
+        { href: `${base}/inicio`, label: "Inicio", icon: HomeIcon },
+      ],
+    },
     {
       label: "Configuración",
       links: [
@@ -408,6 +414,9 @@ function DashboardIcon({ className }: { className?: string }) {
 }
 function HomeIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><path d="M3 9.5 10 3l7 6.5" /><path d="M5 8.5V17h10V8.5" /></svg>;
+}
+function ThemeIcon({ className }: { className?: string }) {
+  return <svg className={className} {...iconProps()} aria-hidden><circle cx="10" cy="10" r="7" /><path d="M10 3a7 7 0 0 1 0 14 3.5 3.5 0 0 1-1-6.9 1.7 1.7 0 0 0-.6-3.3A3.5 3.5 0 0 1 10 3Z" fill="currentColor" stroke="none" /></svg>;
 }
 function ProductIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><path d="M3 6l7-3.5L17 6v8l-7 3.5L3 14V6Z" /><path d="M3 6l7 3.5L17 6M10 9.5V17" /></svg>;

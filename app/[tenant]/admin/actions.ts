@@ -32,13 +32,14 @@ import {
 } from "@/lib/repositories/hero-slide-repository";
 import { updateOrderStatus } from "@/lib/repositories/order-repository";
 import { getSettings, updateSettings } from "@/lib/repositories/settings-repository";
-import { completeOnboarding } from "@/lib/repositories/tenant-repository";
+import { completeOnboarding, updateTenantTheme } from "@/lib/repositories/tenant-repository";
 import { deleteStorageFilesByUrls } from "@/lib/repositories/storage-repository";
 import { slugify } from "@/lib/utils/slug";
 import { HEX_COLOR, readableForegroundFor } from "@/lib/utils/brand";
 import type { Availability, Audience, CardAspectRatio, ImageFit, ProductColor } from "@/lib/types/catalog";
 import { MAX_HERO_SLIDES } from "@/lib/types/catalog";
 import type { OrderStatus } from "@/lib/types/order";
+import type { ThemeKey } from "@/lib/types/tenant";
 
 export type ActionState = { error?: string; success?: boolean };
 
@@ -596,4 +597,20 @@ export async function updateStatementSettingsAction(
   await cleanupReplacedImages([existing.statementImage], [statementImage]);
   revalidatePath(`/${tenantSlug}`, "layout");
   return { success: true };
+}
+
+/**
+ * Lets the tenant pick their own Theme from whatever's registered (see
+ * lib/themes/registry.ts) — no plan-based gating yet (every tenant can use
+ * any Theme for now; restricting which ones a plan allows is a separate,
+ * not-yet-built feature). Never touches products/categories/settings —
+ * every Theme reads those the same way, only presentation changes.
+ * `revalidatePath(..., "layout")` covers every storefront route at once
+ * (home, catalogo, category, product) since they all resolve the Theme
+ * from the same layout-level tenant lookup.
+ */
+export async function updateTenantThemeAction(tenantId: string, tenantSlug: string, theme: ThemeKey): Promise<void> {
+  await updateTenantTheme(tenantId, theme);
+  revalidatePath(`/${tenantSlug}`, "layout");
+  revalidatePath(`/${tenantSlug}/admin/tema`);
 }
