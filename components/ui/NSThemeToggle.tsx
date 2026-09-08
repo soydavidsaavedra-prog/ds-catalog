@@ -42,15 +42,14 @@ function useThemeMode() {
 }
 
 /**
- * A single light/dark toggle, usable anywhere (storefront header, admin
- * sidebar, Super Admin sidebar) — every surface's CSS already reacts to
- * documentElement[data-theme] (see app/globals.css's :root/.ds-platform
- * blocks), so this component only ever needs to flip that one attribute
- * plus persist the choice; it never needs to know which surface it's on.
- * Exceptions that stay fixed regardless of this toggle, by design: Theme
- * 02's own dark identity (its whole visual premise, like .ds-platform's
- * default) and .tenant-preview (always shows the tenant's real light
- * look) — neither renders this component.
+ * A single light/dark toggle, usable anywhere (every storefront Theme's
+ * header, admin sidebar, Super Admin sidebar) — every surface's CSS
+ * already reacts to documentElement[data-theme] (see app/globals.css's
+ * :root/.ds-platform/.theme-02 blocks), so this component only ever needs
+ * to flip that one attribute plus persist the choice; it never needs to
+ * know which surface it's on. The one exception is .tenant-preview
+ * (always shows the tenant's real light storefront look regardless of
+ * surrounding chrome) — it never renders this component.
  *
  * `variant="icon"` (default) is a compact square button for a header's
  * icon row. `variant="row"` is a full-width labeled row matching a

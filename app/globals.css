@@ -348,16 +348,18 @@
 }
 
 /*
- * Theme 02's own dark identity, scoped exactly like .ds-platform
- * above but applied to the STOREFRONT (see the tenant.theme-keyed wrapper
- * div in app/[tenant]/(storefront)/layout.tsx) instead of platform chrome.
- * Every component keeps reading the same semantic tokens (bg-surface,
+ * Theme 02's own DEFAULT identity, scoped exactly like .ds-platform above
+ * but applied to the STOREFRONT (see the tenant.theme-keyed wrapper div in
+ * app/[tenant]/(storefront)/layout.tsx) instead of platform chrome. Every
+ * component keeps reading the same semantic tokens (bg-surface,
  * text-foreground, bg-accent, ...) — only what they resolve to changes.
- * --accent/--accent-strong/--accent-foreground here are Theme 02's own
- * DEFAULT (a vivid orange on carbon, its whole visual premise) — a tenant
- * with a real accentColor override still wins, via an inline style on the
- * very same element (see lib/utils/brand.ts buildAccentOverrideVars),
- * since inline styles always out-rank a class's own declaration.
+ * Dark-on-carbon by default (unaffected by the visitor's OS, same as
+ * .ds-platform); see the light override right below for what
+ * NSThemeToggle switches to. --accent/--accent-strong/--accent-foreground
+ * here are Theme 02's own default — a tenant with a real accentColor
+ * override still wins, via an inline style on the very same element (see
+ * lib/utils/brand.ts buildAccentOverrideVars), since inline styles always
+ * out-rank a class's own declaration.
  */
 .theme-02 {
   --background: #0b0b0a;
@@ -378,6 +380,35 @@
   --focus-ring: #ea580c;
   --overlay: rgba(0, 0, 0, 0.75);
   color-scheme: dark;
+}
+
+/*
+ * Theme 02's light alternative — same warm-premium/orange-accent identity,
+ * just on a light warm-off-white ground instead of carbon. Only active
+ * when a person explicitly picks "claro" via NSThemeToggle (rendered in
+ * Theme 02's own header — see HeaderClient.tsx); dark stays the default
+ * for every visitor who never touches the toggle, same as .ds-platform's
+ * own light override right above.
+ */
+:root[data-theme="light"] .theme-02 {
+  --background: #faf9f7;
+  --foreground: #17140f;
+  --surface: #f1efea;
+  --surface-elevated: #ffffff;
+  --surface-inverted: #17140f;
+  --muted: #6b6459;
+  --muted-foreground: #6b6459;
+  --border: #e6e2da;
+  --border-strong: #cfc9bc;
+  --accent: #f97316;
+  --accent-strong: #ea580c;
+  --accent-foreground: #17140f;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --focus-ring: #ea580c;
+  --overlay: rgba(23, 20, 15, 0.5);
+  color-scheme: light;
 }
 
 @keyframes reveal-up {

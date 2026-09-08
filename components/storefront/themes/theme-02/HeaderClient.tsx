@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { NSLogo } from "@/components/brand/NSLogo";
 import { NSCartButton } from "@/components/cart/NSCartButton";
+import { NSThemeToggle } from "@/components/ui/NSThemeToggle";
 import { cn } from "@/lib/utils/cn";
 
 interface NavCategory {
@@ -135,6 +136,7 @@ export function HeaderClient({
               <path strokeLinecap="round" d="m17 17-3.5-3.5" />
             </svg>
           </button>
+          <NSThemeToggle />
           <NSCartButton />
           <button
             type="button"
