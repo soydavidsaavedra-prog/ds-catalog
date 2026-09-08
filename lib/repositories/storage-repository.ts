@@ -1,6 +1,12 @@
 import "server-only";
 import { getSupabaseClient } from "@/lib/db/supabaseClient";
 import { listAllTenants } from "@/lib/repositories/tenant-repository";
+import { listProducts } from "@/lib/repositories/product-repository";
+import { listBanners } from "@/lib/repositories/banner-repository";
+import { listCategories } from "@/lib/repositories/category-repository";
+import { listHeroSlides } from "@/lib/repositories/hero-slide-repository";
+import { getSettings } from "@/lib/repositories/settings-repository";
+import { listOrders } from "@/lib/repositories/order-repository";
 import { PRODUCT_IMAGES_BUCKET } from "@/lib/media/storage-bucket";
 
 /**
@@ -192,4 +198,83 @@ export async function deleteAllFilesForTenant(tenantSlug: string): Promise<{ del
     if (error) throw error;
   }
   return { deletedCount: files.length };
+}
+
+export interface OrphanedFile {
+  path: string;
+  sizeBytes: number;
+}
+
+/**
+ * Real Storage objects under a tenant's prefix that no row in the database
+ * references any more — normal editing already deletes a file's own
+ * object the moment it's replaced/removed (see deleteStorageFilesByUrls's
+ * call sites in app/[tenant]/admin/actions.ts), so an orphan here means
+ * something interrupted that path: an upload whose form was abandoned
+ * before saving, a crash between upload and save, or a manual DB edit.
+ *
+ * Cross-checks every field that can legitimately still need a file:
+ * every product's images, every banner/category image, every hero
+ * slide's media (image or video), every settings image (hero, logo,
+ * payment badge, the 5 story-step photos, statement), AND every past
+ * order's item snapshot — an order keeps its own copy of the product
+ * photo as it looked at checkout time (see OrderItem.image, populated in
+ * NSProductPurchasePanel), so a photo a product no longer uses can still
+ * be legitimately displayed on an old order and must not be swept.
+ *
+ * Read-only — see deleteOrphanedFiles for the actual (irreversible)
+ * delete step, kept as a separate, explicit action so a Super Admin
+ * always reviews the list before anything is removed.
+ */
+export async function findOrphanedFilesForTenant(tenantId: string, tenantSlug: string): Promise<OrphanedFile[]> {
+  const [files, products, banners, categories, heroSlides, settings, orders] = await Promise.all([
+    listAllFilesInPrefix(tenantSlug),
+    listProducts(tenantId),
+    listBanners(tenantId),
+    listCategories(tenantId),
+    listHeroSlides(tenantId),
+    getSettings(tenantId),
+    listOrders(tenantId),
+  ]);
+
+  if (tenantSlug === LEGACY_ROOT_FILES_TENANT_SLUG) {
+    files.push(...(await listLegacyRootFiles()));
+  }
+
+  const referencedUrls: (string | null | undefined)[] = [
+    ...products.flatMap((p) => p.images),
+    ...banners.map((b) => b.image),
+    ...categories.map((c) => c.image),
+    ...heroSlides.map((h) => h.mediaUrl),
+    ...orders.flatMap((o) => o.items.map((item) => item.image)),
+    settings.heroImage,
+    settings.brandLogo,
+    settings.paymentBadgeIcon,
+    settings.storyStepImage1,
+    settings.storyStepImage2,
+    settings.storyStepImage3,
+    settings.storyStepImage4,
+    settings.storyStepImage5,
+    settings.statementImage,
+  ];
+
+  const referencedPaths = new Set(
+    referencedUrls.map((url) => (url ? storagePathFromPublicUrl(url) : null)).filter((p): p is string => p !== null),
+  );
+
+  return files.filter((f) => !referencedPaths.has(f.path)).map((f) => ({ path: f.path, sizeBytes: f.sizeBytes }));
+}
+
+/** Permanently removes the given Storage paths — meant to be called only with paths a prior findOrphanedFilesForTenant call actually returned, after a human has reviewed the list. Same batching as deleteAllFilesForTenant. */
+export async function deleteOrphanedFiles(paths: string[]): Promise<{ deletedCount: number }> {
+  if (paths.length === 0) return { deletedCount: 0 };
+
+  const supabase = getSupabaseClient();
+  const pageSize = 100;
+  for (let i = 0; i < paths.length; i += pageSize) {
+    const batch = paths.slice(i, i + pageSize);
+    const { error } = await supabase.storage.from(PRODUCT_IMAGES_BUCKET).remove(batch);
+    if (error) throw error;
+  }
+  return { deletedCount: paths.length };
 }

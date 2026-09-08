@@ -33,7 +33,12 @@ import {
   clearPlanChangeRequest,
   type SubscriptionStatus,
 } from "@/lib/repositories/subscriptions-repository";
-import { deleteAllFilesForTenant } from "@/lib/repositories/storage-repository";
+import {
+  deleteAllFilesForTenant,
+  deleteOrphanedFiles,
+  findOrphanedFilesForTenant,
+  type OrphanedFile,
+} from "@/lib/repositories/storage-repository";
 import { updatePlatformSettings } from "@/lib/repositories/platform-settings-repository";
 import { randomBytes } from "node:crypto";
 import { siteConfig } from "@/lib/config/site";
@@ -398,6 +403,32 @@ export async function deleteTenantAction(
   revalidatePath("/superadmin/tenants");
   revalidatePath("/superadmin");
   redirect("/superadmin/tenants");
+}
+
+// ---------- Limpieza de Storage huérfano ----------
+
+/**
+ * Read-only scan — never deletes anything on its own. Called directly from
+ * NSOrphanCleanupPanel (a Client Component) rather than through a <form
+ * action>, since it needs to return the actual list of files for the
+ * Super Admin to review before deleteOrphanedFilesAction ever runs.
+ */
+export async function scanOrphanedFilesAction(tenantId: string, tenantSlug: string): Promise<OrphanedFile[]> {
+  await requireSuperadmin();
+  return findOrphanedFilesForTenant(tenantId, tenantSlug);
+}
+
+/**
+ * Permanently deletes the given Storage paths. Deliberately takes a plain
+ * path list instead of re-deriving "what's orphaned" itself — the Super
+ * Admin has already seen and confirmed exactly this list from
+ * scanOrphanedFilesAction, and re-scanning here could silently pick up a
+ * file uploaded in the few seconds since (e.g. someone else mid-edit on
+ * another tab) and delete it too.
+ */
+export async function deleteOrphanedFilesAction(paths: string[]): Promise<{ deletedCount: number }> {
+  await requireSuperadmin();
+  return deleteOrphanedFiles(paths);
 }
 
 // ---------- Configuración de plataforma ----------
