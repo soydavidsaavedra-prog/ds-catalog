@@ -67,6 +67,14 @@ export interface LoginAttemptRow {
   created_at: string;
 }
 
+export interface TotpBackupCodeRow {
+  id: string;
+  user_id: string;
+  code_hash: string;
+  used_at: string | null;
+  created_at: string;
+}
+
 export type AppUserRole = "owner" | "superadmin";
 
 export interface AppUserRow {
@@ -283,6 +291,7 @@ export interface Database {
       ns_orders: TableDef<OrderRow>;
       ns_settings: TableDef<SettingsRow>;
       ds_login_attempts: TableDef<LoginAttemptRow>;
+      ds_totp_backup_codes: TableDef<TotpBackupCodeRow>;
     };
     Views: Record<string, never>;
     Functions: {

@@ -20,6 +20,7 @@ import {
   extractClientIp,
   recordFailedLoginAttempt,
 } from "@/lib/auth/login-rate-limit";
+import { consumeBackupCode } from "@/lib/auth/totp-backup-codes";
 import { getAppUserById, getAppUserByEmail, createAppUser } from "@/lib/repositories/app-users-repository";
 import { getTenantById } from "@/lib/repositories/tenant-repository";
 import { siteConfig } from "@/lib/config/site";
@@ -214,6 +215,63 @@ export async function verifyTotpLoginAction(
   if (!ok) {
     await recordFailedLoginAttempt(appUser.email, ip).catch((err) => console.error("[acceder] failed to record login attempt:", err));
     return { error: "Código incorrecto o expirado.", totpChallenge: challenge };
+  }
+
+  await clearFailedLoginAttempts(appUser.email).catch((err) => console.error("[acceder] failed to clear login attempts:", err));
+  return signInAndRedirect(challenge.appUserId);
+}
+
+/**
+ * Alternative to verifyTotpLoginAction for a Super Admin who lost access
+ * to their authenticator app — consumes one of the one-time codes from
+ * /superadmin/seguridad instead of a TOTP code. Needs no Supabase session
+ * at all (unlike the TOTP path): consumeBackupCode checks straight
+ * against the hashed codes in ds_totp_backup_codes via the service-role
+ * client, so challenge.accessToken/refreshToken go unused here.
+ */
+export async function verifyBackupCodeLoginAction(
+  challenge: TotpChallenge,
+  _prev: AccederActionState,
+  formData: FormData,
+): Promise<AccederActionState> {
+  const code = String(formData.get("backupCode") ?? "").trim();
+  if (!code) {
+    return { error: "Escribe un código de respaldo.", totpChallenge: challenge };
+  }
+
+  let appUser;
+  try {
+    appUser = await getAppUserById(challenge.appUserId);
+  } catch (err) {
+    return { error: authErrorMessage(err) };
+  }
+  if (!appUser) {
+    return { error: GENERIC_ERROR };
+  }
+
+  const ip = extractClientIp(await headers());
+
+  try {
+    const rateLimit = await checkLoginRateLimit(appUser.email, ip);
+    if (rateLimit.blocked) {
+      return {
+        error: `Demasiados intentos fallidos. Intenta de nuevo en ${rateLimit.retryAfterMinutes} minuto${rateLimit.retryAfterMinutes === 1 ? "" : "s"}.`,
+      };
+    }
+  } catch (err) {
+    console.error("[acceder] rate limit check failed, allowing attempt:", err);
+  }
+
+  let ok: boolean;
+  try {
+    ok = await consumeBackupCode(appUser.id, code);
+  } catch (err) {
+    return { error: authErrorMessage(err) };
+  }
+
+  if (!ok) {
+    await recordFailedLoginAttempt(appUser.email, ip).catch((err) => console.error("[acceder] failed to record login attempt:", err));
+    return { error: "Código de respaldo inválido o ya usado.", totpChallenge: challenge };
   }
 
   await clearFailedLoginAttempts(appUser.email).catch((err) => console.error("[acceder] failed to clear login attempts:", err));

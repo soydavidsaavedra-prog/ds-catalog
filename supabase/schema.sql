@@ -1183,3 +1183,40 @@ create index if not exists ds_login_attempts_identifier_idx on ds_login_attempts
 create index if not exists ds_login_attempts_ip_idx on ds_login_attempts (ip, created_at desc);
 
 commit;
+
+-- =====================================================================
+-- DS Catalog — 2FA backup codes
+-- =====================================================================
+-- One-time recovery codes for Super Admin's TOTP two-factor auth (see
+-- lib/auth/supabase-auth.ts's TOTP section and app/superadmin/(shell)/
+-- seguridad). Without these, losing the authenticator device before
+-- disabling 2FA would mean losing the ability to log in at all — 2FA
+-- itself is required to reach the page that disables it.
+--
+-- References ds_app_users(id), not auth.users(id) directly — same
+-- decoupling-from-the-auth-schema choice ds_app_users.id itself already
+-- makes (see that table's own comment above): this project never puts a
+-- hard FK into Supabase's auth schema, only application-level
+-- consistency (ds_app_users.id IS auth.users.id, always).
+--
+-- code_hash uses the same scrypt hashing as passwords (lib/auth/
+-- password-hash.ts) — a backup code is just another secret string.
+-- used_at null = still usable; set once and never cleared, so a code is
+-- truly single-use. Regenerating a set (or disabling 2FA) deletes every
+-- row for that user outright rather than marking them used.
+--
+-- Safe to re-run: create-if-not-exists only.
+
+begin;
+
+create table if not exists ds_totp_backup_codes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references ds_app_users(id) on delete cascade,
+  code_hash text not null,
+  used_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists ds_totp_backup_codes_user_id_idx on ds_totp_backup_codes (user_id);
+
+commit;
