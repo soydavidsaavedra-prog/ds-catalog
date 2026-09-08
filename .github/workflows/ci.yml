@@ -1,0 +1,50 @@
+name: CI
+
+# Runs on every push (any branch) and every pull request. Vercel already
+# builds and deploys a full preview on each of these (see the "Vercel"
+# check on any PR) — that's this project's real build/deploy verification,
+# already wired via GitHub's Vercel integration and already exercising
+# real Supabase credentials. What was missing, and what this workflow
+# adds, are the fast, secret-free checks a contributor is expected to run
+# locally before pushing: lint, typecheck, and the unit test suite.
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test

@@ -1,5 +1,7 @@
 # DS Catalog
 
+[![CI](https://github.com/soydavidsaavedra-prog/ds-catalog/actions/workflows/ci.yml/badge.svg)](https://github.com/soydavidsaavedra-prog/ds-catalog/actions/workflows/ci.yml)
+
 Plataforma multi-tenant de catálogo, ecommerce conversacional (WhatsApp) y
 panel administrativo. Un solo motor (este código) aloja varios catálogos
 independientes, cada uno bajo `/{tenant-slug}` (ej. `/elnuevosanchez`,
@@ -50,8 +52,13 @@ npm run seed:demo-tenant
 - `npm run build` — build de producción
 - `npm run start` — sirve el build de producción
 - `npm run lint` — ESLint
+- `npm test` — suite de Vitest
 - `npm run seed:supabase` — puebla el catálogo de El Nuevo Sánchez en Supabase (seguro de re-ejecutar)
 - `npm run seed:demo-tenant` — crea el tenant `demo` con datos de prueba mínimos (seguro de re-ejecutar)
+
+## CI
+
+`.github/workflows/ci.yml` corre lint, `tsc --noEmit` y la suite de Vitest en cada push y pull request — sin necesitar credenciales de Supabase, así que no requiere ningún secret configurado en GitHub. El build real (`next build`, con datos reales de Supabase) lo sigue haciendo Vercel automáticamente en cada PR — ver el check "Vercel" en la pestaña de checks.
 
 ## Variables de entorno
 
