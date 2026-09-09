@@ -1,6 +1,7 @@
 import "server-only";
 import { getSupabaseClient } from "@/lib/db/supabaseClient";
 import type { PlanRow } from "@/lib/db/supabase-types";
+import type { ThemeKey } from "@/lib/types/tenant";
 
 export interface Plan {
   id: string;
@@ -12,6 +13,8 @@ export interface Plan {
   maxStorageMb: number | null;
   maxImages: number | null;
   features: string[];
+  /** Which storefront Themes this plan's tenants may switch to from /admin/tema — null means every registered Theme is available (no restriction), same "unrestricted" semantics as the max* fields above. */
+  allowedThemes: ThemeKey[] | null;
   active: boolean;
 }
 
@@ -26,6 +29,7 @@ function fromRow(row: PlanRow): Plan {
     maxStorageMb: row.max_storage_mb,
     maxImages: row.max_images,
     features: row.features,
+    allowedThemes: row.allowed_themes as ThemeKey[] | null,
     active: row.active,
   };
 }
@@ -53,6 +57,7 @@ export interface PlanInput {
   maxStorageMb: number | null;
   maxImages: number | null;
   features: string[];
+  allowedThemes: ThemeKey[] | null;
 }
 
 export async function createPlan(input: PlanInput): Promise<Plan> {
@@ -68,6 +73,7 @@ export async function createPlan(input: PlanInput): Promise<Plan> {
       max_storage_mb: input.maxStorageMb,
       max_images: input.maxImages,
       features: input.features,
+      allowed_themes: input.allowedThemes,
     })
     .select("*")
     .single();
@@ -94,6 +100,7 @@ export async function updatePlan(id: string, input: Omit<PlanInput, "key">): Pro
       max_storage_mb: input.maxStorageMb,
       max_images: input.maxImages,
       features: input.features,
+      allowed_themes: input.allowedThemes,
     })
     .eq("id", id)
     .select("*")

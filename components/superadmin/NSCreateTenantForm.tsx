@@ -65,12 +65,15 @@ export function NSCreateTenantForm() {
       </div>
 
       <div>
-        <NSLabel htmlFor="password">Contraseña inicial del panel</NSLabel>
-        <NSInput id="password" name="password" type="password" required minLength={8} />
+        <NSLabel htmlFor="ownerEmail">Correo del administrador</NSLabel>
+        <NSInput id="ownerEmail" name="ownerEmail" type="email" required />
+        <p className="mt-1 text-xs text-muted-foreground">
+          Le enviamos un enlace para que cree su propia contraseña e inicie sesión en /acceder.
+        </p>
       </div>
 
       <div className="border-t border-border pt-5">
-        <NSLabel htmlFor="contactEmail">Correo del administrador (opcional)</NSLabel>
+        <NSLabel htmlFor="contactEmail">Correo de contacto público (opcional)</NSLabel>
         <NSInput id="contactEmail" name="contactEmail" type="email" />
       </div>
       <div>

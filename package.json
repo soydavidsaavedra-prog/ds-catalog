@@ -7,13 +7,18 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "seed:supabase": "tsx scripts/seed-supabase.ts",
     "seed:demo-tenant": "tsx scripts/seed-demo-tenant.ts",
     "superadmin:create": "tsx scripts/create-superadmin.ts"
   },
   "dependencies": {
+    "@sentry/nextjs": "^10.73.0",
     "@supabase/supabase-js": "^2.112.3",
     "clsx": "^2.1.1",
+    "csv-parse": "^7.0.2",
     "motion": "^13.1.1",
     "next": "^15.5.23",
     "react": "19.1.0",
@@ -24,6 +29,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -33,6 +39,8 @@
     "eslint-config-next": "15.5.20",
     "tailwindcss": "^4",
     "tsx": "^4.23.12",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.7"
   }
 }

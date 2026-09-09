@@ -11,8 +11,8 @@ export default function SuperadminNewTenantPage() {
       <div>
         <h1 className="font-display text-2xl uppercase tracking-wide">Nuevo cliente</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Crea el tenant, su contraseña de acceso y su configuración inicial. El resto (productos, tema, banners)
-          lo administra el propio cliente desde su panel.
+          Crea el tenant y envía la invitación a su administrador por correo. El resto (productos, tema, banners) lo
+          administra el propio cliente desde su panel.
         </p>
       </div>
       <NSCreateTenantForm />

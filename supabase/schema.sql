@@ -209,9 +209,20 @@ alter table ns_settings enable row level security;
 -- Bootstrap the single settings row so getSettings() always finds one, even
 -- before the seed script runs. Real values (WhatsApp number, etc.) can be
 -- edited any time from /admin/configuracion.
+--
+-- Guarded by "table is still empty" (not "on conflict (id)") because this
+-- statement predates ns_settings.tenant_id/the multi-tenant migration
+-- further below: on an already-migrated database, id is no longer pinned
+-- to 1 (see the ns_settings_id_seq section), so "on conflict (id)" no
+-- longer matches anything and this insert would otherwise fire again on
+-- every full re-run of this file, creating a fresh row with no tenant_id —
+-- which then fails the migration's own "alter column tenant_id set not
+-- null" a few sections down. This file is a running history, not a script
+-- meant to be replayed from the top on a live database — see the header
+-- comment — but this guard makes that specific footgun impossible either way.
 insert into ns_settings (id, brand_name, slogan, whatsapp_number, currency)
-values (1, 'El Nuevo Sánchez', 'De la fábrica a tus manos', '584121234567', 'USD')
-on conflict (id) do nothing;
+select 1, 'El Nuevo Sánchez', 'De la fábrica a tus manos', '584121234567', 'USD'
+where not exists (select 1 from ns_settings);
 
 -- ---------- storage: product image uploads ----------
 -- Public bucket: product photos need to be viewable by any visitor via a
@@ -942,5 +953,371 @@ alter table ns_products add constraint ns_products_card_aspect_ratio_check
   check (card_aspect_ratio in ('portrait', 'square', 'landscape'));
 alter table ns_products add constraint ns_products_image_fit_check
   check (image_fit in ('cover', 'contain'));
+
+commit;
+
+-- Identidad real por email (Supabase Auth) en vez de contraseña compartida
+-- por slug/superadmin. ds_app_users.id es siempre el mismo id que
+-- auth.users.id de Supabase Auth — esta tabla es solo el "perfil" (rol +
+-- a qué tenant pertenece), la contraseña en sí vive en Supabase Auth, no
+-- aquí. Un owner tiene tenant_id (relación 1:1 con ds_tenants, igual que
+-- Horizon — ver docs/ANALISIS_HORIZON_REFERENCIA_SAAS.md sección 4); un
+-- superadmin tiene tenant_id null. on delete cascade en tenant_id: al
+-- borrar un tenant (deleteTenant en tenant-repository.ts) su fila de
+-- ds_app_users desaparece sola — el hard-delete además borra el usuario
+-- de Supabase Auth explícitamente (ver deleteTenantAction) para no dejar
+-- una cuenta huérfana sin tenant ni perfil.
+--
+-- Ninguna política RLS activa aquí tampoco: esta tabla solo se lee/escribe
+-- desde repositorios de servidor con el cliente service_role, igual que
+-- el resto del esquema (ver docs/ARCHITECTURE.md). Sin RLS.
+
+begin;
+
+create table if not exists ds_app_users (
+  id uuid primary key,
+  email text not null unique,
+  role text not null check (role in ('owner', 'superadmin')),
+  tenant_id uuid references ds_tenants(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists ds_app_users_tenant_id_idx on ds_app_users(tenant_id);
+
+commit;
+
+-- Nuevo estado 'pending': un tenant recién autoregistrado (/registro) elige
+-- un plan en el onboarding y queda con una suscripción 'pending' — ni
+-- "activo e ilimitado" (el comportamiento de "sin suscripción" que
+-- conservan los tenants creados antes de este cambio) ni con acceso real,
+-- hasta que un Super Admin la revisa y la pasa a 'active' desde la ficha
+-- del cliente. Ver lib/tenant/plan-limits.ts (getFreezeReason) y
+-- app/[tenant]/admin/actions.ts (completeOnboardingAction).
+
+begin;
+
+do $$
+declare
+  conname text;
+begin
+  select con.conname into conname
+  from pg_constraint con
+  join pg_class rel on rel.oid = con.conrelid
+  where rel.relname = 'subscriptions' and con.contype = 'c' and pg_get_constraintdef(con.oid) ilike '%status%';
+  if conname is not null then
+    execute format('alter table subscriptions drop constraint %I', conname);
+  end if;
+end $$;
+
+alter table subscriptions add constraint subscriptions_status_check
+  check (status in ('pending', 'active', 'trial', 'paused', 'expired', 'cancelled'));
+
+commit;
+
+-- Panel "Mi cuenta" del tenant: pedir un cambio de plan o pedir eliminar
+-- la cuenta son SOLICITUDES, no acciones inmediatas — ninguna de las dos
+-- cambia nada por sí sola. requested_plan_id no toca subscriptions.plan_id
+-- ni .status (el tenant sigue con acceso normal a su plan actual mientras
+-- espera), y deletion_requested_at es solo una marca de tiempo que Super
+-- Admin ve y decide: procede con el hard-delete ya existente
+-- (deleteTenantAction) o descarta la solicitud. Ver app/[tenant]/admin/
+-- actions.ts y app/superadmin/actions.ts.
+
+begin;
+
+alter table subscriptions add column if not exists requested_plan_id uuid references plans(id);
+alter table ds_tenants add column if not exists deletion_requested_at timestamptz;
+
+commit;
+
+-- Un solo número de WhatsApp de soporte para toda la plataforma —
+-- distinto del WhatsApp propio de cada tenant (ns_settings.whatsapp_number,
+-- para que SUS clientes le compren). Este es el que ve un tenant cuando
+-- necesita contactar a la plataforma (panel administrativo, cuenta
+-- vencida/pendiente) y el que se promociona en la landing pública. Patrón
+-- de tabla singleton: id siempre 'true', el check garantiza que nunca haya
+-- una segunda fila. Editable desde /superadmin/configuracion.
+
+begin;
+
+create table if not exists platform_settings (
+  id boolean primary key default true check (id),
+  support_whatsapp_number text not null default '',
+  support_whatsapp_display text not null default '',
+  updated_at timestamptz not null default now()
+);
+
+insert into platform_settings (id, support_whatsapp_number, support_whatsapp_display)
+values (true, '584245210934', '+58 424 521 0934')
+on conflict (id) do nothing;
+
+commit;
+
+-- Hero dinámico: 0+ fotos/videos que rotan automáticamente detrás del
+-- mismo texto/CTA del hero (esos siguen viniendo de ns_settings.hero_*,
+-- sin cambios) — reemplaza al apartado "Banners", que nunca se llegó a
+-- mostrar en ningún catálogo público (CRUD sin ninguna pantalla que lo
+-- leyera). ns_banners no se toca ni se borra aquí — sigue existiendo,
+-- simplemente ya no tiene UI que lo alimente.
+--
+-- Un tenant sin filas aquí (todos hoy) sigue viendo exactamente el hero
+-- de una sola imagen de siempre — ver NSHero.tsx.
+
+begin;
+
+create table if not exists ns_hero_slides (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references ds_tenants(id),
+  media_type text not null default 'image' check (media_type in ('image', 'video')),
+  media_url text not null,
+  position_x integer not null default 50,
+  position_y integer not null default 50,
+  "order" integer not null default 0,
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists ns_hero_slides_tenant_id_idx on ns_hero_slides(tenant_id);
+
+-- =====================================================================
+-- DS Catalog — storefront Theme
+-- =====================================================================
+-- Which visual Theme renders this tenant's public storefront (see
+-- lib/themes/registry.ts) — separate from business_type above (which only
+-- affects the admin's own product form) and from branding/content in
+-- ns_settings (which every Theme still consumes as-is). Every tenant that
+-- existed before this concept did (El Nuevo Sánchez, demo) backfills to
+-- 'theme-01' — the original storefront, unchanged.
+--
+-- Safe to re-run: add-column-if-not-exists + backfill guarded by null +
+-- drop-and-recreate the same check constraint.
+
+begin;
+
+alter table ds_tenants add column if not exists theme text;
+
+update ds_tenants set theme = 'theme-01' where theme is null;
+
+alter table ds_tenants alter column theme set not null;
+alter table ds_tenants alter column theme set default 'theme-01';
+
+-- Drop any existing theme check constraint FIRST (before the rename below),
+-- since an earlier version of this migration allowed 'theme-ferrecol' — a
+-- client name that was never meant to be the public theme key — and a row
+-- already set to it would violate the new constraint if it were added
+-- before the rename runs.
+do $$
+declare
+  conname text;
+begin
+  select con.conname into conname
+  from pg_constraint con
+  join pg_class rel on rel.oid = con.conrelid
+  where rel.relname = 'ds_tenants' and con.contype = 'c' and pg_get_constraintdef(con.oid) ilike '%theme%' and pg_get_constraintdef(con.oid) not ilike '%business_type%';
+  if conname is not null then
+    execute format('alter table ds_tenants drop constraint %I', conname);
+  end if;
+end $$;
+
+-- Renames any tenant already set to the old 'theme-ferrecol' key (from
+-- testing before this rename) to its permanent name, 'theme-02'.
+update ds_tenants set theme = 'theme-02' where theme = 'theme-ferrecol';
+
+alter table ds_tenants add constraint ds_tenants_theme_check
+  check (theme in ('theme-01', 'theme-02'));
+
+commit;
+
+-- =====================================================================
+-- DS Catalog — plan-gated Themes
+-- =====================================================================
+-- Which storefront Themes (see lib/themes/registry.ts) a plan's tenants
+-- may switch to from their own /admin/tema, same shape/semantics as
+-- max_products/max_storage_mb/max_images above: null means "no
+-- restriction" (every registered Theme available), not "none allowed" —
+-- so every existing plan keeps working exactly as before this migration
+-- (every tenant can already use either Theme) until a Super Admin
+-- deliberately restricts one from /superadmin/plans. A plan's own tenants
+-- already on a Theme their (now-restricted) plan doesn't list keep
+-- rendering it as-is — this only gates picking a NEW one going forward,
+-- same "existing usage isn't retroactively broken" rule the other limits
+-- follow.
+--
+-- jsonb (not a native text[]) to match this table's own existing
+-- convention for a list-of-strings column — see `features` above.
+--
+-- Safe to re-run: add-column-if-not-exists only, no backfill needed since
+-- null is already the correct value for every plan that existed before.
+
+begin;
+
+alter table plans add column if not exists allowed_themes jsonb;
+
+commit;
+
+-- =====================================================================
+-- DS Catalog — login rate limiting
+-- =====================================================================
+-- Records every FAILED login attempt at /acceder (tenant admins and
+-- Super Admin go through the same form — see app/acceder/actions.ts) so
+-- lib/auth/login-rate-limit.ts can lock out an email, and separately an
+-- IP, after too many failures in a short window. No `success` column:
+-- only failures are ever inserted here, so counting rows in a time
+-- window IS the failure count. A successful login clears that email's
+-- own rows (see clearFailedLoginAttempts) instead of leaving them to
+-- expire on their own, so a legitimate user who mistyped a few times
+-- isn't left half-locked right after finally getting in.
+--
+-- Safe to re-run: create-if-not-exists only.
+
+begin;
+
+create table if not exists ds_login_attempts (
+  id uuid primary key default gen_random_uuid(),
+  identifier text not null,
+  ip text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists ds_login_attempts_identifier_idx on ds_login_attempts (identifier, created_at desc);
+create index if not exists ds_login_attempts_ip_idx on ds_login_attempts (ip, created_at desc);
+
+commit;
+
+-- =====================================================================
+-- DS Catalog — 2FA backup codes
+-- =====================================================================
+-- One-time recovery codes for Super Admin's TOTP two-factor auth (see
+-- lib/auth/supabase-auth.ts's TOTP section and app/superadmin/(shell)/
+-- seguridad). Without these, losing the authenticator device before
+-- disabling 2FA would mean losing the ability to log in at all — 2FA
+-- itself is required to reach the page that disables it.
+--
+-- References ds_app_users(id), not auth.users(id) directly — same
+-- decoupling-from-the-auth-schema choice ds_app_users.id itself already
+-- makes (see that table's own comment above): this project never puts a
+-- hard FK into Supabase's auth schema, only application-level
+-- consistency (ds_app_users.id IS auth.users.id, always).
+--
+-- code_hash uses the same scrypt hashing as passwords (lib/auth/
+-- password-hash.ts) — a backup code is just another secret string.
+-- used_at null = still usable; set once and never cleared, so a code is
+-- truly single-use. Regenerating a set (or disabling 2FA) deletes every
+-- row for that user outright rather than marking them used.
+--
+-- Safe to re-run: create-if-not-exists only.
+
+begin;
+
+create table if not exists ds_totp_backup_codes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references ds_app_users(id) on delete cascade,
+  code_hash text not null,
+  used_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists ds_totp_backup_codes_user_id_idx on ds_totp_backup_codes (user_id);
+
+commit;
+
+-- =====================================================================
+-- DS Catalog — dominio propio por tenant
+-- =====================================================================
+-- Lets a tenant serve its storefront from its own domain (e.g.
+-- tienda.com) instead of only {platform}/{slug} — see lib/domains/ and
+-- middleware.ts, which rewrites a request whose Host header matches
+-- custom_domain to the tenant's normal /{slug}/... path internally (the
+-- rest of the app never needs to know a request arrived via a custom
+-- domain).
+--
+-- custom_domain is stored normalized (lowercase, no protocol/port/path
+-- — see lib/domains/validate-domain.ts) and unique across every tenant,
+-- so two tenants can never race for the same domain. Nullable: most
+-- tenants never set one.
+--
+-- custom_domain_verified tracks whether lib/domains/vercel-domains.ts
+-- has confirmed the domain actually points at this platform (via the
+-- Vercel Domains API, when VERCEL_API_TOKEN/VERCEL_PROJECT_ID are
+-- configured) — an unverified domain is stored but middleware.ts never
+-- routes traffic for it, so setting a domain can never let a tenant
+-- hijack a domain string it doesn't actually control.
+--
+-- Safe to re-run: add-column-if-not-exists only, no backfill needed
+-- since null/false are already the correct values for every tenant that
+-- existed before this concept did.
+
+begin;
+
+alter table ds_tenants add column if not exists custom_domain text unique;
+alter table ds_tenants add column if not exists custom_domain_verified boolean not null default false;
+
+create index if not exists ds_tenants_custom_domain_idx on ds_tenants (custom_domain);
+
+commit;
+
+-- =====================================================================
+-- DS Catalog — auditoría de acciones de Super Admin
+-- =====================================================================
+-- Append-only trail of every meaningful state-changing action taken from
+-- /superadmin (see lib/audit/audit-log.ts and app/superadmin/actions.ts)
+-- — who (actor_email), what (action, a short machine-readable key like
+-- "tenant.status_changed"), on which tenant if any, and a human-readable
+-- one-line summary. Read-only from the app's perspective once written:
+-- there is no update/delete path, by design — an audit trail that could
+-- be edited or erased isn't one.
+--
+-- tenant_id deliberately has NO foreign key to ds_tenants: a hard tenant
+-- delete (deleteTenantAction) must never cascade-delete or orphan its own
+-- audit history — the log of what happened to a tenant has to outlive
+-- the tenant itself. tenant_slug is stored alongside as a plain snapshot
+-- so entries stay readable by name even after the tenant referenced by
+-- tenant_id no longer exists.
+--
+-- Writes are fail-open (see recordAuditLog) — a logging hiccup must never
+-- block or fail the real admin action it was trying to record, the same
+-- design philosophy as lib/auth/login-rate-limit.ts.
+--
+-- Safe to re-run: create-if-not-exists only.
+
+begin;
+
+create table if not exists ds_audit_log (
+  id uuid primary key default gen_random_uuid(),
+  actor_email text not null,
+  action text not null,
+  tenant_id uuid,
+  tenant_slug text,
+  summary text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists ds_audit_log_created_at_idx on ds_audit_log (created_at desc);
+create index if not exists ds_audit_log_tenant_id_idx on ds_audit_log (tenant_id);
+
+commit;
+
+-- =====================================================================
+-- DS Catalog — páginas legales (Términos y Política de Privacidad)
+-- =====================================================================
+-- Free-text content for a "Términos y condiciones" and "Política de
+-- privacidad" page — one pair per tenant (ns_settings, for their own
+-- storefront customers) and one pair for the platform itself
+-- (platform_settings, shown at /terminos and /privacidad, for people
+-- signing up at /registro). Deliberately plain nullable text with NO
+-- seeded content: this app never fabricates legal text on anyone's
+-- behalf — see NSSettingsForm / NSPlatformSettingsForm's own copy, which
+-- tells the person filling this in to write or have a lawyer review it.
+-- Null/empty = the page and its footer link simply don't exist yet,
+-- rather than showing a blank or fake legal page.
+--
+-- Safe to re-run: add-column-if-not-exists only.
+
+begin;
+
+alter table ns_settings add column if not exists terms_content text;
+alter table ns_settings add column if not exists privacy_content text;
+alter table platform_settings add column if not exists terms_content text;
+alter table platform_settings add column if not exists privacy_content text;
 
 commit;

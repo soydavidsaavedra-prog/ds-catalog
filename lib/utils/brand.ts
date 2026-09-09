@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { SiteSettings } from "@/lib/types/catalog";
 
 export const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
@@ -5,22 +6,36 @@ export const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 /**
  * A tenant with accentColor/accentColorStrong/accentForeground set (either
  * picked from /admin/configuracion, or — for El Nuevo Sánchez — pinned by
- * hand in supabase/schema.sql) gets a scoped CSS custom-property override
- * instead of the platform default (app/globals.css --accent/--accent-
- * strong/--focus-ring, teal). Returns null when the tenant has no
- * override, so callers can skip rendering the <style> tag entirely.
+ * hand in supabase/schema.sql) gets these applied as inline style vars on
+ * a scoped wrapper element — the storefront layout's own root div (see
+ * app/[tenant]/(storefront)/layout.tsx) or, inside the admin, the
+ * `.tenant-preview` wrapper in app/globals.css. An inline style always
+ * wins over a class's own CSS custom-property declaration on the same
+ * element, which is what lets a storefront Theme that defines its own
+ * scope (e.g. app/globals.css's `.theme-02`) declare a DEFAULT
+ * accent while still deferring to a tenant's real color when set. Theme
+ * 01 has no scope of its own — it simply IS the :root default (teal,
+ * gold for El Nuevo Sánchez's inline override) — so this also covers it.
+ * Returns undefined (not an empty object) when the tenant has no
+ * override, so the active Theme's own default accent shows through
+ * unless a caller spreads something else on top.
  *
  * Values are validated as strict 6-digit hex before being interpolated —
  * updateSettingsAction already only ever writes valid hex here (native
  * <input type="color"> + readableForegroundFor), but this keeps the CSS
  * injection safe regardless of how a row ended up with these set.
  */
-export function buildAccentOverrideCss(settings: SiteSettings): string | null {
+export function buildAccentOverrideVars(settings: SiteSettings): CSSProperties | undefined {
   const { accentColor, accentColorStrong, accentForeground } = settings;
-  if (!accentColor || !accentColorStrong || !accentForeground) return null;
-  if (![accentColor, accentColorStrong, accentForeground].every((c) => HEX_COLOR.test(c))) return null;
+  if (!accentColor || !accentColorStrong || !accentForeground) return undefined;
+  if (![accentColor, accentColorStrong, accentForeground].every((c) => HEX_COLOR.test(c))) return undefined;
 
-  return `:root{--accent:${accentColor};--accent-strong:${accentColorStrong};--accent-foreground:${accentForeground};--focus-ring:${accentColorStrong};}`;
+  return {
+    "--accent": accentColor,
+    "--accent-strong": accentColorStrong,
+    "--accent-foreground": accentForeground,
+    "--focus-ring": accentColorStrong,
+  } as CSSProperties;
 }
 
 /**

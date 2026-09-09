@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { TenantSummary } from "@/lib/repositories/superadmin-repository";
 import type { TenantStatus } from "@/lib/types/tenant";
 import { NSInput } from "@/components/ui/NSInput";
+import { DSTable } from "@/components/ui/DSTable";
 import { NSTenantStatusBadge } from "@/components/superadmin/NSTenantStatusBadge";
 import { cn } from "@/lib/utils/cn";
 
@@ -57,47 +58,36 @@ export function NSTenantsTable({ tenants }: { tenants: TenantSummary[] }) {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-card border border-border">
-        <table className="w-full min-w-[640px] text-sm">
-          <thead>
-            <tr className="border-b border-border bg-surface text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <th className="px-4 py-3 font-semibold">Cliente</th>
-              <th className="px-4 py-3 font-semibold">Estado</th>
-              <th className="px-4 py-3 font-semibold text-right">Productos</th>
-              <th className="px-4 py-3 font-semibold text-right">Pedidos</th>
-              <th className="px-4 py-3 font-semibold">Creado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                  Sin resultados.
-                </td>
-              </tr>
-            ) : (
-              filtered.map((t) => (
-                <tr key={t.id} className="border-b border-border last:border-0 hover:bg-surface">
-                  <td className="px-4 py-3">
-                    <Link href={`/superadmin/tenants/${t.id}`} className="font-medium hover:text-accent-strong">
-                      {t.name}
-                    </Link>
-                    <span className="ml-2 text-xs text-muted-foreground">/{t.slug}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <NSTenantStatusBadge status={t.status} />
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums">{t.counts.products}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{t.counts.orders}</td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground">
-                    {new Date(t.createdAt).toLocaleDateString("es")}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DSTable
+        isEmpty={filtered.length === 0}
+        emptyMessage="Sin resultados."
+        columns={[
+          { label: "Cliente" },
+          { label: "Estado" },
+          { label: "Productos", align: "right" },
+          { label: "Pedidos", align: "right" },
+          { label: "Creado" },
+        ]}
+      >
+        {filtered.map((t) => (
+          <tr key={t.id} className="border-b border-border last:border-0 hover:bg-surface">
+            <td className="px-4 py-3">
+              <Link href={`/superadmin/tenants/${t.id}`} className="font-medium hover:text-accent-strong">
+                {t.name}
+              </Link>
+              <span className="ml-2 text-xs text-muted-foreground">/{t.slug}</span>
+            </td>
+            <td className="px-4 py-3">
+              <NSTenantStatusBadge status={t.status} />
+            </td>
+            <td className="px-4 py-3 text-right tabular-nums">{t.counts.products}</td>
+            <td className="px-4 py-3 text-right tabular-nums">{t.counts.orders}</td>
+            <td className="px-4 py-3 text-xs text-muted-foreground">
+              {new Date(t.createdAt).toLocaleDateString("es")}
+            </td>
+          </tr>
+        ))}
+      </DSTable>
     </div>
   );
 }

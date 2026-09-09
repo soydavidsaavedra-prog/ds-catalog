@@ -8,6 +8,7 @@ import {
 import { listSubscriptionsWithDetails } from "@/lib/repositories/subscriptions-repository";
 import { listPlans } from "@/lib/repositories/plans-repository";
 import { formatBytes } from "@/lib/utils/format";
+import { NSOrphanCleanupPanel } from "@/components/superadmin/NSOrphanCleanupPanel";
 
 export const metadata: Metadata = {
   title: "Storage",
@@ -96,6 +97,9 @@ export default async function SuperadminStoragePage() {
                     ⚠️ Cerca del límite de su plan ({percentOfPlan?.toFixed(0)}%)
                   </p>
                 ) : null}
+                <div className="mt-3 border-t border-border pt-3">
+                  <NSOrphanCleanupPanel tenantId={u.tenantId} tenantSlug={u.tenantSlug} />
+                </div>
               </div>
             );
           })}

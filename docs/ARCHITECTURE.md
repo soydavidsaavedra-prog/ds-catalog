@@ -174,24 +174,42 @@ fallback de build-time/env (ver `lib/data/seed/settings.ts`).
 
 ## Autenticación de administrador
 
-Sin proveedor externo, sin cuentas de comprador. Sesión por cookie firmada
-(hash SHA-256 vía Web Crypto, compatible con Edge y Node), derivada del
-slug del tenant — una sesión de `/elnuevosanchez/admin` nunca autentica
-`/demo/admin`. `middleware.ts` protege todo `/[tenant]/admin/*` excepto
-`/[tenant]/admin/login`; `app/[tenant]/admin/(shell)/layout.tsx` repite la
-verificación del lado del servidor como defensa en profundidad.
+Identidad real por correo, vía Supabase Auth — no hay contraseñas
+compartidas ni por slug. `/acceder` (`app/acceder/`) es el único login de
+la plataforma, tanto para el dueño de un tenant como para Super Admin: pide
+correo + contraseña, valida contra Supabase Auth
+(`lib/auth/supabase-auth.ts`), busca el perfil en `ds_app_users` (columna
+`role`: `"owner"` con `tenant_id`, o `"superadmin"` con `tenant_id` nulo) y
+abre la sesión que corresponda. `/acceder/recuperar` +
+`/acceder/restablecer` cubren "olvidé mi contraseña" con el correo nativo
+de Supabase (sin SMTP propio) — ver el comentario de
+`getUserFromAccessToken` en `lib/auth/supabase-auth.ts` para por qué el
+paso de confirmación nunca necesita exponer la anon key al navegador.
 
-Lo que valida la *contraseña* en sí ya no es un único secreto compartido:
-`verifyTenantAdminPassword()` (`lib/auth/admin-auth.ts`) primero revisa si
-el tenant tiene su propio `ds_tenants.admin_password_hash` (scrypt con sal
-por tenant — `lib/auth/tenant-credentials.ts`, ver sección "Registro y
-onboarding de nuevos tenants" abajo) y solo si no lo tiene cae al secreto
-compartido `ADMIN_PASSWORD`. Esto mantiene funcionando sin cambios a los
-tenants sembrados a mano (elnuevosanchez, demo) mientras cada tenant nuevo
-creado por `/registro` ya tiene su propia contraseña real desde el día uno.
+Una vez autenticado, cada rol sigue con su propio mecanismo de sesión (sin
+cambios respecto a antes): el tenant-admin usa una cookie firmada derivada
+del slug (`lib/auth/admin-token.ts`, protegida por `middleware.ts` en todo
+`/[tenant]/admin/*`) y Super Admin usa una cookie separada
+(`lib/auth/superadmin-token.ts`, protegida en `/superadmin/*`). Lo único
+que cambió es *cómo se prueba la identidad antes* de emitir esa cookie —
+antes una contraseña comparada localmente, ahora Supabase Auth.
 
-**Antes de desplegar a producción**: define `ADMIN_PASSWORD` y
-`ADMIN_SESSION_SECRET` en las variables de entorno reales.
+`/[tenant]/admin/login` y `/superadmin/login` sobreviven solo como stubs
+que redirigen a `/acceder` (por si algún enlace viejo quedó guardado);
+`middleware.ts` ya redirige ahí directamente en cualquier caso nuevo.
+
+Cuentas de Super Admin creadas antes de este cambio (tabla legada
+`super_admin_users`, `scripts/create-superadmin.ts`) se migran solas la
+primera vez que esa persona inicia sesión en `/acceder`: si Supabase Auth
+rechaza el intento pero la contraseña coincide con la fila legada,
+`accederAction` (`app/acceder/actions.ts`) crea la cuenta real de Supabase
+Auth con esa misma contraseña y una fila en `ds_app_users` — logins
+siguientes ya nunca vuelven a tocar la tabla vieja.
+
+**Antes de desplegar a producción**: define `SUPABASE_ANON_KEY` (además de
+`SUPABASE_SERVICE_ROLE_KEY`), y en el dashboard de Supabase agrega la URL
+`{tu dominio}/acceder/restablecer` a Authentication → URL Configuration →
+Redirect URLs, o el correo de recuperación no llevará a nadie ahí.
 
 ## Registro y onboarding de nuevos tenants
 
@@ -200,14 +218,16 @@ Primer tramo de la evolución a SaaS descrita en
 de cliente por autoservicio, sin intervención manual por SQL.
 
 - **`/registro`** (`app/registro/`) — ruta pública de nivel raíz, fuera de
-  `app/[tenant]/...`. Pide nombre del negocio, slug (auto-sugerido desde el
-  nombre, editable en vivo, con verificación de colisión — a diferencia
-  del reintento silencioso de Horizon, aquí se informa el conflicto y se
-  sugiere una alternativa) y una contraseña real. `registerTenantAction`
-  crea la fila en `ds_tenants` (`status: "active"` de inmediato — todavía
-  no existe gating por suscripción, ver sección 6 del análisis), su
-  `admin_password_hash`, una fila `ns_settings` con copy neutro (ver nota
-  abajo), abre sesión automáticamente y redirige a onboarding.
+  `app/[tenant]/...`. Pide nombre del negocio, correo, slug (auto-sugerido
+  desde el nombre, editable en vivo, con verificación de colisión — a
+  diferencia del reintento silencioso de Horizon, aquí se informa el
+  conflicto y se sugiere una alternativa) y una contraseña real.
+  `registerTenantAction` crea la cuenta en Supabase Auth, la fila en
+  `ds_tenants` (`status: "active"` de inmediato — todavía no existe gating
+  por suscripción, ver sección 6 del análisis), una fila `ns_settings` con
+  copy neutro (ver nota abajo) y su perfil en `ds_app_users`
+  (`role: "owner"`), abre sesión automáticamente y redirige a onboarding —
+  sin paso de verificación de correo bloqueante, igual que Horizon.
 - **`/[tenant]/admin/onboarding`** — wizard de 2 pasos (marca; contacto y
   WhatsApp) protegido por la misma cookie de sesión que el resto de
   `/admin/*`. Guarda todo en un solo Server Action al finalizar
@@ -227,9 +247,11 @@ de cliente por autoservicio, sin intervención manual por SQL.
   vez de componente.
 
 **Deliberadamente fuera de este alcance** (ver sección G del análisis):
-todavía no hay identidad real de usuario (Supabase Auth), ni Super Admin,
-ni planes/suscripciones — un tenant registrado queda activo e ilimitado de
-inmediato. Son los siguientes tramos del mismo análisis.
+todavía no hay planes/suscripciones aplicados al alta en sí — un tenant
+registrado queda activo e ilimitado de inmediato (el enforcement de límites
+de plan es una capa aparte, ver `lib/tenant/plan-limits.ts`). Identidad
+real de usuario y Super Admin ya están resueltos — ver "Autenticación de
+administrador" arriba.
 
 **Dos ajustes hechos tras las primeras pruebas reales de este flujo:**
 - `/` (la landing raíz) se marcó `export const dynamic = "force-dynamic"`.

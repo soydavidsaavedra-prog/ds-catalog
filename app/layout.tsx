@@ -1,7 +1,25 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Bebas_Neue } from "next/font/google";
 import { MotionConfig } from "motion/react";
+import Script from "next/script";
 import "./globals.css";
+
+/**
+ * Applies a persisted light/dark choice (see components/ui/NSThemeToggle.tsx)
+ * BEFORE first paint, so a returning visitor never sees one theme flash into
+ * another. `beforeInteractive` guarantees Next.js injects this into the
+ * initial HTML <head> and runs it ahead of hydration, on every page —
+ * storefront, admin, and Super Admin alike, since they all read the same
+ * documentElement[data-theme] attribute. No-ops (stays on system
+ * preference/each scope's own default) when nothing was ever explicitly
+ * chosen, or when storage is unavailable (private browsing).
+ */
+const THEME_INIT_SCRIPT = `
+try {
+  var t = localStorage.getItem('ds-theme');
+  if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+} catch (e) {}
+`;
 
 const bodyFont = Geist({
   variable: "--font-body",
@@ -56,6 +74,9 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${bodyFont.variable} ${displayFont.variable} ${monoFont.variable}`}>
       <body className="flex min-h-dvh flex-col bg-background text-foreground antialiased">
+        <Script id="theme-init" strategy="beforeInteractive">
+          {THEME_INIT_SCRIPT}
+        </Script>
         <MotionConfig reducedMotion="user">{children}</MotionConfig>
       </body>
     </html>

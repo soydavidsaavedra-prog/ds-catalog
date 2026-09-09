@@ -6,20 +6,30 @@ import { getSettings } from "@/lib/repositories/settings-repository";
 import { listPlans } from "@/lib/repositories/plans-repository";
 import { getSubscriptionByTenantId } from "@/lib/repositories/subscriptions-repository";
 import { getStorageUsageForSlug } from "@/lib/repositories/storage-repository";
+import { getAppUserByTenantId } from "@/lib/repositories/app-users-repository";
 import { formatBytes } from "@/lib/utils/format";
 import {
   updateTenantStatusAction,
   updateTenantBusinessTypeAction,
+  updateTenantThemeAction,
   impersonateTenantAction,
   assignPlanAction,
   updateSubscriptionStatusAction,
+  approvePlanChangeAction,
+  dismissPlanChangeRequestAction,
+  dismissDeletionRequestAction,
+  removeTenantCustomDomainAction,
 } from "@/app/superadmin/actions";
+import { DSStatusBadge } from "@/components/ui/DSStatusBadge";
 import { NSTenantStatusBadge } from "@/components/superadmin/NSTenantStatusBadge";
 import { NSDeleteTenantForm } from "@/components/superadmin/NSDeleteTenantForm";
+import { NSAssignOwnerEmailForm } from "@/components/superadmin/NSAssignOwnerEmailForm";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSLabel, NSSelect, NSInput } from "@/components/ui/NSInput";
 import { NSLogo } from "@/components/brand/NSLogo";
+import { cn } from "@/lib/utils/cn";
 import { BUSINESS_TYPE_OPTIONS } from "@/lib/tenant/business-type";
+import { THEME_META } from "@/lib/themes/registry";
 import type { TenantStatus } from "@/lib/types/tenant";
 import type { SubscriptionStatus } from "@/lib/repositories/subscriptions-repository";
 
@@ -43,13 +53,15 @@ export default async function SuperadminTenantDetailPage({
   const tenant = await getTenantSummaryById(tenantId);
   if (!tenant) notFound();
 
-  const [settings, plans, subscription, storage] = await Promise.all([
+  const [settings, plans, subscription, storage, owner] = await Promise.all([
     getSettings(tenant.id),
     listPlans(),
     getSubscriptionByTenantId(tenant.id),
     getStorageUsageForSlug(tenant.slug),
+    getAppUserByTenantId(tenant.id),
   ]);
   const currentPlan = subscription ? plans.find((p) => p.id === subscription.planId) : null;
+  const requestedPlan = subscription?.requestedPlanId ? plans.find((p) => p.id === subscription.requestedPlanId) : null;
 
   return (
     <div className="flex flex-col gap-8">
@@ -127,9 +139,62 @@ export default async function SuperadminTenantDetailPage({
       </div>
 
       <div>
+        <h2 className="font-display text-lg uppercase tracking-wide">Theme del catálogo público</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Controla la presentación/experiencia del catálogo público de este cliente. No afecta sus productos,
+          categorías, pedidos ni configuración.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {Object.values(THEME_META).map((meta) => (
+            <form key={meta.key} action={updateTenantThemeAction.bind(null, tenant.id, meta.key)}>
+              <NSButton type="submit" variant={tenant.theme === meta.key ? "primary" : "outline"} size="sm">
+                {meta.label}
+              </NSButton>
+            </form>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h2 className="font-display text-lg uppercase tracking-wide">Dominio propio</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          El cliente lo conecta desde su propio panel (Configuración → Dominio). Aquí solo puedes ver el estado y
+          quitarlo si es necesario (soporte, abuso).
+        </p>
+        {tenant.customDomain ? (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-card border border-border p-5 text-sm">
+            <div className="flex items-center gap-3">
+              <span className="font-mono">{tenant.customDomain}</span>
+              <DSStatusBadge
+                label={tenant.customDomainVerified ? "Verificado" : "Pendiente"}
+                tone={tenant.customDomainVerified ? "success" : "warning"}
+              />
+            </div>
+            <form action={removeTenantCustomDomainAction.bind(null, tenant.id)}>
+              <NSButton type="submit" variant="outline" size="sm">
+                Quitar dominio
+              </NSButton>
+            </form>
+          </div>
+        ) : (
+          <p className="mt-1 text-sm text-muted-foreground">Sin dominio propio — solo accesible en /{tenant.slug}.</p>
+        )}
+      </div>
+
+      <div>
         <h2 className="font-display text-lg uppercase tracking-wide">Plan y suscripción</h2>
+        {subscription?.status === "pending" ? (
+          <p className="mt-1 text-sm text-warning">
+            Este cliente se registró y eligió este plan — actívalo abajo (o cámbialo primero) para darle acceso.
+          </p>
+        ) : null}
         {subscription ? (
-          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-card border border-border p-5 text-sm">
+          <div
+            className={cn(
+              "mt-3 flex flex-wrap items-center gap-3 rounded-card border p-5 text-sm",
+              subscription.status === "pending" ? "border-warning/40 bg-warning/10" : "border-border",
+            )}
+          >
             <div className="flex-1">
               <p className="font-display text-lg">{currentPlan?.name ?? "Plan eliminado"}</p>
               <p className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -138,7 +203,7 @@ export default async function SuperadminTenantDetailPage({
               </p>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {(["active", "trial", "paused", "expired", "cancelled"] as SubscriptionStatus[]).map((s) => (
+              {(["pending", "active", "trial", "paused", "expired", "cancelled"] as SubscriptionStatus[]).map((s) => (
                 <form key={s} action={updateSubscriptionStatusAction.bind(null, tenant.id, s)}>
                   <NSButton type="submit" variant={subscription.status === s ? "primary" : "outline"} size="sm">
                     {s}
@@ -150,6 +215,26 @@ export default async function SuperadminTenantDetailPage({
         ) : (
           <p className="mt-1 text-sm text-muted-foreground">Sin plan asignado — el cliente sigue activo e ilimitado.</p>
         )}
+
+        {requestedPlan ? (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-control border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
+            <span>
+              El cliente pidió cambiar a <strong>{requestedPlan.name}</strong>.
+            </span>
+            <div className="flex gap-2">
+              <form action={approvePlanChangeAction.bind(null, tenant.id)}>
+                <NSButton type="submit" size="sm">
+                  Aprobar y activar
+                </NSButton>
+              </form>
+              <form action={dismissPlanChangeRequestAction.bind(null, tenant.id)}>
+                <NSButton type="submit" variant="outline" size="sm">
+                  Descartar
+                </NSButton>
+              </form>
+            </div>
+          </div>
+        ) : null}
 
         <form action={assignPlanAction.bind(null, tenant.id)} className="mt-4 flex flex-wrap items-end gap-3">
           <div>
@@ -182,6 +267,24 @@ export default async function SuperadminTenantDetailPage({
       </div>
 
       <div>
+        <h2 className="font-display text-lg uppercase tracking-wide">Administrador</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          El correo con el que este cliente inicia sesión en /acceder. Reasignarlo revoca el acceso del correo
+          anterior y envía una invitación nueva.
+        </p>
+        <div className="mt-3">
+          {owner ? (
+            <p className="rounded-card border border-border bg-surface-elevated px-4 py-3 text-sm">
+              <span className="font-semibold">{owner.email}</span>
+            </p>
+          ) : (
+            <p className="mb-2 text-sm text-danger">Este cliente todavía no tiene una cuenta de acceso.</p>
+          )}
+          <NSAssignOwnerEmailForm tenantId={tenant.id} currentEmail={owner?.email} />
+        </div>
+      </div>
+
+      <div>
         <h2 className="font-display text-lg uppercase tracking-wide">Información general</h2>
         <dl className="mt-3 grid grid-cols-1 gap-x-8 gap-y-3 rounded-card border border-border p-5 text-sm sm:grid-cols-2">
           <Field label="Correo de contacto" value={settings.contactEmail || "—"} />
@@ -193,7 +296,21 @@ export default async function SuperadminTenantDetailPage({
 
       <div className="rounded-card border border-danger/30 p-5">
         <h2 className="font-display text-lg uppercase tracking-wide text-danger">Zona de peligro</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+
+        {tenant.deletionRequestedAt ? (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-control border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
+            <span>
+              El cliente pidió eliminar su cuenta el {new Date(tenant.deletionRequestedAt).toLocaleDateString("es")}.
+            </span>
+            <form action={dismissDeletionRequestAction.bind(null, tenant.id)}>
+              <NSButton type="submit" variant="outline" size="sm">
+                Descartar solicitud
+              </NSButton>
+            </form>
+          </div>
+        ) : null}
+
+        <p className="mt-3 text-sm text-muted-foreground">
           Elimina permanentemente este cliente: su catálogo, pedidos, configuración y todos sus archivos en Supabase
           Storage. Irreversible.
         </p>

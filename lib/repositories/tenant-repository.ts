@@ -1,7 +1,7 @@
 import "server-only";
 import { getSupabaseClient } from "@/lib/db/supabaseClient";
 import type { TenantRow } from "@/lib/db/supabase-types";
-import type { BusinessType, Tenant, TenantStatus } from "@/lib/types/tenant";
+import type { BusinessType, Tenant, TenantStatus, ThemeKey } from "@/lib/types/tenant";
 
 function fromRow(row: TenantRow): Tenant {
   return {
@@ -13,7 +13,14 @@ function fromRow(row: TenantRow): Tenant {
     // applied — Supabase returns undefined for a column it doesn't know
     // about yet; "moda" is the original behavior every tenant had.
     businessType: row.business_type ?? "moda",
+    // Same reasoning as businessType above, for a row read before the
+    // theme migration was applied — "theme-01" is every tenant's original,
+    // unchanged storefront.
+    theme: row.theme ?? "theme-01",
     onboardingCompleted: row.onboarding_completed,
+    deletionRequestedAt: row.deletion_requested_at ?? null,
+    customDomain: row.custom_domain ?? null,
+    customDomainVerified: row.custom_domain_verified ?? false,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -26,25 +33,9 @@ export async function isTenantSlugTaken(slug: string): Promise<boolean> {
   return data !== null;
 }
 
-/** Auth-only lookup — never exposed as part of the public Tenant type. */
-export async function getTenantAuthRecord(
-  slug: string,
-): Promise<{ id: string; adminPasswordHash: string | null } | null> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("ds_tenants")
-    .select("id, admin_password_hash")
-    .eq("slug", slug)
-    .maybeSingle();
-  if (error) throw error;
-  if (!data) return null;
-  return { id: data.id, adminPasswordHash: data.admin_password_hash };
-}
-
 export interface CreateTenantInput {
   slug: string;
   name: string;
-  adminPasswordHash: string;
   businessType: BusinessType;
 }
 
@@ -53,6 +44,12 @@ export interface CreateTenantInput {
  * subscription/plan gating yet (see docs/ANALISIS_HORIZON_REFERENCIA_SAAS.md
  * section 6), so a self-registered tenant's storefront is reachable as
  * soon as onboarding finishes, same as any tenant seeded by hand.
+ *
+ * admin_password_hash is always null now — real identity (who can log in
+ * as this tenant's owner) lives in Supabase Auth + ds_app_users (see
+ * lib/repositories/app-users-repository.ts), not on this row. The column
+ * itself stays in the schema only because dropping it isn't worth the
+ * migration risk; nothing reads it anymore.
  */
 export async function createTenant(input: CreateTenantInput): Promise<Tenant> {
   const supabase = getSupabaseClient();
@@ -63,7 +60,7 @@ export async function createTenant(input: CreateTenantInput): Promise<Tenant> {
       name: input.name,
       status: "active",
       business_type: input.businessType,
-      admin_password_hash: input.adminPasswordHash,
+      admin_password_hash: null,
       onboarding_completed: false,
     })
     .select("*")
@@ -128,6 +125,22 @@ export async function createDefaultSettings(tenantId: string, brandName: string)
   if (error) throw error;
 }
 
+/** /admin/cuenta's "solicitar eliminación de cuenta" — sets a timestamp Super Admin sees on the tenant's own detail page; the actual hard-delete stays a separate, explicit action (deleteTenantAction) so nothing is ever destroyed just because a request exists. */
+export async function requestAccountDeletion(tenantId: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase
+    .from("ds_tenants")
+    .update({ deletion_requested_at: new Date().toISOString() })
+    .eq("id", tenantId);
+  if (error) throw error;
+}
+
+export async function cancelAccountDeletionRequest(tenantId: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from("ds_tenants").update({ deletion_requested_at: null }).eq("id", tenantId);
+  if (error) throw error;
+}
+
 export async function completeOnboarding(tenantId: string): Promise<void> {
   const supabase = getSupabaseClient();
   const { error } = await supabase
@@ -152,6 +165,21 @@ export async function getTenantById(tenantId: string): Promise<Tenant | null> {
   return data ? fromRow(data as TenantRow) : null;
 }
 
+/**
+ * Same lookup as resolveTenant, but returns null instead of calling
+ * notFound() — for a spot that wants to *try* showing a tenant's
+ * branding if the slug happens to be valid (e.g. /acceder's optional
+ * ?tenant= hint) without ever being allowed to break the page over a
+ * stale or mistyped slug. Deliberately doesn't filter by status: even a
+ * paused tenant's name/logo is harmless to show on a login screen.
+ */
+export async function getTenantBySlug(slug: string): Promise<Tenant | null> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.from("ds_tenants").select("*").eq("slug", slug).maybeSingle();
+  if (error) throw error;
+  return data ? fromRow(data as TenantRow) : null;
+}
+
 /** Super Admin only — changes reachability (see resolveTenant), never touches the tenant's rows in ns_*. */
 export async function updateTenantStatus(tenantId: string, status: TenantStatus): Promise<void> {
   const supabase = getSupabaseClient();
@@ -164,6 +192,77 @@ export async function updateTenantBusinessType(tenantId: string, businessType: B
   const supabase = getSupabaseClient();
   const { error } = await supabase.from("ds_tenants").update({ business_type: businessType }).eq("id", tenantId);
   if (error) throw error;
+}
+
+/** Super Admin only — swaps which Theme (lib/themes/registry.ts) renders this tenant's public storefront; never touches products/categories/settings, which every Theme reads as-is. */
+export async function updateTenantTheme(tenantId: string, theme: ThemeKey): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from("ds_tenants").update({ theme }).eq("id", tenantId);
+  if (error) throw error;
+}
+
+export async function isCustomDomainTaken(domain: string, excludingTenantId?: string): Promise<boolean> {
+  const supabase = getSupabaseClient();
+  let query = supabase.from("ds_tenants").select("id").eq("custom_domain", domain);
+  if (excludingTenantId) query = query.neq("id", excludingTenantId);
+  const { data, error } = await query.maybeSingle();
+  if (error) throw error;
+  return data !== null;
+}
+
+/**
+ * Stores the tenant's requested custom domain, always unverified — the
+ * caller (setDomainAction in app/[tenant]/admin/(shell)/dominio/actions.ts)
+ * is responsible for calling lib/domains/vercel-domains.ts's addDomain
+ * first and only reaching here once Vercel has accepted the domain (or
+ * VERCEL_API_TOKEN isn't configured, in which case DNS instructions are
+ * shown without that extra step). middleware.ts never routes traffic for
+ * an unverified domain, so this alone can't let a tenant claim a domain
+ * it doesn't control.
+ */
+export async function setTenantCustomDomain(tenantId: string, domain: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase
+    .from("ds_tenants")
+    .update({ custom_domain: domain, custom_domain_verified: false })
+    .eq("id", tenantId);
+  if (error) throw error;
+}
+
+export async function removeTenantCustomDomain(tenantId: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase
+    .from("ds_tenants")
+    .update({ custom_domain: null, custom_domain_verified: false })
+    .eq("id", tenantId);
+  if (error) throw error;
+}
+
+export async function markCustomDomainVerified(tenantId: string, verified: boolean): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from("ds_tenants").update({ custom_domain_verified: verified }).eq("id", tenantId);
+  if (error) throw error;
+}
+
+/**
+ * The lookup middleware.ts needs to route a request that arrived on a
+ * tenant's own domain instead of {platform}/{slug} — deliberately only
+ * matches a VERIFIED domain on an ACTIVE tenant, so neither an
+ * unconfirmed DNS setup nor a paused/suspended tenant is ever reachable
+ * through its custom domain (matching resolveTenant's own "active only"
+ * rule for the {slug} path).
+ */
+export async function getTenantByCustomDomain(domain: string): Promise<Tenant | null> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("ds_tenants")
+    .select("*")
+    .eq("custom_domain", domain)
+    .eq("custom_domain_verified", true)
+    .eq("status", "active")
+    .maybeSingle();
+  if (error) throw error;
+  return data ? fromRow(data as TenantRow) : null;
 }
 
 /**
@@ -182,7 +281,14 @@ export async function deleteTenant(tenantId: string): Promise<void> {
   const supabase = getSupabaseClient();
 
   const del = async (
-    table: "ns_products" | "ns_categories" | "ns_banners" | "ns_orders" | "ns_settings" | "subscriptions",
+    table:
+      | "ns_products"
+      | "ns_categories"
+      | "ns_banners"
+      | "ns_hero_slides"
+      | "ns_orders"
+      | "ns_settings"
+      | "subscriptions",
   ) => {
     const { error } = await supabase.from(table).delete().eq("tenant_id", tenantId);
     if (error) throw error;
@@ -191,6 +297,7 @@ export async function deleteTenant(tenantId: string): Promise<void> {
   await del("ns_products");
   await del("ns_categories");
   await del("ns_banners");
+  await del("ns_hero_slides");
   await del("ns_orders");
   await del("ns_settings");
   await del("subscriptions");

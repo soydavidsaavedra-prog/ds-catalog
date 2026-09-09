@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+/** DS Catalog's own platform identity (see .ds-platform in app/globals.css) — Super Admin is the platform's own control center, with no tenant to brand it after. */
 export default function SuperadminRootLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <div className="ds-platform min-h-dvh">{children}</div>;
 }

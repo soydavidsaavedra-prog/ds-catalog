@@ -5,6 +5,12 @@
  * section). Run this by hand, once per real person who should have
  * platform-wide access.
  *
+ * This row is legacy storage, not itself a login method: the first time
+ * this person logs in at /acceder with this email+password, accederAction
+ * (app/acceder/actions.ts) transparently provisions the real Supabase Auth
+ * account + ds_app_users profile behind the scenes — see the comment on
+ * verifySuperadminCredentials in lib/auth/superadmin-auth.ts.
+ *
  * Usage (after supabase/schema.sql has been run at least once):
  *   npm run superadmin:create -- --email=you@example.com --password=a-strong-password
  *
@@ -77,7 +83,7 @@ async function main() {
   }
 
   console.log(`✓ Super admin created: ${data.email} (${data.id})`);
-  console.log(`  Log in at /superadmin/login`);
+  console.log(`  Log in at /acceder`);
 }
 
 main();

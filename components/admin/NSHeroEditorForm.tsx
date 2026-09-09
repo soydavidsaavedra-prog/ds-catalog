@@ -1,22 +1,38 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
-import type { SiteSettings } from "@/lib/types/catalog";
+import { useActionState, useState } from "react";
+import { MAX_HERO_SLIDES, type HeroSlide, type SiteSettings } from "@/lib/types/catalog";
+import type { ThemeKey } from "@/lib/types/tenant";
 import { updateHeroSettingsAction, type ActionState } from "@/app/[tenant]/admin/actions";
+import { buildAccentOverrideVars } from "@/lib/utils/brand";
 import { NSInput, NSLabel } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
-import { NSHero } from "@/components/home/NSHero";
+import { NSHero } from "@/components/storefront/themes/theme-01/NSHero";
+import { Hero as Theme02Hero } from "@/components/storefront/themes/theme-02/Hero";
+import { NSHeroSlideUploadForm } from "@/components/admin/NSHeroSlideUploadForm";
+import { NSHeroSlideList } from "@/components/admin/NSHeroSlideList";
 
 const initialState: ActionState = {};
 
 const PREVIEW_SCALE = 0.32;
 
-export function NSHeroEditorForm({ tenantId, tenantSlug, settings }: { tenantId: string; tenantSlug: string; settings: SiteSettings }) {
+export function NSHeroEditorForm({
+  tenantId,
+  tenantSlug,
+  theme,
+  settings,
+  slides,
+}: {
+  tenantId: string;
+  tenantSlug: string;
+  /** Which Theme actually renders this tenant's storefront — the preview below must match it, not always show Theme 01. */
+  theme: ThemeKey;
+  settings: SiteSettings;
+  /** Photos/videos that auto-rotate behind the static text below — see /admin/inicio's "Portada (Hero)" section. Empty means the storefront shows just the single image above, unchanged. */
+  slides: HeroSlide[];
+}) {
   const boundAction = updateHeroSettingsAction.bind(null, tenantId, tenantSlug);
   const [state, formAction, pending] = useActionState(boundAction, initialState);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const [draft, setDraft] = useState({
     eyebrow: settings.heroEyebrow,
@@ -35,27 +51,8 @@ export function NSHeroEditorForm({ tenantId, tenantSlug, settings }: { tenantId:
     setDraft((prev) => ({ ...prev, [key]: value }));
   }
 
-  async function handleFile(files: FileList | null) {
-    const file = files?.[0];
-    if (!file) return;
-    setUploading(true);
-    setUploadError(null);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetch(`/${tenantSlug}/admin/api/upload`, { method: "POST", body: formData });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Error al subir imagen");
-      set("image", data.url as string);
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : "Error al subir imagen");
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  }
-
   return (
+    <div className="flex flex-col gap-8">
     <div className="flex flex-col gap-6 xl:flex-row xl:items-start">
       <form action={formAction} className="flex w-full flex-col gap-5 xl:max-w-md">
         {state.success ? (
@@ -64,57 +61,14 @@ export function NSHeroEditorForm({ tenantId, tenantSlug, settings }: { tenantId:
           </div>
         ) : null}
 
-        <div>
-          <NSLabel>Imagen de portada</NSLabel>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="flex h-10 items-center justify-center rounded-control border border-dashed border-border-strong px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:border-accent-strong hover:text-accent-strong disabled:opacity-50"
-            >
-              {uploading ? "Subiendo..." : "Subir desde tu computador"}
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/avif"
-              className="hidden"
-              onChange={(e) => handleFile(e.target.files)}
-            />
-          </div>
-          {uploadError ? <p className="mt-2 text-xs text-danger">{uploadError}</p> : null}
-          <input type="hidden" name="heroImage" value={draft.image} />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <NSLabel htmlFor="posX">Posición horizontal de la imagen</NSLabel>
-            <input
-              id="posX"
-              type="range"
-              min={0}
-              max={100}
-              value={draft.imagePositionX}
-              onChange={(e) => set("imagePositionX", Number(e.target.value))}
-              className="w-full accent-[var(--accent)]"
-            />
-            <input type="hidden" name="heroImagePositionX" value={draft.imagePositionX} />
-          </div>
-          <div>
-            <NSLabel htmlFor="posY">Posición vertical de la imagen</NSLabel>
-            <input
-              id="posY"
-              type="range"
-              min={0}
-              max={100}
-              value={draft.imagePositionY}
-              onChange={(e) => set("imagePositionY", Number(e.target.value))}
-              className="w-full accent-[var(--accent)]"
-            />
-            <input type="hidden" name="heroImagePositionY" value={draft.imagePositionY} />
-          </div>
-        </div>
+        {/* No manual image upload/position control here anymore — Fotos y
+            videos (below) is now the one place that manages what's behind
+            the portada. These hidden fields just carry the tenant's
+            existing background through "Guardar portada" unchanged, so
+            saving the text fields never blanks it out. */}
+        <input type="hidden" name="heroImage" value={draft.image} />
+        <input type="hidden" name="heroImagePositionX" value={draft.imagePositionX} />
+        <input type="hidden" name="heroImagePositionY" value={draft.imagePositionY} />
 
         <div>
           <NSLabel htmlFor="heroEyebrow">Texto pequeño (arriba del título)</NSLabel>
@@ -191,9 +145,12 @@ export function NSHeroEditorForm({ tenantId, tenantSlug, settings }: { tenantId:
 
       <div className="w-full xl:flex-1">
         <NSLabel>Vista previa en vivo</NSLabel>
+        {/* tenant-preview: shows the tenant's real accent/light storefront
+            look, not DS Catalog's own dark chrome around it — see
+            app/globals.css and lib/utils/brand.ts buildAccentOverrideVars. */}
         <div
-          className="overflow-hidden rounded-card border border-border"
-          style={{ height: 640 * PREVIEW_SCALE }}
+          className="tenant-preview overflow-hidden rounded-card border border-border"
+          style={{ height: 640 * PREVIEW_SCALE, ...buildAccentOverrideVars(settings) }}
         >
           <div
             style={{
@@ -203,10 +160,46 @@ export function NSHeroEditorForm({ tenantId, tenantSlug, settings }: { tenantId:
               height: `${100 / PREVIEW_SCALE}%`,
             }}
           >
-            <NSHero {...draft} />
+            {theme === "theme-02" ? (
+              <Theme02Hero
+                eyebrow={draft.eyebrow}
+                titleLine1={draft.titleLine1}
+                titleLine2={draft.titleLine2}
+                subtitle={draft.subtitle}
+                ctaLabel={draft.ctaLabel}
+                ctaHref={draft.ctaHref}
+                image={slides[0]?.mediaUrl ?? draft.image}
+                imagePositionX={slides[0]?.positionX ?? draft.imagePositionX}
+                imagePositionY={slides[0]?.positionY ?? draft.imagePositionY}
+                brandName={settings.brandName}
+              />
+            ) : (
+              <NSHero {...draft} slides={slides} brandName={settings.brandName} />
+            )}
           </div>
         </div>
       </div>
+    </div>
+
+    <div className="rounded-card border border-border bg-surface p-5">
+      <NSLabel>Fotos y videos de la portada (máximo {MAX_HERO_SLIDES})</NSLabel>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Esto es lo que se ve de fondo en la portada. Con una sola foto o video, se queda fija; con varias, la
+        portada las va mostrando una tras otra en la tienda. El título, subtítulo y botón de arriba (y su
+        posición en la vista previa) se mantienen fijos — esto solo cambia el fondo.
+      </p>
+      <div className="mt-4">
+        <NSHeroSlideUploadForm
+          tenantId={tenantId}
+          tenantSlug={tenantSlug}
+          atCap={slides.length >= MAX_HERO_SLIDES}
+          maxSlides={MAX_HERO_SLIDES}
+        />
+      </div>
+      <div className="mt-4">
+        <NSHeroSlideList tenantId={tenantId} tenantSlug={tenantSlug} slides={slides} />
+      </div>
+    </div>
     </div>
   );
 }

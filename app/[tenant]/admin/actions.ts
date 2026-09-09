@@ -2,11 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import {
-  createAdminSession,
-  destroyAdminSession,
-  verifyTenantAdminPassword,
-} from "@/lib/auth/admin-auth";
+import { destroyAdminSession } from "@/lib/auth/admin-auth";
 import {
   countProducts,
   createProduct,
@@ -17,6 +13,8 @@ import {
   type ProductInput,
 } from "@/lib/repositories/product-repository";
 import { getEffectivePlanForTenant } from "@/lib/tenant/plan-limits";
+import { getPlanById } from "@/lib/repositories/plans-repository";
+import { assignPlanToTenant } from "@/lib/repositories/subscriptions-repository";
 import {
   createCategory,
   deleteCategory,
@@ -25,15 +23,23 @@ import {
   listCategories,
   updateCategory,
 } from "@/lib/repositories/category-repository";
-import { createBanner, deleteBanner, getBannerById, updateBanner } from "@/lib/repositories/banner-repository";
+import {
+  createHeroSlide,
+  deleteHeroSlide,
+  getHeroSlideById,
+  listHeroSlides,
+  updateHeroSlide,
+} from "@/lib/repositories/hero-slide-repository";
 import { updateOrderStatus } from "@/lib/repositories/order-repository";
 import { getSettings, updateSettings } from "@/lib/repositories/settings-repository";
-import { completeOnboarding } from "@/lib/repositories/tenant-repository";
+import { completeOnboarding, updateTenantTheme } from "@/lib/repositories/tenant-repository";
 import { deleteStorageFilesByUrls } from "@/lib/repositories/storage-repository";
 import { slugify } from "@/lib/utils/slug";
 import { HEX_COLOR, readableForegroundFor } from "@/lib/utils/brand";
 import type { Availability, Audience, CardAspectRatio, ImageFit, ProductColor } from "@/lib/types/catalog";
+import { MAX_HERO_SLIDES } from "@/lib/types/catalog";
 import type { OrderStatus } from "@/lib/types/order";
+import type { ThemeKey } from "@/lib/types/tenant";
 
 export type ActionState = { error?: string; success?: boolean };
 
@@ -55,22 +61,9 @@ async function cleanupReplacedImages(
 
 // ---------- Auth ----------
 
-export async function loginAction(
-  tenantSlug: string,
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const password = String(formData.get("password") ?? "");
-  if (!(await verifyTenantAdminPassword(tenantSlug, password))) {
-    return { error: "Contraseña incorrecta." };
-  }
-  await createAdminSession(tenantSlug);
-  redirect(`/${tenantSlug}/admin`);
-}
-
 export async function logoutAction(tenantSlug: string): Promise<void> {
   await destroyAdminSession();
-  redirect(`/${tenantSlug}/admin/login`);
+  redirect(`/acceder?tenant=${tenantSlug}`);
 }
 
 /** Distinct from logoutAction only in where it sends the browser back — the session teardown is identical (destroyAdminSession() already clears the impersonation marker too). */
@@ -87,6 +80,12 @@ export async function completeOnboardingAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const planId = String(formData.get("planId") ?? "");
+  const plan = planId ? await getPlanById(planId) : null;
+  if (!plan || !plan.active) {
+    return { error: "Elige un plan para continuar." };
+  }
+
   try {
     await updateSettings(tenantId, {
       slogan: String(formData.get("slogan") ?? "").trim(),
@@ -95,6 +94,11 @@ export async function completeOnboardingAction(
       whatsappDisplay: String(formData.get("whatsappDisplay") ?? "").trim(),
       contactEmail: String(formData.get("contactEmail") ?? "").trim(),
     });
+    // "pending", no "trial"/"active": un Super Admin tiene que revisar y
+    // activar esta solicitud antes de que el tenant pueda usar su panel o
+    // que su catálogo público sea visible — ver getFreezeReason en
+    // lib/tenant/plan-limits.ts.
+    await assignPlanToTenant(tenantId, plan.id, "pending", null);
     await completeOnboarding(tenantId);
   } catch (err) {
     return { error: friendlyDbErrorMessage(err) };
@@ -367,47 +371,57 @@ export async function moveCategoryAction(
   revalidatePath(`/${tenantSlug}/admin/categorias`);
 }
 
-// ---------- Banners ----------
+// ---------- Hero slides ----------
 
-export async function createBannerAction(tenantId: string, tenantSlug: string, formData: FormData): Promise<void> {
-  await createBanner(tenantId, {
-    title: String(formData.get("title") ?? "").trim(),
-    subtitle: String(formData.get("subtitle") ?? "").trim(),
-    image: String(formData.get("image") ?? "placeholder:hero:1").trim(),
-    ctaLabel: String(formData.get("ctaLabel") ?? "").trim(),
-    ctaHref: String(formData.get("ctaHref") ?? "/catalogo").trim(),
+/**
+ * mediaType is trusted from the client here (it already picked the right
+ * file input / detected the upload's MIME type before submitting) — worth
+ * noting since nothing re-derives it from mediaUrl server-side, unlike
+ * most other fields on this action. A wrong value only affects which
+ * <video>/<img> tag the storefront renders it with, not access control.
+ */
+export async function createHeroSlideAction(tenantId: string, tenantSlug: string, formData: FormData): Promise<void> {
+  const current = await listHeroSlides(tenantId);
+  if (current.length >= MAX_HERO_SLIDES) {
+    throw new Error(`Ya alcanzaste el máximo de ${MAX_HERO_SLIDES} fotos/videos para el hero.`);
+  }
+  await createHeroSlide(tenantId, {
+    mediaType: formData.get("mediaType") === "video" ? "video" : "image",
+    mediaUrl: String(formData.get("mediaUrl") ?? "").trim(),
+    positionX: Number(formData.get("positionX") ?? 50),
+    positionY: Number(formData.get("positionY") ?? 50),
     active: formData.get("active") === "on",
-    order: Number(formData.get("order") ?? 1),
+    // Derived from the just-fetched count, not trusted from the client:
+    // two uploads submitted close together would otherwise both compute
+    // the same "next" order client-side and land on the same number.
+    order: current.length + 1,
   });
-  revalidatePath(`/${tenantSlug}/admin/banners`);
+  revalidatePath(`/${tenantSlug}`);
+  revalidatePath(`/${tenantSlug}/admin/inicio`);
 }
 
-export async function updateBannerAction(
+export async function updateHeroSlideAction(
   tenantId: string,
   tenantSlug: string,
   id: string,
   formData: FormData,
 ): Promise<void> {
-  const image = String(formData.get("image") ?? "").trim();
-  const existing = await getBannerById(tenantId, id);
-  await updateBanner(tenantId, id, {
-    title: String(formData.get("title") ?? "").trim(),
-    subtitle: String(formData.get("subtitle") ?? "").trim(),
-    image,
-    ctaLabel: String(formData.get("ctaLabel") ?? "").trim(),
-    ctaHref: String(formData.get("ctaHref") ?? "").trim(),
+  await updateHeroSlide(tenantId, id, {
+    positionX: Number(formData.get("positionX") ?? 50),
+    positionY: Number(formData.get("positionY") ?? 50),
     active: formData.get("active") === "on",
     order: Number(formData.get("order") ?? 1),
   });
-  if (existing) await cleanupReplacedImages([existing.image], [image]);
-  revalidatePath(`/${tenantSlug}/admin/banners`);
+  revalidatePath(`/${tenantSlug}`);
+  revalidatePath(`/${tenantSlug}/admin/inicio`);
 }
 
-export async function deleteBannerAction(tenantId: string, tenantSlug: string, id: string): Promise<void> {
-  const existing = await getBannerById(tenantId, id);
-  await deleteBanner(tenantId, id);
-  if (existing) await cleanupReplacedImages([existing.image], []);
-  revalidatePath(`/${tenantSlug}/admin/banners`);
+export async function deleteHeroSlideAction(tenantId: string, tenantSlug: string, id: string): Promise<void> {
+  const existing = await getHeroSlideById(tenantId, id);
+  await deleteHeroSlide(tenantId, id);
+  if (existing) await cleanupReplacedImages([existing.mediaUrl], []);
+  revalidatePath(`/${tenantSlug}`);
+  revalidatePath(`/${tenantSlug}/admin/inicio`);
 }
 
 // ---------- Orders ----------
@@ -481,6 +495,8 @@ export async function updateSettingsAction(
       accentColor: customAccentColor ? accentColor : null,
       accentColorStrong: customAccentColor ? accentColorStrong : null,
       accentForeground: customAccentColor ? readableForegroundFor(accentColor) : null,
+      termsContent: String(formData.get("termsContent") ?? "").trim(),
+      privacyContent: String(formData.get("privacyContent") ?? "").trim(),
     });
   } catch (err) {
     return { error: friendlyDbErrorMessage(err) };
@@ -583,4 +599,29 @@ export async function updateStatementSettingsAction(
   await cleanupReplacedImages([existing.statementImage], [statementImage]);
   revalidatePath(`/${tenantSlug}`, "layout");
   return { success: true };
+}
+
+/**
+ * Lets the tenant pick their own Theme from whatever their plan allows
+ * (Plan.allowedThemes — null means every registered Theme, see
+ * lib/themes/registry.ts). NSThemeSelector already hides the "Usar este
+ * tema" button for a Theme the plan doesn't include, same as
+ * createHeroSlideAction's MAX_HERO_SLIDES check above — this is the
+ * server-side backstop for a request the real UI never sends, not the
+ * primary defense. A tenant with no subscription/plan at all is
+ * unrestricted, matching every other plan-based limit in this file.
+ * Never touches products/categories/settings — every Theme reads those
+ * the same way, only presentation changes. `revalidatePath(...,
+ * "layout")` covers every storefront route at once (home, catalogo,
+ * category, product) since they all resolve the Theme from the same
+ * layout-level tenant lookup.
+ */
+export async function updateTenantThemeAction(tenantId: string, tenantSlug: string, theme: ThemeKey): Promise<void> {
+  const plan = await getEffectivePlanForTenant(tenantId);
+  if (plan?.allowedThemes && !plan.allowedThemes.includes(theme)) {
+    throw new Error("Este tema no está disponible en tu plan actual.");
+  }
+  await updateTenantTheme(tenantId, theme);
+  revalidatePath(`/${tenantSlug}`, "layout");
+  revalidatePath(`/${tenantSlug}/admin/tema`);
 }

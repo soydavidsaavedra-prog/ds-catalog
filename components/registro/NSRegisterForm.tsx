@@ -40,6 +40,11 @@ export function NSRegisterForm() {
       </div>
 
       <div>
+        <NSLabel htmlFor="email">Correo</NSLabel>
+        <NSInput id="email" name="email" type="email" required autoComplete="username" />
+      </div>
+
+      <div>
         <NSLabel htmlFor="businessType">Tipo de negocio</NSLabel>
         <NSSelect id="businessType" name="businessType" required defaultValue="">
           <option value="" disabled>

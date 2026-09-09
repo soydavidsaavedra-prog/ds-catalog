@@ -20,13 +20,31 @@ export type TenantStatus = "active" | "paused" | "suspended" | "archived";
  */
 export type BusinessType = "moda" | "ferreteria" | "restaurante" | "belleza" | "tecnologia" | "hogar" | "otro";
 
+/**
+ * Which visual Theme renders this tenant's public storefront — see
+ * lib/themes/registry.ts for the actual component implementations. Kept as
+ * a plain literal union here (not derived from the registry) so this data
+ * layer never depends on the component tree, the same separation
+ * BusinessType already keeps from lib/tenant/business-type.ts. "theme-01"
+ * is the default for every tenant, including every one that existed before
+ * this concept did — unchanged storefront.
+ */
+export type ThemeKey = "theme-01" | "theme-02";
+
 export interface Tenant {
   id: string;
   slug: string;
   name: string;
   status: TenantStatus;
   businessType: BusinessType;
+  theme: ThemeKey;
   onboardingCompleted: boolean;
+  /** Set from /admin/cuenta's "solicitar eliminación de cuenta" — a request Super Admin reviews, not an immediate delete. Null = no pending request. */
+  deletionRequestedAt: string | null;
+  /** Normalized (lowercase, no protocol/port/path — see lib/domains/validate-domain.ts), unique across tenants. Null = storefront only reachable at {platform}/{slug}, same as every tenant before this feature existed. */
+  customDomain: string | null;
+  /** True once lib/domains/vercel-domains.ts confirms the domain actually points at this platform. middleware.ts only routes traffic for a verified domain — an unverified one is stored but inert. */
+  customDomainVerified: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { isAdminAuthenticated } from "@/lib/auth/admin-auth";
 import { getSupabaseClient } from "@/lib/db/supabaseClient";
 import { PRODUCT_IMAGES_BUCKET } from "@/lib/media/storage-bucket";
+import { MAX_IMAGE_UPLOAD_BYTES, MAX_VIDEO_UPLOAD_BYTES } from "@/lib/media/upload-limits";
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { getEffectivePlanForTenant } from "@/lib/tenant/plan-limits";
 import { getStorageUsageForSlug } from "@/lib/repositories/storage-repository";
@@ -13,8 +14,10 @@ const ALLOWED_EXTENSIONS: Record<string, string> = {
   "image/webp": "webp",
   "image/avif": "avif",
   "image/svg+xml": "svg",
+  "video/mp4": "mp4",
+  "video/webm": "webm",
 };
-const MAX_SIZE = 8 * 1024 * 1024;
+const VIDEO_TYPES = new Set(["video/mp4", "video/webm"]);
 const BUCKET = PRODUCT_IMAGES_BUCKET;
 
 export async function POST(request: Request, { params }: { params: Promise<{ tenant: string }> }) {
@@ -31,10 +34,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
   }
   const extension = ALLOWED_EXTENSIONS[file.type];
   if (!extension) {
-    return NextResponse.json({ error: "Formato no soportado (usa JPG, PNG, WEBP, AVIF o SVG)" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Formato no soportado (usa JPG, PNG, WEBP, AVIF, SVG, MP4 o WEBM)" },
+      { status: 400 },
+    );
   }
-  if (file.size > MAX_SIZE) {
-    return NextResponse.json({ error: "La imagen supera 8MB" }, { status: 400 });
+  const isVideo = VIDEO_TYPES.has(file.type);
+  const maxSize = isVideo ? MAX_VIDEO_UPLOAD_BYTES : MAX_IMAGE_UPLOAD_BYTES;
+  if (file.size > maxSize) {
+    return NextResponse.json(
+      { error: isVideo ? "El video supera 4MB" : "La imagen supera 8MB" },
+      { status: 400 },
+    );
   }
 
   // Compression to ~500KB happens client-side before this request is even

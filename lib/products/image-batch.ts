@@ -1,0 +1,137 @@
+import { slugify } from "@/lib/utils/slug";
+import type { Audience, Category } from "@/lib/types/catalog";
+import type { ProductInput } from "@/lib/repositories/product-repository";
+
+/**
+ * Bulk product creation from a batch of already-uploaded images — one
+ * product per image, for a tenant with a pile of product photos and no
+ * catalog data entered yet (see app/[tenant]/admin/(shell)/productos/
+ * lote-fotos/). Each product is created INACTIVE (a draft, hidden from
+ * the public storefront) with a provisional name derived from the
+ * filename — the tenant is expected to open each one afterward and fill
+ * in the real name, price and description. This is the image-upload
+ * sibling of lib/products/csv-import.ts, which instead bulk-creates from
+ * a CSV with no photos; the two are deliberately opposite trade-offs
+ * (real photos + fake text here, real text + placeholder photo there).
+ *
+ * Pure and DB-free on purpose, same reasoning as csv-import.ts: takes the
+ * tenant's already-fetched categories and already-taken slugs as plain
+ * arguments, so this is fully unit-testable without mocking Supabase —
+ * the calling Server Action (.../lote-fotos/actions.ts) is the only place
+ * that touches the database, via createProduct per draft, and the only
+ * place that uploads anything (the client component does that before
+ * ever calling the action — see NSProductBatchForm.tsx).
+ */
+
+/**
+ * Cap on how many products one batch call creates — independent of
+ * plan.maxProducts (which the Server Action enforces separately). Mainly
+ * a resilience limit: 100 sequential compress+upload round trips from the
+ * browser is already a lot to ask of one tab/connection; more than that
+ * should be split into another batch.
+ */
+export const MAX_BATCH_IMAGES = 100;
+
+const AUDIENCE_VALUES: Audience[] = ["dama", "caballero", "nino", "unisex"];
+
+/** Same audience-derived-from-category-tree rule as resolveAudienceForCategory in app/[tenant]/admin/actions.ts and csv-import.ts's own copy — duplicated for the same reason theirs is: this stays synchronous over an already-fetched category list instead of a DB round-trip. */
+function resolveAudience(category: Category, categoriesById: Map<string, Category>): Audience {
+  const topLevel = category.parentId ? categoriesById.get(category.parentId) : category;
+  const slug = topLevel?.slug;
+  return AUDIENCE_VALUES.includes(slug as Audience) ? (slug as Audience) : "unisex";
+}
+
+/**
+ * Turns "camisa_azul-01.JPG" into "Camisa Azul 01" — a readable starting
+ * point, never a finished product title. Falls back to "Producto" for a
+ * filename that strips down to nothing (e.g. "____.jpg" or a name made
+ * entirely of punctuation).
+ */
+export function deriveNameFromFilename(filename: string): string {
+  const withoutExtension = filename.replace(/\.[^./]+$/, "");
+  const cleaned = withoutExtension
+    .replace(/[_\-.]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!cleaned) return "Producto";
+  return cleaned
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+export interface BatchImageItem {
+  /** Original filename, kept only to derive the name and to label errors — never stored. */
+  filename: string;
+  /** Public Storage URL — already uploaded by the time this module sees it. */
+  url: string;
+}
+
+export interface BatchProductDraft {
+  filename: string;
+  input: ProductInput;
+}
+
+export interface BuildBatchDraftsInput {
+  items: BatchImageItem[];
+  /** The one category every product in this batch is assigned to — a batch has no per-image category info, so this is chosen once for the whole upload. */
+  category: Category;
+  /** Full tree, needed only to resolve `category`'s top-level parent for audience. */
+  categories: Category[];
+  /** First reference number to use (e.g. 46 for "NS-046") — the caller computes this once via getNextReference, then this function increments it locally per item so two batches submitted close together can never collide on the same number (same reasoning as createHeroSlideAction's `order` in app/[tenant]/admin/actions.ts). */
+  startingReferenceNumber: number;
+  existingSlugs: Set<string>;
+}
+
+/** Builds ready-to-insert ProductInput drafts, one per image — never throws; a batch is always as many valid drafts as items given. */
+export function buildBatchProductDrafts(input: BuildBatchDraftsInput): BatchProductDraft[] {
+  const categoriesById = new Map(input.categories.map((c) => [c.id, c] as const));
+  const audience = resolveAudience(input.category, categoriesById);
+  const seenSlugs = new Set(input.existingSlugs);
+  let referenceNumber = input.startingReferenceNumber;
+
+  return input.items.map((item) => {
+    const name = deriveNameFromFilename(item.filename);
+    const reference = `NS-${String(referenceNumber).padStart(3, "0")}`;
+    referenceNumber += 1;
+
+    const baseSlug = slugify(`${reference}-${name}`);
+    let slug = baseSlug;
+    let suffix = 2;
+    while (seenSlugs.has(slug)) {
+      slug = `${baseSlug}-${suffix}`;
+      suffix += 1;
+    }
+    seenSlugs.add(slug);
+
+    const draft: BatchProductDraft = {
+      filename: item.filename,
+      input: {
+        slug,
+        reference,
+        name,
+        price: 0,
+        wholesalePrice: null,
+        description: "",
+        categorySlug: input.category.slug,
+        audience,
+        images: [item.url],
+        cardAspectRatio: "portrait",
+        imageFit: "cover",
+        sizes: [],
+        colors: [],
+        availability: "in_stock",
+        featured: false,
+        isNew: false,
+        onSale: false,
+        // Deliberately inactive — a draft with a provisional name/price of 0
+        // must never be visible to real customers before the tenant edits
+        // it. See NSProductsTable's Activo/Inactivo filter for how they're
+        // found afterward.
+        active: false,
+        hidePaymentBadge: false,
+      },
+    };
+    return draft;
+  });
+}

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getPlanById } from "@/lib/repositories/plans-repository";
 import { getStorageUsageByTenant, deriveGlobalStorageUsage } from "@/lib/repositories/storage-repository";
 import { listAllTenantsWithCounts } from "@/lib/repositories/superadmin-repository";
+import { THEME_META } from "@/lib/themes/registry";
 import { NSPlanForm } from "@/components/superadmin/NSPlanForm";
 
 export const metadata: Metadata = {
@@ -34,7 +35,7 @@ export default async function SuperadminEditPlanPage({
           Los clientes con este plan asignado quedan sujetos a los límites nuevos de inmediato.
         </p>
       </div>
-      <NSPlanForm plan={plan} avgBytesPerProduct={avgBytesPerProduct} />
+      <NSPlanForm plan={plan} avgBytesPerProduct={avgBytesPerProduct} themeOptions={Object.values(THEME_META)} />
     </div>
   );
 }

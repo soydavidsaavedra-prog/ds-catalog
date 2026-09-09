@@ -81,6 +81,22 @@ export interface Banner {
   order: number;
 }
 
+export type HeroMediaType = "image" | "video";
+
+/** A background carousel only makes sense with a handful of slides — past this, "auto-advancing" starts feeling like an unrelated slideshow rather than a hero. */
+export const MAX_HERO_SLIDES = 5;
+
+/** One background slide of the storefront's hero carousel — see components/home/NSHero.tsx. Text/CTA stay static (SiteSettings.hero*); only the background media rotates between these. */
+export interface HeroSlide {
+  id: string;
+  mediaType: HeroMediaType;
+  mediaUrl: string;
+  positionX: number;
+  positionY: number;
+  order: number;
+  active: boolean;
+}
+
 export interface SiteSettings {
   brandName: string;
   slogan: string;
@@ -147,6 +163,15 @@ export interface SiteSettings {
   storyStepLabel3: string | null;
   storyStepLabel4: string | null;
   storyStepLabel5: string | null;
+  /**
+   * Free text for /{tenant}/terminos and /{tenant}/privacidad — editable
+   * from /admin/configuracion. Empty string = that page doesn't exist
+   * (404) and its footer link is hidden; this app never writes a default
+   * here, since real legal text has to come from the business owner (or
+   * their lawyer), never be fabricated.
+   */
+  termsContent: string;
+  privacyContent: string;
 }
 
 export type SortOption =
@@ -166,4 +191,10 @@ export interface CatalogFilters {
   minPrice?: number;
   maxPrice?: number;
   sort?: SortOption;
+}
+
+/** The site-wide payment-method badge (e.g. Cashea) shown on product cards/detail — a plain data shape, not tied to any one Theme's rendering of it. */
+export interface PaymentBadgeInfo {
+  icon: string;
+  label: string;
 }

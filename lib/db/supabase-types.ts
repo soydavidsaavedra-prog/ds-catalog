@@ -1,6 +1,6 @@
 import type { Audience, Availability, CardAspectRatio, ImageFit, ProductColor } from "@/lib/types/catalog";
 import type { OrderItem, OrderStatus } from "@/lib/types/order";
-import type { BusinessType, TenantStatus } from "@/lib/types/tenant";
+import type { BusinessType, TenantStatus, ThemeKey } from "@/lib/types/tenant";
 
 /**
  * Minimal hand-written Database type (row shapes only — see
@@ -13,7 +13,7 @@ import type { BusinessType, TenantStatus } from "@/lib/types/tenant";
  * Postgres column defaults/constraints.
  */
 
-export type SubscriptionStatus = "active" | "trial" | "paused" | "expired" | "cancelled";
+export type SubscriptionStatus = "pending" | "active" | "trial" | "paused" | "expired" | "cancelled";
 
 export interface PlanRow {
   id: string;
@@ -25,6 +25,8 @@ export interface PlanRow {
   max_storage_mb: number | null;
   max_images: number | null;
   features: string[];
+  /** null = every registered Theme available (see lib/themes/registry.ts) — same "unrestricted" semantics as the max_* columns above. */
+  allowed_themes: string[] | null;
   active: boolean;
   created_at: string;
   updated_at: string;
@@ -35,6 +37,7 @@ export interface SubscriptionRow {
   tenant_id: string;
   plan_id: string;
   status: SubscriptionStatus;
+  requested_plan_id: string | null;
   started_at: string;
   expires_at: string | null;
   created_at: string;
@@ -50,14 +53,62 @@ export interface SuperAdminUserRow {
   updated_at: string;
 }
 
+export interface PlatformSettingsRow {
+  id: boolean;
+  support_whatsapp_number: string;
+  support_whatsapp_display: string;
+  terms_content: string | null;
+  privacy_content: string | null;
+  updated_at: string;
+}
+
+export interface LoginAttemptRow {
+  id: string;
+  identifier: string;
+  ip: string | null;
+  created_at: string;
+}
+
+export interface TotpBackupCodeRow {
+  id: string;
+  user_id: string;
+  code_hash: string;
+  used_at: string | null;
+  created_at: string;
+}
+
+export interface AuditLogRow {
+  id: string;
+  actor_email: string;
+  action: string;
+  tenant_id: string | null;
+  tenant_slug: string | null;
+  summary: string;
+  created_at: string;
+}
+
+export type AppUserRole = "owner" | "superadmin";
+
+export interface AppUserRow {
+  id: string;
+  email: string;
+  role: AppUserRole;
+  tenant_id: string | null;
+  created_at: string;
+}
+
 export interface TenantRow {
   id: string;
   slug: string;
   name: string;
   status: TenantStatus;
   business_type: BusinessType;
+  theme: ThemeKey;
   admin_password_hash: string | null;
   onboarding_completed: boolean;
+  deletion_requested_at: string | null;
+  custom_domain: string | null;
+  custom_domain_verified: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -101,6 +152,18 @@ export interface ProductRow {
   hide_payment_badge: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface HeroSlideRow {
+  id: string;
+  tenant_id: string;
+  media_type: "image" | "video";
+  media_url: string;
+  position_x: number;
+  position_y: number;
+  order: number;
+  active: boolean;
+  created_at: string;
 }
 
 export interface BannerRow {
@@ -176,6 +239,9 @@ export interface SettingsRow {
   story_step_label3: string | null;
   story_step_label4: string | null;
   story_step_label5: string | null;
+  /** Null/empty = no legal page for this tenant yet — see the "páginas legales" schema.sql block. */
+  terms_content: string | null;
+  privacy_content: string | null;
 }
 
 // Each Row/Insert/Update is intersected with Record<string, unknown> so the
@@ -193,14 +259,26 @@ type TableDef<Row, Relationships extends readonly unknown[] = []> = {
 
 // subscriptions is the only table queried with a PostgREST embed
 // (lib/repositories/subscriptions-repository.ts listSubscriptionsWithDetails
-// selects "*, plans(*), ds_tenants(name, slug)") — the generic client
-// needs these declared to type the embed's result instead of erroring
-// with SelectQueryError, since (unlike a real `supabase gen types` run)
-// this hand-written Database type has no other way to know the FKs exist.
+// selects "*, plans!subscriptions_plan_id_fkey(*), ds_tenants(name, slug)")
+// — the generic client needs these declared to type the embed's result
+// instead of erroring with SelectQueryError, since (unlike a real
+// `supabase gen types` run) this hand-written Database type has no other
+// way to know the FKs exist. The explicit `!subscriptions_plan_id_fkey`
+// hint in that query (rather than a bare `plans(*)`) is required at
+// runtime too, independent of this type: subscriptions has a SECOND FK
+// into plans (requested_plan_id, below) and PostgREST rejects an
+// unqualified embed once more than one relationship could match.
 type SubscriptionsRelationships = [
   {
     foreignKeyName: "subscriptions_plan_id_fkey";
     columns: ["plan_id"];
+    isOneToOne: false;
+    referencedRelation: "plans";
+    referencedColumns: ["id"];
+  },
+  {
+    foreignKeyName: "subscriptions_requested_plan_id_fkey";
+    columns: ["requested_plan_id"];
     isOneToOne: false;
     referencedRelation: "plans";
     referencedColumns: ["id"];
@@ -218,14 +296,20 @@ export interface Database {
   public: {
     Tables: {
       super_admin_users: TableDef<SuperAdminUserRow>;
+      ds_app_users: TableDef<AppUserRow>;
+      platform_settings: TableDef<PlatformSettingsRow>;
       plans: TableDef<PlanRow>;
       subscriptions: TableDef<SubscriptionRow, SubscriptionsRelationships>;
       ds_tenants: TableDef<TenantRow>;
       ns_categories: TableDef<CategoryRow>;
       ns_products: TableDef<ProductRow>;
       ns_banners: TableDef<BannerRow>;
+      ns_hero_slides: TableDef<HeroSlideRow>;
       ns_orders: TableDef<OrderRow>;
       ns_settings: TableDef<SettingsRow>;
+      ds_login_attempts: TableDef<LoginAttemptRow>;
+      ds_totp_backup_codes: TableDef<TotpBackupCodeRow>;
+      ds_audit_log: TableDef<AuditLogRow>;
     };
     Views: Record<string, never>;
     Functions: {

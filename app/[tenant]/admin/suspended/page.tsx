@@ -2,14 +2,31 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { isAdminAuthenticated } from "@/lib/auth/admin-auth";
-import { isSubscriptionFrozen } from "@/lib/tenant/plan-limits";
+import { getFreezeReason, type FreezeReason } from "@/lib/tenant/plan-limits";
 import { getSettings } from "@/lib/repositories/settings-repository";
+import { getPlatformSettings } from "@/lib/repositories/platform-settings-repository";
 import { NSLogo } from "@/components/brand/NSLogo";
+import { NSWhatsAppButton } from "@/components/whatsapp/NSWhatsAppButton";
 import { logoutAction } from "@/app/[tenant]/admin/actions";
 
 export const metadata: Metadata = {
   title: "Cuenta suspendida",
   robots: { index: false, follow: false },
+};
+
+const COPY: Record<FreezeReason, { title: string; body: string }> = {
+  pending: {
+    title: "Cuenta en revisión",
+    body: "Recibimos tu registro y el plan que elegiste. En breve confirmamos tu cuenta y podrás entrar a tu panel — te avisaremos por correo.",
+  },
+  expired: {
+    title: "Tu plan venció",
+    body: "Tu catálogo público y tu panel quedaron en pausa hasta que se renueve. Contáctanos para reactivarlo.",
+  },
+  cancelled: {
+    title: "Suscripción cancelada",
+    body: "Tu catálogo público y tu panel quedaron en pausa. Contáctanos si quieres reactivar tu cuenta.",
+  },
 };
 
 export default async function AdminSuspendedPage({
@@ -21,17 +38,19 @@ export default async function AdminSuspendedPage({
   const tenant = await resolveTenant(tenantSlug);
 
   if (!(await isAdminAuthenticated(tenantSlug))) {
-    redirect(`/${tenantSlug}/admin/login`);
+    redirect(`/acceder?tenant=${tenantSlug}`);
   }
   // Redirect back to the normal panel the moment it's no longer frozen —
   // this page isn't where a healthy account should land.
-  if (!(await isSubscriptionFrozen(tenant.id))) {
+  const reason = await getFreezeReason(tenant.id);
+  if (!reason) {
     redirect(`/${tenantSlug}/admin`);
   }
-  const settings = await getSettings(tenant.id);
+  const [settings, platformSettings] = await Promise.all([getSettings(tenant.id), getPlatformSettings()]);
+  const copy = COPY[reason];
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-ink-950 px-4 text-center text-ink-0">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-4 text-center text-foreground">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3">
           <NSLogo
@@ -44,14 +63,20 @@ export default async function AdminSuspendedPage({
           />
         </div>
         <div className="rounded-card border border-warning/30 bg-warning/10 p-6">
-          <p className="font-display text-lg uppercase tracking-wide text-warning">Cuenta suspendida</p>
-          <p className="mt-2 text-sm text-ink-300">
-            Tu plan venció. Tu catálogo público y tu panel quedaron en pausa hasta que se renueve. Contáctanos para
-            reactivarlo.
-          </p>
+          <p className="font-display text-lg uppercase tracking-wide text-warning">{copy.title}</p>
+          <p className="mt-2 text-sm text-muted-foreground">{copy.body}</p>
         </div>
+        {platformSettings.supportWhatsappNumber ? (
+          <NSWhatsAppButton
+            whatsappNumber={platformSettings.supportWhatsappNumber}
+            message={`Hola, necesito ayuda con mi cuenta de DS Catalog (${tenantSlug}).`}
+            className="mt-4"
+          >
+            Contactar soporte
+          </NSWhatsAppButton>
+        ) : null}
         <form action={logoutAction.bind(null, tenantSlug)} className="mt-6">
-          <button type="submit" className="text-xs font-medium text-ink-400 hover:text-ink-0">
+          <button type="submit" className="text-xs font-medium text-muted-foreground hover:text-foreground">
             Cerrar sesión
           </button>
         </form>
