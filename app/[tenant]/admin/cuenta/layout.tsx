@@ -2,12 +2,21 @@ import { redirect } from "next/navigation";
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { isAdminAuthenticated, isImpersonatedSession } from "@/lib/auth/admin-auth";
 import { getSettings } from "@/lib/repositories/settings-repository";
-import { getPlanStatusInfo, EXPIRY_WARNING_DAYS } from "@/lib/tenant/plan-limits";
 import { getPlatformSettings } from "@/lib/repositories/platform-settings-repository";
 import { NSAdminShellChrome } from "@/components/admin/NSAdminShellChrome";
-import { NSPlanExpiryBanner } from "@/components/admin/NSPlanExpiryBanner";
 
-export default async function AdminShellLayout({
+/**
+ * Mi cuenta gets the exact same sidebar/container chrome as every page
+ * under (shell) (via the shared NSAdminShellChrome) — but through its OWN
+ * layout, deliberately never (shell)'s: (shell)/layout.tsx redirects a
+ * frozen tenant (pending/expired/cancelled subscription) to
+ * /admin/suspended, a dead-end screen with no way to manage the account.
+ * Mi cuenta is exactly where a frozen tenant needs to still be able to
+ * land — to request a different plan (NSAccountPlanCard) or request
+ * deleting the account (NSAccountDangerZone) — so this only ever applies
+ * the same auth check every admin page has, never the freeze redirect.
+ */
+export default async function AdminAccountLayout({
   children,
   params,
 }: {
@@ -21,14 +30,6 @@ export default async function AdminShellLayout({
     redirect(`/acceder?tenant=${tenantSlug}`);
   }
   const impersonating = await isImpersonatedSession();
-  const planStatus = await getPlanStatusInfo(tenant.id);
-  // The tenant's own session is frozen out the moment its plan expires —
-  // but a Super Admin impersonating in to fix things (renew the plan,
-  // check on the account) must still get through. See
-  // lib/tenant/plan-limits.ts getPlanStatusInfo.
-  if (!impersonating && planStatus.freezeReason) {
-    redirect(`/${tenantSlug}/admin/suspended`);
-  }
   const [settings, platformSettings] = await Promise.all([getSettings(tenant.id), getPlatformSettings()]);
 
   return (
@@ -39,15 +40,6 @@ export default async function AdminShellLayout({
       tagline={settings.heroSubtitle}
       impersonating={impersonating}
       supportWhatsappNumber={platformSettings.supportWhatsappNumber}
-      banner={
-        planStatus.daysUntilExpiry !== null && planStatus.daysUntilExpiry <= EXPIRY_WARNING_DAYS ? (
-          <NSPlanExpiryBanner
-            tenantSlug={tenantSlug}
-            daysUntilExpiry={planStatus.daysUntilExpiry}
-            expiresAt={planStatus.expiresAt}
-          />
-        ) : null
-      }
     >
       {children}
     </NSAdminShellChrome>
