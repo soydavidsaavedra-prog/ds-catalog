@@ -41,6 +41,10 @@ export interface Tenant {
   onboardingCompleted: boolean;
   /** Set from /admin/cuenta's "solicitar eliminación de cuenta" — a request Super Admin reviews, not an immediate delete. Null = no pending request. */
   deletionRequestedAt: string | null;
+  /** Normalized (lowercase, no protocol/port/path — see lib/domains/validate-domain.ts), unique across tenants. Null = storefront only reachable at {platform}/{slug}, same as every tenant before this feature existed. */
+  customDomain: string | null;
+  /** True once lib/domains/vercel-domains.ts confirms the domain actually points at this platform. middleware.ts only routes traffic for a verified domain — an unverified one is stored but inert. */
+  customDomainVerified: boolean;
   createdAt: string;
   updatedAt: string;
 }

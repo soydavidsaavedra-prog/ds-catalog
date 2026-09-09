@@ -40,9 +40,10 @@ export const siteConfig = {
     locale: "es-VE",
   },
   seo: {
-    // Platform base domain — each tenant's real URL is /{domain}/{tenantSlug}/...,
-    // never a domain of its own (yet; see docs/ARCHITECTURE.md for the
-    // custom-domain-per-tenant upgrade path).
+    // Platform base domain — a tenant's default URL is /{domain}/{tenantSlug}/...,
+    // unless they've connected their own domain (see README.md's "Dominio
+    // propio por tenant" and middleware.ts, which rewrites a request on a
+    // verified custom domain back to this same {slug} path internally).
     domain: process.env.NEXT_PUBLIC_SITE_URL ?? "https://ds-catalog.vercel.app",
     defaultTitle: "DS Catalog",
     titleTemplate: "%s | DS Catalog",

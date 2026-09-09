@@ -1220,3 +1220,38 @@ create table if not exists ds_totp_backup_codes (
 create index if not exists ds_totp_backup_codes_user_id_idx on ds_totp_backup_codes (user_id);
 
 commit;
+
+-- =====================================================================
+-- DS Catalog — dominio propio por tenant
+-- =====================================================================
+-- Lets a tenant serve its storefront from its own domain (e.g.
+-- tienda.com) instead of only {platform}/{slug} — see lib/domains/ and
+-- middleware.ts, which rewrites a request whose Host header matches
+-- custom_domain to the tenant's normal /{slug}/... path internally (the
+-- rest of the app never needs to know a request arrived via a custom
+-- domain).
+--
+-- custom_domain is stored normalized (lowercase, no protocol/port/path
+-- — see lib/domains/validate-domain.ts) and unique across every tenant,
+-- so two tenants can never race for the same domain. Nullable: most
+-- tenants never set one.
+--
+-- custom_domain_verified tracks whether lib/domains/vercel-domains.ts
+-- has confirmed the domain actually points at this platform (via the
+-- Vercel Domains API, when VERCEL_API_TOKEN/VERCEL_PROJECT_ID are
+-- configured) — an unverified domain is stored but middleware.ts never
+-- routes traffic for it, so setting a domain can never let a tenant
+-- hijack a domain string it doesn't actually control.
+--
+-- Safe to re-run: add-column-if-not-exists only, no backfill needed
+-- since null/false are already the correct values for every tenant that
+-- existed before this concept did.
+
+begin;
+
+alter table ds_tenants add column if not exists custom_domain text unique;
+alter table ds_tenants add column if not exists custom_domain_verified boolean not null default false;
+
+create index if not exists ds_tenants_custom_domain_idx on ds_tenants (custom_domain);
+
+commit;

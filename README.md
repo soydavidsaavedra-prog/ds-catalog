@@ -108,6 +108,50 @@ oficiales de RFC 4226 — pero la ejecución real de principio a fin
 todavía no se confirmó. Corre `npm run test:e2e` en un entorno con
 acceso de red real antes de confiar en ella para CI/CD.
 
+## Dominio propio por tenant
+
+Cada tenant puede conectar su propio dominio (ej. `tutienda.com`) desde
+`/{tenant}/admin/dominio`, para que su catálogo se vea ahí en vez de bajo
+`{este dominio}/{tenant-slug}`. Internamente, `middleware.ts` reescribe
+cada request que llega por un dominio propio verificado hacia la ruta
+`/{tenant-slug}/...` normal — el resto de la app nunca sabe que la
+petición llegó por un dominio distinto.
+
+Cómo funciona:
+
+1. El tenant escribe su dominio en `/admin/dominio`. Si `VERCEL_API_TOKEN`
+   y `VERCEL_PROJECT_ID` están configurados, la app lo agrega
+   automáticamente al proyecto de Vercel vía su [API de
+   dominios](https://vercel.com/docs/rest-api/reference/endpoints/domains)
+   — agregar un dominio a Vercel es lo que realmente hace que su red lo
+   sirva; un registro DNS correcto por sí solo no basta.
+2. La página muestra las instrucciones DNS (registro `A` para un dominio
+   raíz, `CNAME` para un subdominio) y un botón "Verificar" que vuelve a
+   consultar a Vercel hasta confirmar que el DNS ya apunta correctamente.
+3. Solo un dominio **verificado** es enrutado — `ds_tenants.custom_domain_verified`
+   controla esto, y `middleware.ts` nunca sirve tráfico para un dominio
+   sin verificar ni para un tenant que no esté `active`.
+
+Sin `VERCEL_API_TOKEN`/`VERCEL_PROJECT_ID` configurados, un tenant todavía
+puede guardar su dominio (queda pendiente) pero la verificación automática
+no está disponible — el operador de la plataforma debe agregarlo a mano
+desde el dashboard de Vercel y no hay forma de marcarlo verificado desde
+la app en ese caso; ver `lib/domains/vercel-domains.ts`.
+
+Super Admin puede ver el dominio de cualquier tenant y quitarlo (soporte,
+abuso) desde el detalle del tenant, sin necesitar impersonarlo.
+
+**Nota sobre este entorno de desarrollo (sandbox):** la integración con la
+API de Vercel y la reescritura de `middleware.ts` no pudieron probarse
+end-to-end aquí — la política de red de este sandbox bloquea tanto
+Supabase como probablemente la API de Vercel (ver la nota de la suite
+Playwright más abajo). La lógica pura (normalización/validación de
+dominios) sí tiene cobertura de Vitest. Antes de confiar en esta función
+para tenants reales, pruébala en un entorno con acceso de red real:
+guarda un dominio de prueba, sigue las instrucciones DNS y confirma que
+"Verificar" lo marca como verificado y que el catálogo carga en ese
+dominio.
+
 ## Variables de entorno
 
 Las variables de Supabase son **obligatorias** (no tienen default); el resto
@@ -127,6 +171,7 @@ tiene un valor de desarrollo pero **debe configurarse antes de desplegar**:
 | `NEXT_PUBLIC_SITE_URL` | Dominio base de la plataforma (usado en sitemap, OG, links de WhatsApp) — cada tenant vive en `{este dominio}/{tenant-slug}`, ninguno tiene dominio propio todavía | `https://ds-catalog.vercel.app` |
 | `NEXT_PUBLIC_SENTRY_DSN` | DSN del proyecto en [sentry.io](https://sentry.io) — activa la captura de errores (cliente, servidor y Edge). Sin definir, el SDK queda instalado pero inactivo (no envía nada) | — (opcional) |
 | `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` | Solo para subir source maps al build (stack traces legibles en el dashboard de Sentry en vez de código minificado) — sin `SENTRY_AUTH_TOKEN` el build simplemente omite ese paso | — (opcionales) |
+| `VERCEL_API_TOKEN`, `VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID` | Ver "Dominio propio por tenant" abajo — sin `VERCEL_API_TOKEN`/`VERCEL_PROJECT_ID`, un tenant puede guardar su dominio pero queda en modo DNS manual (el operador lo agrega a mano desde el dashboard de Vercel) | — (opcionales) |
 
 En Vercel, configura las mismas variables en **Project Settings →
 Environment Variables** — sin las 3 de Supabase el build falla (páginas de

@@ -70,6 +70,7 @@ export function NSAdminSidebar({
       label: "Configuración",
       links: [
         { href: `${base}/configuracion`, label: "Configuración", icon: SettingsIcon },
+        { href: `${base}/dominio`, label: "Dominio", icon: DomainIcon },
         { href: `${base}/cuenta`, label: "Mi cuenta", icon: AccountIcon },
       ],
     },
@@ -426,6 +427,9 @@ function CategoryIcon({ className }: { className?: string }) {
 }
 function OrderIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><path d="M4 3h12l-1 12H5L4 3Z" /><path d="M7 3a3 3 0 0 1 6 0M4 7h12" /></svg>;
+}
+function DomainIcon({ className }: { className?: string }) {
+  return <svg className={className} {...iconProps()} aria-hidden><circle cx="10" cy="10" r="7.5" /><path d="M2.5 10h15M10 2.5c2 2 3 5 3 7.5s-1 5.5-3 7.5c-2-2-3-5-3-7.5s1-5.5 3-7.5Z" /></svg>;
 }
 function SettingsIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><circle cx="10" cy="10" r="2.6" /><path d="M10 2.5v2M10 15.5v2M17.5 10h-2M4.5 10h-2M15.1 4.9l-1.4 1.4M6.3 13.7l-1.4 1.4M15.1 15.1l-1.4-1.4M6.3 6.3 4.9 4.9" /></svg>;

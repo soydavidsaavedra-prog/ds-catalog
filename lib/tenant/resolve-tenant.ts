@@ -31,6 +31,8 @@ function fromRow(row: TenantRow): Tenant {
     theme: row.theme ?? "theme-01",
     onboardingCompleted: row.onboarding_completed,
     deletionRequestedAt: row.deletion_requested_at ?? null,
+    customDomain: row.custom_domain ?? null,
+    customDomainVerified: row.custom_domain_verified ?? false,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

@@ -95,6 +95,8 @@ export interface TenantRow {
   admin_password_hash: string | null;
   onboarding_completed: boolean;
   deletion_requested_at: string | null;
+  custom_domain: string | null;
+  custom_domain_verified: boolean;
   created_at: string;
   updated_at: string;
 }

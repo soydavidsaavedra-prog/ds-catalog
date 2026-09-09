@@ -19,6 +19,8 @@ function fromRow(row: TenantRow): Tenant {
     theme: row.theme ?? "theme-01",
     onboardingCompleted: row.onboarding_completed,
     deletionRequestedAt: row.deletion_requested_at ?? null,
+    customDomain: row.custom_domain ?? null,
+    customDomainVerified: row.custom_domain_verified ?? false,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -197,6 +199,70 @@ export async function updateTenantTheme(tenantId: string, theme: ThemeKey): Prom
   const supabase = getSupabaseClient();
   const { error } = await supabase.from("ds_tenants").update({ theme }).eq("id", tenantId);
   if (error) throw error;
+}
+
+export async function isCustomDomainTaken(domain: string, excludingTenantId?: string): Promise<boolean> {
+  const supabase = getSupabaseClient();
+  let query = supabase.from("ds_tenants").select("id").eq("custom_domain", domain);
+  if (excludingTenantId) query = query.neq("id", excludingTenantId);
+  const { data, error } = await query.maybeSingle();
+  if (error) throw error;
+  return data !== null;
+}
+
+/**
+ * Stores the tenant's requested custom domain, always unverified — the
+ * caller (setDomainAction in app/[tenant]/admin/(shell)/dominio/actions.ts)
+ * is responsible for calling lib/domains/vercel-domains.ts's addDomain
+ * first and only reaching here once Vercel has accepted the domain (or
+ * VERCEL_API_TOKEN isn't configured, in which case DNS instructions are
+ * shown without that extra step). middleware.ts never routes traffic for
+ * an unverified domain, so this alone can't let a tenant claim a domain
+ * it doesn't control.
+ */
+export async function setTenantCustomDomain(tenantId: string, domain: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase
+    .from("ds_tenants")
+    .update({ custom_domain: domain, custom_domain_verified: false })
+    .eq("id", tenantId);
+  if (error) throw error;
+}
+
+export async function removeTenantCustomDomain(tenantId: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase
+    .from("ds_tenants")
+    .update({ custom_domain: null, custom_domain_verified: false })
+    .eq("id", tenantId);
+  if (error) throw error;
+}
+
+export async function markCustomDomainVerified(tenantId: string, verified: boolean): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from("ds_tenants").update({ custom_domain_verified: verified }).eq("id", tenantId);
+  if (error) throw error;
+}
+
+/**
+ * The lookup middleware.ts needs to route a request that arrived on a
+ * tenant's own domain instead of {platform}/{slug} — deliberately only
+ * matches a VERIFIED domain on an ACTIVE tenant, so neither an
+ * unconfirmed DNS setup nor a paused/suspended tenant is ever reachable
+ * through its custom domain (matching resolveTenant's own "active only"
+ * rule for the {slug} path).
+ */
+export async function getTenantByCustomDomain(domain: string): Promise<Tenant | null> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("ds_tenants")
+    .select("*")
+    .eq("custom_domain", domain)
+    .eq("custom_domain_verified", true)
+    .eq("status", "active")
+    .maybeSingle();
+  if (error) throw error;
+  return data ? fromRow(data as TenantRow) : null;
 }
 
 /**

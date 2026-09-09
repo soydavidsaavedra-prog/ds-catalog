@@ -18,7 +18,9 @@ import {
   approvePlanChangeAction,
   dismissPlanChangeRequestAction,
   dismissDeletionRequestAction,
+  removeTenantCustomDomainAction,
 } from "@/app/superadmin/actions";
+import { DSStatusBadge } from "@/components/ui/DSStatusBadge";
 import { NSTenantStatusBadge } from "@/components/superadmin/NSTenantStatusBadge";
 import { NSDeleteTenantForm } from "@/components/superadmin/NSDeleteTenantForm";
 import { NSAssignOwnerEmailForm } from "@/components/superadmin/NSAssignOwnerEmailForm";
@@ -151,6 +153,32 @@ export default async function SuperadminTenantDetailPage({
             </form>
           ))}
         </div>
+      </div>
+
+      <div>
+        <h2 className="font-display text-lg uppercase tracking-wide">Dominio propio</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          El cliente lo conecta desde su propio panel (Configuración → Dominio). Aquí solo puedes ver el estado y
+          quitarlo si es necesario (soporte, abuso).
+        </p>
+        {tenant.customDomain ? (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-card border border-border p-5 text-sm">
+            <div className="flex items-center gap-3">
+              <span className="font-mono">{tenant.customDomain}</span>
+              <DSStatusBadge
+                label={tenant.customDomainVerified ? "Verificado" : "Pendiente"}
+                tone={tenant.customDomainVerified ? "success" : "warning"}
+              />
+            </div>
+            <form action={removeTenantCustomDomainAction.bind(null, tenant.id)}>
+              <NSButton type="submit" variant="outline" size="sm">
+                Quitar dominio
+              </NSButton>
+            </form>
+          </div>
+        ) : (
+          <p className="mt-1 text-sm text-muted-foreground">Sin dominio propio — solo accesible en /{tenant.slug}.</p>
+        )}
       </div>
 
       <div>

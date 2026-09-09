@@ -18,10 +18,12 @@ import {
   deleteTenant,
   getTenantById,
   isTenantSlugTaken,
+  removeTenantCustomDomain,
   updateTenantBusinessType,
   updateTenantStatus,
   updateTenantTheme,
 } from "@/lib/repositories/tenant-repository";
+import { removeDomainFromVercelProject } from "@/lib/domains/vercel-domains";
 import { updateSettings } from "@/lib/repositories/settings-repository";
 import { seedStarterCategories } from "@/lib/repositories/category-repository";
 import { createPlan, updatePlan, setPlanActive, type PlanInput } from "@/lib/repositories/plans-repository";
@@ -99,6 +101,23 @@ export async function updateTenantBusinessTypeAction(tenantId: string, businessT
 export async function updateTenantThemeAction(tenantId: string, theme: ThemeKey): Promise<void> {
   await requireSuperadmin();
   await updateTenantTheme(tenantId, theme);
+  revalidatePath(`/superadmin/tenants/${tenantId}`);
+}
+
+/**
+ * Support/abuse override — the tenant's own /admin/dominio has its own
+ * "Quitar dominio", this is the same removal but callable by Super Admin
+ * without needing to impersonate the tenant first (e.g. a domain being
+ * used to impersonate another brand, or a support request from a tenant
+ * that's locked out of their own admin).
+ */
+export async function removeTenantCustomDomainAction(tenantId: string): Promise<void> {
+  await requireSuperadmin();
+  const tenant = await getTenantById(tenantId);
+  if (tenant?.customDomain) {
+    await removeDomainFromVercelProject(tenant.customDomain);
+  }
+  await removeTenantCustomDomain(tenantId);
   revalidatePath(`/superadmin/tenants/${tenantId}`);
 }
 
