@@ -168,7 +168,7 @@ tiene un valor de desarrollo pero **debe configurarse antes de desplegar**:
 | `NEXT_PUBLIC_WHATSAPP_NUMBER` | Número de WhatsApp por defecto (solo dígitos, con código de país) — cada tenant lo sobreescribe desde su propio `/admin/configuracion` | `584121234567` |
 | `NEXT_PUBLIC_WHATSAPP_DISPLAY` | Número formateado por defecto | `+58 412 123 4567` |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | Email de contacto por defecto | `ventas@elnuevosanchez.com` |
-| `NEXT_PUBLIC_SITE_URL` | Dominio base de la plataforma (usado en sitemap, OG, links de WhatsApp) — cada tenant vive en `{este dominio}/{tenant-slug}`, ninguno tiene dominio propio todavía | `https://ds-catalog.vercel.app` |
+| `NEXT_PUBLIC_SITE_URL` | Dominio base de la plataforma (usado en sitemap, OG, links de WhatsApp) — cada tenant vive en `{este dominio}/{tenant-slug}` salvo que haya conectado su propio dominio (ver "Dominio propio por tenant" abajo) | `https://ds-catalog.vercel.app` |
 | `NEXT_PUBLIC_SENTRY_DSN` | DSN del proyecto en [sentry.io](https://sentry.io) — activa la captura de errores (cliente, servidor y Edge). Sin definir, el SDK queda instalado pero inactivo (no envía nada) | — (opcional) |
 | `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` | Solo para subir source maps al build (stack traces legibles en el dashboard de Sentry en vez de código minificado) — sin `SENTRY_AUTH_TOKEN` el build simplemente omite ese paso | — (opcionales) |
 | `VERCEL_API_TOKEN`, `VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID` | Ver "Dominio propio por tenant" abajo — sin `VERCEL_API_TOKEN`/`VERCEL_PROJECT_ID`, un tenant puede guardar su dominio pero queda en modo DNS manual (el operador lo agrega a mano desde el dashboard de Vercel) | — (opcionales) |
@@ -196,3 +196,10 @@ caliente desde `/{tenant}/admin/configuracion`, sin redeploy.
 - Colores y tipografía son hoy los mismos para todos los tenants (tokens
   de Tailwind compilados, no leídos de la base de datos); solo el
   contenido (textos, logo, imágenes) varía por tenant.
+- `/superadmin/auditoria` registra quién hizo qué desde Super Admin
+  (cambios de estado/plan/theme de un cliente, eliminación de cuentas,
+  impersonación, cambios de configuración de la plataforma, etc.) — ver
+  `lib/audit/audit-log.ts`. Es de solo escritura desde la app (no hay
+  edición ni borrado) y no depende de que el tenant referenciado siga
+  existiendo, para que el historial de una eliminación sobreviva a la
+  eliminación misma.

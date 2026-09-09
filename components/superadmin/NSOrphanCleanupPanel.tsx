@@ -44,7 +44,7 @@ export function NSOrphanCleanupPanel({ tenantId, tenantSlug }: { tenantId: strin
     const paths = state.files.map((f) => f.path);
     startTransition(async () => {
       try {
-        const { deletedCount } = await deleteOrphanedFilesAction(paths);
+        const { deletedCount } = await deleteOrphanedFilesAction(tenantId, tenantSlug, paths);
         setState({ status: "deleted", count: deletedCount });
         setConfirming(false);
       } catch {

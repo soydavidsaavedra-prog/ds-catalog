@@ -1255,3 +1255,44 @@ alter table ds_tenants add column if not exists custom_domain_verified boolean n
 create index if not exists ds_tenants_custom_domain_idx on ds_tenants (custom_domain);
 
 commit;
+
+-- =====================================================================
+-- DS Catalog — auditoría de acciones de Super Admin
+-- =====================================================================
+-- Append-only trail of every meaningful state-changing action taken from
+-- /superadmin (see lib/audit/audit-log.ts and app/superadmin/actions.ts)
+-- — who (actor_email), what (action, a short machine-readable key like
+-- "tenant.status_changed"), on which tenant if any, and a human-readable
+-- one-line summary. Read-only from the app's perspective once written:
+-- there is no update/delete path, by design — an audit trail that could
+-- be edited or erased isn't one.
+--
+-- tenant_id deliberately has NO foreign key to ds_tenants: a hard tenant
+-- delete (deleteTenantAction) must never cascade-delete or orphan its own
+-- audit history — the log of what happened to a tenant has to outlive
+-- the tenant itself. tenant_slug is stored alongside as a plain snapshot
+-- so entries stay readable by name even after the tenant referenced by
+-- tenant_id no longer exists.
+--
+-- Writes are fail-open (see recordAuditLog) — a logging hiccup must never
+-- block or fail the real admin action it was trying to record, the same
+-- design philosophy as lib/auth/login-rate-limit.ts.
+--
+-- Safe to re-run: create-if-not-exists only.
+
+begin;
+
+create table if not exists ds_audit_log (
+  id uuid primary key default gen_random_uuid(),
+  actor_email text not null,
+  action text not null,
+  tenant_id uuid,
+  tenant_slug text,
+  summary text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists ds_audit_log_created_at_idx on ds_audit_log (created_at desc);
+create index if not exists ds_audit_log_tenant_id_idx on ds_audit_log (tenant_id);
+
+commit;

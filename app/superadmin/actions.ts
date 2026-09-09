@@ -24,6 +24,7 @@ import {
   updateTenantTheme,
 } from "@/lib/repositories/tenant-repository";
 import { removeDomainFromVercelProject } from "@/lib/domains/vercel-domains";
+import { recordAuditLog } from "@/lib/audit/audit-log";
 import { updateSettings } from "@/lib/repositories/settings-repository";
 import { seedStarterCategories } from "@/lib/repositories/category-repository";
 import { createPlan, updatePlan, setPlanActive, type PlanInput } from "@/lib/repositories/plans-repository";
@@ -67,11 +68,19 @@ export async function superadminLogoutAction(): Promise<void> {
 // ---------- Tenant management ----------
 
 export async function updateTenantStatusAction(tenantId: string, status: TenantStatus): Promise<void> {
-  await requireSuperadmin();
+  const superadmin = await requireSuperadmin();
+  const tenant = await getTenantById(tenantId);
   await updateTenantStatus(tenantId, status);
   revalidatePath("/superadmin/tenants");
   revalidatePath(`/superadmin/tenants/${tenantId}`);
   revalidatePath("/superadmin");
+  await recordAuditLog({
+    actorEmail: superadmin.email,
+    action: "tenant.status_changed",
+    tenantId,
+    tenantSlug: tenant?.slug ?? null,
+    summary: `Cambió el estado a "${status}".`,
+  });
 }
 
 /**
@@ -86,9 +95,17 @@ export async function updateTenantStatusAction(tenantId: string, status: TenantS
  * always worked.
  */
 export async function updateTenantBusinessTypeAction(tenantId: string, businessType: BusinessType): Promise<void> {
-  await requireSuperadmin();
+  const superadmin = await requireSuperadmin();
+  const tenant = await getTenantById(tenantId);
   await updateTenantBusinessType(tenantId, businessType);
   revalidatePath(`/superadmin/tenants/${tenantId}`);
+  await recordAuditLog({
+    actorEmail: superadmin.email,
+    action: "tenant.business_type_changed",
+    tenantId,
+    tenantSlug: tenant?.slug ?? null,
+    summary: `Cambió el tipo de negocio a "${businessType}".`,
+  });
 }
 
 /**
@@ -99,9 +116,17 @@ export async function updateTenantBusinessTypeAction(tenantId: string, businessT
  * makes a <select> here look like it silently reverted even on success.
  */
 export async function updateTenantThemeAction(tenantId: string, theme: ThemeKey): Promise<void> {
-  await requireSuperadmin();
+  const superadmin = await requireSuperadmin();
+  const tenant = await getTenantById(tenantId);
   await updateTenantTheme(tenantId, theme);
   revalidatePath(`/superadmin/tenants/${tenantId}`);
+  await recordAuditLog({
+    actorEmail: superadmin.email,
+    action: "tenant.theme_changed",
+    tenantId,
+    tenantSlug: tenant?.slug ?? null,
+    summary: `Cambió el theme a "${theme}".`,
+  });
 }
 
 /**
@@ -112,13 +137,21 @@ export async function updateTenantThemeAction(tenantId: string, theme: ThemeKey)
  * that's locked out of their own admin).
  */
 export async function removeTenantCustomDomainAction(tenantId: string): Promise<void> {
-  await requireSuperadmin();
+  const superadmin = await requireSuperadmin();
   const tenant = await getTenantById(tenantId);
-  if (tenant?.customDomain) {
-    await removeDomainFromVercelProject(tenant.customDomain);
+  const removedDomain = tenant?.customDomain ?? null;
+  if (removedDomain) {
+    await removeDomainFromVercelProject(removedDomain);
   }
   await removeTenantCustomDomain(tenantId);
   revalidatePath(`/superadmin/tenants/${tenantId}`);
+  await recordAuditLog({
+    actorEmail: superadmin.email,
+    action: "tenant.custom_domain_removed",
+    tenantId,
+    tenantSlug: tenant?.slug ?? null,
+    summary: removedDomain ? `Quitó el dominio propio "${removedDomain}".` : "Quitó el dominio propio.",
+  });
 }
 
 /**
@@ -136,12 +169,20 @@ export async function removeTenantCustomDomainAction(tenantId: string): Promise<
  * trusted from a client-supplied tenantId alone.
  */
 export async function impersonateTenantAction(tenantId: string): Promise<void> {
-  await requireSuperadmin();
+  const superadmin = await requireSuperadmin();
   const tenant = await getTenantById(tenantId);
   if (!tenant) throw new Error("Cliente no encontrado.");
 
   await createAdminSession(tenant.slug);
   await markImpersonatedSession(tenant.slug);
+
+  await recordAuditLog({
+    actorEmail: superadmin.email,
+    action: "tenant.impersonated",
+    tenantId,
+    tenantSlug: tenant.slug,
+    summary: "Inició sesión como este cliente (impersonación).",
+  });
 
   redirect(`/${tenant.slug}/admin`);
 }
@@ -170,7 +211,7 @@ export async function createTenantBySuperadminAction(
   _prev: SuperadminActionState,
   formData: FormData,
 ): Promise<SuperadminActionState> {
-  await requireSuperadmin();
+  const superadmin = await requireSuperadmin();
 
   const name = String(formData.get("name") ?? "").trim();
   const slugInput = String(formData.get("slug") ?? "").trim();
@@ -211,6 +252,13 @@ export async function createTenantBySuperadminAction(
 
   revalidatePath("/superadmin/tenants");
   revalidatePath("/superadmin");
+  await recordAuditLog({
+    actorEmail: superadmin.email,
+    action: "tenant.created",
+    tenantId: tenant.id,
+    tenantSlug: tenant.slug,
+    summary: `Creó el cliente "${tenant.name}" (dueño: ${ownerEmail}).`,
+  });
   redirect(`/superadmin/tenants/${tenant.id}`);
 }
 
@@ -226,7 +274,7 @@ export async function assignTenantOwnerEmailAction(
   _prev: SuperadminActionState,
   formData: FormData,
 ): Promise<SuperadminActionState> {
-  await requireSuperadmin();
+  const superadmin = await requireSuperadmin();
 
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   if (!email || !email.includes("@")) return { error: "Escribe un correo válido." };
@@ -236,6 +284,14 @@ export async function assignTenantOwnerEmailAction(
   await inviteTenantOwner(tenantId, email);
 
   revalidatePath(`/superadmin/tenants/${tenantId}`);
+  const tenant = await getTenantById(tenantId);
+  await recordAuditLog({
+    actorEmail: superadmin.email,
+    action: "tenant.owner_assigned",
+    tenantId,
+    tenantSlug: tenant?.slug ?? null,
+    summary: `Asignó/reenvió el acceso de administrador a "${email}".`,
+  });
   return { error: undefined };
 }
 
@@ -277,7 +333,7 @@ export async function createPlanAction(
   _prev: SuperadminActionState,
   formData: FormData,
 ): Promise<SuperadminActionState> {
-  await requireSuperadmin();
+  const superadmin = await requireSuperadmin();
 
   const key = slugify(String(formData.get("key") ?? "").trim());
   const fields = parsePlanFormFields(formData);
@@ -298,6 +354,11 @@ export async function createPlanAction(
 
   revalidatePath("/superadmin/plans");
   revalidatePath("/");
+  await recordAuditLog({
+    actorEmail: superadmin.email,
+    action: "plan.created",
+    summary: `Creó el plan "${fields.name}" (${key}).`,
+  });
   redirect("/superadmin/plans");
 }
 
@@ -306,7 +367,7 @@ export async function updatePlanAction(
   _prev: SuperadminActionState,
   formData: FormData,
 ): Promise<SuperadminActionState> {
-  await requireSuperadmin();
+  const superadmin = await requireSuperadmin();
 
   const fields = parsePlanFormFields(formData);
   if (!fields.name) return { error: "El nombre es obligatorio." };
@@ -322,20 +383,30 @@ export async function updatePlanAction(
 
   revalidatePath("/superadmin/plans");
   revalidatePath("/");
+  await recordAuditLog({
+    actorEmail: superadmin.email,
+    action: "plan.updated",
+    summary: `Actualizó el plan "${fields.name}".`,
+  });
   redirect("/superadmin/plans");
 }
 
 export async function togglePlanActiveAction(planId: string, active: boolean): Promise<void> {
-  await requireSuperadmin();
+  const superadmin = await requireSuperadmin();
   await setPlanActive(planId, active);
   revalidatePath("/superadmin/plans");
   revalidatePath("/");
+  await recordAuditLog({
+    actorEmail: superadmin.email,
+    action: "plan.active_toggled",
+    summary: active ? "Reactivó un plan." : "Desactivó un plan.",
+  });
 }
 
 // ---------- Subscriptions ----------
 
 export async function assignPlanAction(tenantId: string, formData: FormData): Promise<void> {
-  await requireSuperadmin();
+  const superadmin = await requireSuperadmin();
 
   const planId = String(formData.get("planId") ?? "");
   const status = String(formData.get("status") ?? "trial") as SubscriptionStatus;
@@ -344,27 +415,51 @@ export async function assignPlanAction(tenantId: string, formData: FormData): Pr
 
   if (!planId) return;
 
+  const tenant = await getTenantById(tenantId);
   await assignPlanToTenant(tenantId, planId, status, expiresAt);
   revalidatePath(`/superadmin/tenants/${tenantId}`);
   revalidatePath("/superadmin/subscriptions");
+  await recordAuditLog({
+    actorEmail: superadmin.email,
+    action: "subscription.plan_assigned",
+    tenantId,
+    tenantSlug: tenant?.slug ?? null,
+    summary: `Asignó un plan (estado inicial: ${status}).`,
+  });
 }
 
 export async function updateSubscriptionStatusAction(tenantId: string, status: SubscriptionStatus): Promise<void> {
-  await requireSuperadmin();
+  const superadmin = await requireSuperadmin();
+  const tenant = await getTenantById(tenantId);
   await updateSubscriptionStatus(tenantId, status);
   revalidatePath(`/superadmin/tenants/${tenantId}`);
   revalidatePath("/superadmin/subscriptions");
+  await recordAuditLog({
+    actorEmail: superadmin.email,
+    action: "subscription.status_changed",
+    tenantId,
+    tenantSlug: tenant?.slug ?? null,
+    summary: `Cambió el estado de la suscripción a "${status}".`,
+  });
 }
 
 /** From /admin/cuenta's "solicitar cambio de plan" — moves the tenant onto the requested plan and marks it active in one step. No-op if there's no request (button shouldn't be reachable in that state, but never trust the client alone). */
 export async function approvePlanChangeAction(tenantId: string): Promise<void> {
-  await requireSuperadmin();
+  const superadmin = await requireSuperadmin();
   const subscription = await getSubscriptionByTenantId(tenantId);
   if (!subscription?.requestedPlanId) return;
+  const tenant = await getTenantById(tenantId);
   await approvePlanChangeRequest(tenantId, subscription.requestedPlanId);
   revalidatePath(`/superadmin/tenants/${tenantId}`);
   revalidatePath("/superadmin/subscriptions");
   revalidatePath("/superadmin");
+  await recordAuditLog({
+    actorEmail: superadmin.email,
+    action: "subscription.plan_change_approved",
+    tenantId,
+    tenantSlug: tenant?.slug ?? null,
+    summary: "Aprobó una solicitud de cambio de plan.",
+  });
 }
 
 /** Keeps the tenant on their current plan — just clears the request without changing anything. */
@@ -400,7 +495,7 @@ export async function deleteTenantAction(
   _prev: SuperadminActionState,
   formData: FormData,
 ): Promise<SuperadminActionState> {
-  await requireSuperadmin();
+  const superadmin = await requireSuperadmin();
 
   const tenant = await getTenantById(tenantId);
   if (!tenant) return { error: "Cliente no encontrado." };
@@ -421,6 +516,16 @@ export async function deleteTenantAction(
 
   revalidatePath("/superadmin/tenants");
   revalidatePath("/superadmin");
+  // tenant.id no longer exists in ds_tenants at this point — tenantId/tenantSlug here
+  // are deliberately just a readable snapshot (see ds_audit_log's schema comment on
+  // why tenant_id has no FK), not a claim that the row still exists.
+  await recordAuditLog({
+    actorEmail: superadmin.email,
+    action: "tenant.deleted",
+    tenantId: tenant.id,
+    tenantSlug: tenant.slug,
+    summary: `Eliminó permanentemente el cliente "${tenant.name}" (${tenant.slug}).`,
+  });
   redirect("/superadmin/tenants");
 }
 
@@ -445,9 +550,21 @@ export async function scanOrphanedFilesAction(tenantId: string, tenantSlug: stri
  * file uploaded in the few seconds since (e.g. someone else mid-edit on
  * another tab) and delete it too.
  */
-export async function deleteOrphanedFilesAction(paths: string[]): Promise<{ deletedCount: number }> {
-  await requireSuperadmin();
-  return deleteOrphanedFiles(paths);
+export async function deleteOrphanedFilesAction(
+  tenantId: string,
+  tenantSlug: string,
+  paths: string[],
+): Promise<{ deletedCount: number }> {
+  const superadmin = await requireSuperadmin();
+  const result = await deleteOrphanedFiles(paths);
+  await recordAuditLog({
+    actorEmail: superadmin.email,
+    action: "storage.orphans_deleted",
+    tenantId,
+    tenantSlug,
+    summary: `Eliminó ${result.deletedCount} archivo(s) huérfano(s) de Storage.`,
+  });
+  return result;
 }
 
 // ---------- Configuración de plataforma ----------
@@ -463,7 +580,7 @@ export async function updatePlatformSettingsAction(
   _prev: SuperadminActionState,
   formData: FormData,
 ): Promise<SuperadminActionState> {
-  await requireSuperadmin();
+  const superadmin = await requireSuperadmin();
 
   const supportWhatsappNumber = String(formData.get("supportWhatsappNumber") ?? "").replace(/[^0-9]/g, "");
   const supportWhatsappDisplay = String(formData.get("supportWhatsappDisplay") ?? "").trim();
@@ -476,5 +593,10 @@ export async function updatePlatformSettingsAction(
 
   revalidatePath("/superadmin/configuracion");
   revalidatePath("/");
+  await recordAuditLog({
+    actorEmail: superadmin.email,
+    action: "platform_settings.updated",
+    summary: "Actualizó la configuración de soporte de la plataforma.",
+  });
   return {};
 }

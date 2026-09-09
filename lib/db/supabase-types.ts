@@ -75,6 +75,16 @@ export interface TotpBackupCodeRow {
   created_at: string;
 }
 
+export interface AuditLogRow {
+  id: string;
+  actor_email: string;
+  action: string;
+  tenant_id: string | null;
+  tenant_slug: string | null;
+  summary: string;
+  created_at: string;
+}
+
 export type AppUserRole = "owner" | "superadmin";
 
 export interface AppUserRow {
@@ -294,6 +304,7 @@ export interface Database {
       ns_settings: TableDef<SettingsRow>;
       ds_login_attempts: TableDef<LoginAttemptRow>;
       ds_totp_backup_codes: TableDef<TotpBackupCodeRow>;
+      ds_audit_log: TableDef<AuditLogRow>;
     };
     Views: Record<string, never>;
     Functions: {
