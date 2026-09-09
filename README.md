@@ -152,6 +152,30 @@ guarda un dominio de prueba, sigue las instrucciones DNS y confirma que
 "Verificar" lo marca como verificado y que el catálogo carga en ese
 dominio.
 
+## Notificaciones
+
+Cuando un negocio termina el registro/onboarding en `/registro`, su
+suscripción queda en estado `pending` — necesita que un Super Admin la
+revise y active antes de que el panel/catálogo sean usables (ver
+`lib/tenant/plan-limits.ts`). Para no depender de entrar a
+`/superadmin/tenants` a chequear manualmente, la app envía un correo a
+**todos** los Super Admin en cuanto eso pasa (`lib/notifications/`).
+
+Usa la API de [Resend](https://resend.com) vía `fetch` directo (sin SDK).
+Configura `RESEND_API_KEY` (de tu cuenta de Resend) y `RESEND_FROM_EMAIL`
+(un remitente de un dominio que hayas verificado en Resend, ej.
+`"DS Catalog <notificaciones@tudominio.com>"`). Sin esas dos variables,
+el aviso solo se registra en los logs del servidor — el registro del
+tenant nunca falla ni se bloquea por esto.
+
+**Nota sobre este entorno de desarrollo (sandbox):** el envío real a
+través de la API de Resend no se pudo probar aquí (mismo bloqueo de red
+que el resto del proyecto). La lógica de construcción del correo
+(asunto/HTML, incluyendo el escape contra inyección de HTML) sí tiene
+cobertura de Vitest. Antes de confiar en esto para avisos reales,
+regístrate como tenant de prueba en un entorno con acceso real y confirma
+que el correo llega.
+
 ## Variables de entorno
 
 Las variables de Supabase son **obligatorias** (no tienen default); el resto
@@ -172,6 +196,7 @@ tiene un valor de desarrollo pero **debe configurarse antes de desplegar**:
 | `NEXT_PUBLIC_SENTRY_DSN` | DSN del proyecto en [sentry.io](https://sentry.io) — activa la captura de errores (cliente, servidor y Edge). Sin definir, el SDK queda instalado pero inactivo (no envía nada) | — (opcional) |
 | `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` | Solo para subir source maps al build (stack traces legibles en el dashboard de Sentry en vez de código minificado) — sin `SENTRY_AUTH_TOKEN` el build simplemente omite ese paso | — (opcionales) |
 | `VERCEL_API_TOKEN`, `VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID` | Ver "Dominio propio por tenant" abajo — sin `VERCEL_API_TOKEN`/`VERCEL_PROJECT_ID`, un tenant puede guardar su dominio pero queda en modo DNS manual (el operador lo agrega a mano desde el dashboard de Vercel) | — (opcionales) |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | Ver "Notificaciones" abajo — sin estas, el aviso de nuevo registro solo queda en los logs, nunca falla el registro del tenant | — (opcionales) |
 
 En Vercel, configura las mismas variables en **Project Settings →
 Environment Variables** — sin las 3 de Supabase el build falla (páginas de

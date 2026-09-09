@@ -32,8 +32,10 @@ import {
 } from "@/lib/repositories/hero-slide-repository";
 import { updateOrderStatus } from "@/lib/repositories/order-repository";
 import { getSettings, updateSettings } from "@/lib/repositories/settings-repository";
-import { completeOnboarding, updateTenantTheme } from "@/lib/repositories/tenant-repository";
+import { completeOnboarding, getTenantById, updateTenantTheme } from "@/lib/repositories/tenant-repository";
+import { getAppUserByTenantId } from "@/lib/repositories/app-users-repository";
 import { deleteStorageFilesByUrls } from "@/lib/repositories/storage-repository";
+import { notifyNewTenantRegistration } from "@/lib/notifications/tenant-notifications";
 import { slugify } from "@/lib/utils/slug";
 import { HEX_COLOR, readableForegroundFor } from "@/lib/utils/brand";
 import type { Availability, Audience, CardAspectRatio, ImageFit, ProductColor } from "@/lib/types/catalog";
@@ -103,6 +105,18 @@ export async function completeOnboardingAction(
   } catch (err) {
     return { error: friendlyDbErrorMessage(err) };
   }
+
+  const [tenant, owner] = await Promise.all([getTenantById(tenantId), getAppUserByTenantId(tenantId)]);
+  if (tenant && owner) {
+    await notifyNewTenantRegistration({
+      tenantId,
+      tenantName: tenant.name,
+      tenantSlug,
+      ownerEmail: owner.email,
+      planName: plan.name,
+    });
+  }
+
   revalidatePath(`/${tenantSlug}`, "layout");
   redirect(`/${tenantSlug}/admin`);
 }

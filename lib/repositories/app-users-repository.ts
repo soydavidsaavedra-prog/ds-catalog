@@ -67,6 +67,14 @@ export async function deleteAppUserByTenantId(tenantId: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Every active Super Admin's email — used to fan out platform-level notifications (e.g. a new tenant registration awaiting review) to whoever can act on them, not just one hardcoded address. */
+export async function listSuperAdminEmails(): Promise<string[]> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.from("ds_app_users").select("email").eq("role", "superadmin");
+  if (error) throw error;
+  return (data as { email: string }[]).map((row) => row.email);
+}
+
 export async function getAppUserByTenantId(tenantId: string): Promise<AppUser | null> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
