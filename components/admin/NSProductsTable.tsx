@@ -19,20 +19,26 @@ const AVAILABILITY_TONE: Record<Availability, "success" | "warning" | "danger"> 
 
 type SortKey = "name" | "price";
 
+type StatusFilter = "all" | "active" | "inactive";
+
 export function NSProductsTable({
   tenantId,
   tenantSlug,
   products,
   categoryOptions,
+  initialStatusFilter = "all",
 }: {
   tenantId: string;
   tenantSlug: string;
   products: Product[];
   /** [slug, name][] — only categories that actually have products, in display order. */
   categoryOptions: [string, string][];
+  /** Preset from ?estado= in the URL — e.g. the "Ver borradores" link after a batch create lands here already filtered to inactive. */
+  initialStatusFilter?: StatusFilter;
 }) {
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatusFilter);
   const [sortKey, setSortKey] = useState<SortKey | undefined>();
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const categoryName = new Map(categoryOptions);
@@ -42,7 +48,8 @@ export function NSProductsTable({
     const result = products.filter((p) => {
       const matchesQuery = !q || p.name.toLowerCase().includes(q) || p.reference.toLowerCase().includes(q);
       const matchesCategory = categoryFilter === "all" || p.categorySlug === categoryFilter;
-      return matchesQuery && matchesCategory;
+      const matchesStatus = statusFilter === "all" || (statusFilter === "active") === p.active;
+      return matchesQuery && matchesCategory && matchesStatus;
     });
     if (!sortKey) return result;
     const dir = sortDirection === "asc" ? 1 : -1;
@@ -50,7 +57,7 @@ export function NSProductsTable({
       if (sortKey === "price") return (a.price - b.price) * dir;
       return a.name.localeCompare(b.name) * dir;
     });
-  }, [products, query, categoryFilter, sortKey, sortDirection]);
+  }, [products, query, categoryFilter, statusFilter, sortKey, sortDirection]);
 
   function handleSort(key: string) {
     if (key !== "name" && key !== "price") return;
@@ -78,6 +85,11 @@ export function NSProductsTable({
               {name}
             </option>
           ))}
+        </NSSelect>
+        <NSSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)} className="sm:max-w-[9rem]">
+          <option value="all">Todos</option>
+          <option value="active">Activos</option>
+          <option value="inactive">Inactivos</option>
         </NSSelect>
         <p className="text-xs text-muted-foreground sm:ml-auto">
           {filtered.length} de {products.length} productos

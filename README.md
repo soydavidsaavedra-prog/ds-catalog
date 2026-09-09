@@ -196,6 +196,15 @@ caliente desde `/{tenant}/admin/configuracion`, sin redeploy.
 - Colores y tipografía son hoy los mismos para todos los tenants (tokens
   de Tailwind compilados, no leídos de la base de datos); solo el
   contenido (textos, logo, imágenes) varía por tenant.
+- `/admin/productos/lote-fotos` crea productos en lote a partir de fotos:
+  una foto = un producto en **borrador** (`active: false`, oculto del
+  catálogo público), con nombre provisional tomado del archivo, referencia
+  secuencial y precio en 0 — pensado para "subo 100 fotos, luego edito
+  cada uno". Ver `lib/products/image-batch.ts` (lógica pura, con tests) y
+  `components/admin/NSProductBatchForm.tsx` (sube las imágenes una por una
+  al mismo endpoint de siempre y respeta el límite de productos del plan,
+  igual que la importación por CSV). Los borradores se encuentran filtrando
+  por "Inactivos" en la tabla de productos.
 - Páginas legales (Términos y Política de Privacidad) son opcionales y de
   texto libre, en dos niveles: cada tenant tiene las suyas propias (para
   sus clientes, editables desde `/admin/configuracion` → "Legal",
