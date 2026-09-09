@@ -53,12 +53,60 @@ npm run seed:demo-tenant
 - `npm run start` — sirve el build de producción
 - `npm run lint` — ESLint
 - `npm test` — suite de Vitest
+- `npm run test:e2e` — suite de Playwright (ver "Tests E2E" abajo)
 - `npm run seed:supabase` — puebla el catálogo de El Nuevo Sánchez en Supabase (seguro de re-ejecutar)
 - `npm run seed:demo-tenant` — crea el tenant `demo` con datos de prueba mínimos (seguro de re-ejecutar)
 
 ## CI
 
 `.github/workflows/ci.yml` corre lint, `tsc --noEmit` y la suite de Vitest en cada push y pull request — sin necesitar credenciales de Supabase, así que no requiere ningún secret configurado en GitHub. El build real (`next build`, con datos reales de Supabase) lo sigue haciendo Vercel automáticamente en cada PR — ver el check "Vercel" en la pestaña de checks.
+
+## Tests E2E (Playwright)
+
+`e2e/` corre contra un servidor real (`npm run dev`) y **Supabase real** —
+a diferencia de la suite de Vitest, no hay modo simulado: el objetivo es
+probar los flujos de login/2FA/rate limiting/importación CSV tal como
+los usa un cliente de verdad.
+
+```
+npm run test:e2e
+```
+
+Antes de correrlo:
+
+1. `.env.local` con credenciales reales de Supabase (las mismas que usa
+   `npm run dev`) — el proyecto debe tener corridas las migraciones de
+   `supabase/schema.sql`, en particular `ds_login_attempts` y
+   `ds_totp_backup_codes`.
+2. Nada más — `e2e/setup/global-setup.ts` crea automáticamente (y
+   `global-teardown.ts` borra al terminar) un tenant de prueba
+   (`e2e-test-tienda`) con una categoría, su dueño, y una cuenta de Super
+   Admin **separada y desechable** solo para las pruebas de 2FA — nunca
+   toca cuentas reales.
+
+Qué cubre cada spec:
+
+- `login.spec.ts` — credenciales inválidas vs. login exitoso del dueño de un tenant.
+- `rate-limit.spec.ts` — bloqueo tras 5 intentos fallidos.
+- `super-admin-2fa.spec.ts` — ciclo completo: activar 2FA (con
+  `e2e/setup/totp.ts`, un generador TOTP propio verificado contra los
+  vectores de prueba oficiales de RFC 4226, calculando códigos válidos
+  sin necesitar una app autenticadora real), login con código, código de
+  respaldo, y desactivar.
+- `product-import.spec.ts` — sube `e2e/fixtures/products.csv` y verifica
+  que los productos aparezcan en el catálogo.
+
+**Nota sobre este entorno de desarrollo (sandbox):** esta suite no pudo
+validarse aquí — la política de red de este sandbox bloquea el acceso a
+Supabase, y a diferencia del build de Next.js (que falla rápido con un
+mensaje claro), el arranque del servidor de desarrollo se queda colgado
+indefinidamente esperando una respuesta que nunca llega, porque hasta la
+página de inicio necesita datos de Supabase. El código se revisó
+cuidadosamente contra los selectores reales del DOM de cada componente,
+y el generador TOTP se verificó con tests unitarios contra los vectores
+oficiales de RFC 4226 — pero la ejecución real de principio a fin
+todavía no se confirmó. Corre `npm run test:e2e` en un entorno con
+acceso de red real antes de confiar en ella para CI/CD.
 
 ## Variables de entorno
 

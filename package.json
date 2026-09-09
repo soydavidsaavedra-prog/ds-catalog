@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "seed:supabase": "tsx scripts/seed-supabase.ts",
     "seed:demo-tenant": "tsx scripts/seed-demo-tenant.ts",
     "superadmin:create": "tsx scripts/create-superadmin.ts"
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
