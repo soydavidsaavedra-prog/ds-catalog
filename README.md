@@ -196,6 +196,15 @@ caliente desde `/{tenant}/admin/configuracion`, sin redeploy.
 - Colores y tipografía son hoy los mismos para todos los tenants (tokens
   de Tailwind compilados, no leídos de la base de datos); solo el
   contenido (textos, logo, imágenes) varía por tenant.
+- Páginas legales (Términos y Política de Privacidad) son opcionales y de
+  texto libre, en dos niveles: cada tenant tiene las suyas propias (para
+  sus clientes, editables desde `/admin/configuracion` → "Legal",
+  visibles en `/{tenant}/terminos` y `/{tenant}/privacidad`), y la
+  plataforma tiene las suyas (para quien se registra en `/registro`,
+  editables desde `/superadmin/configuracion`, visibles en `/terminos` y
+  `/privacidad`). Vacío = la página y su enlace en el footer no existen
+  — **esta app nunca escribe contenido legal por defecto**; el texto lo
+  define el dueño del negocio (o su abogado), no una plantilla generada.
 - `/superadmin/auditoria` registra quién hizo qué desde Super Admin
   (cambios de estado/plan/theme de un cliente, eliminación de cuentas,
   impersonación, cambios de configuración de la plataforma, etc.) — ver

@@ -5,13 +5,26 @@ import type { PlatformSettingsRow } from "@/lib/db/supabase-types";
 export interface PlatformSettings {
   supportWhatsappNumber: string;
   supportWhatsappDisplay: string;
+  /** Free text for /terminos and /privacidad (the platform's own, for people signing up at /registro) — same "empty = page doesn't exist yet, never fabricated" rule as ns_settings' termsContent/privacyContent (lib/types/catalog.ts). */
+  termsContent: string;
+  privacyContent: string;
 }
 
 function fromRow(row: PlatformSettingsRow): PlatformSettings {
-  return { supportWhatsappNumber: row.support_whatsapp_number, supportWhatsappDisplay: row.support_whatsapp_display };
+  return {
+    supportWhatsappNumber: row.support_whatsapp_number,
+    supportWhatsappDisplay: row.support_whatsapp_display,
+    termsContent: row.terms_content ?? "",
+    privacyContent: row.privacy_content ?? "",
+  };
 }
 
-const EMPTY_SETTINGS: PlatformSettings = { supportWhatsappNumber: "", supportWhatsappDisplay: "" };
+const EMPTY_SETTINGS: PlatformSettings = {
+  supportWhatsappNumber: "",
+  supportWhatsappDisplay: "",
+  termsContent: "",
+  privacyContent: "",
+};
 
 /**
  * Singleton row (id is always `true`, enforced by the table's check
@@ -43,8 +56,12 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
 
 export async function updatePlatformSettings(input: PlatformSettings): Promise<void> {
   const supabase = getSupabaseClient();
-  const { error } = await supabase
-    .from("platform_settings")
-    .upsert({ id: true, support_whatsapp_number: input.supportWhatsappNumber, support_whatsapp_display: input.supportWhatsappDisplay });
+  const { error } = await supabase.from("platform_settings").upsert({
+    id: true,
+    support_whatsapp_number: input.supportWhatsappNumber,
+    support_whatsapp_display: input.supportWhatsappDisplay,
+    terms_content: input.termsContent,
+    privacy_content: input.privacyContent,
+  });
   if (error) throw error;
 }

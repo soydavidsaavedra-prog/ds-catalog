@@ -140,6 +140,39 @@ export function NSSettingsForm({ tenantId, tenantSlug, settings }: { tenantId: s
         </div>
       </DSCard>
 
+      <DSCard
+        title="Legal"
+        description="Términos y condiciones y política de privacidad de tu propio negocio, para tus clientes — no de DS Catalog."
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-xs text-muted-foreground">
+            Déjalo vacío si todavía no tienes uno — la página y el enlace en el footer solo aparecen cuando escribes
+            algo aquí. Este texto lo defines tú (o tu abogado): no es asesoría legal ni un modelo generado
+            automáticamente.
+          </p>
+          <div>
+            <NSLabel htmlFor="termsContent">Términos y condiciones</NSLabel>
+            <NSTextarea
+              id="termsContent"
+              name="termsContent"
+              defaultValue={settings.termsContent}
+              rows={8}
+              placeholder="Pega o escribe aquí tus términos y condiciones..."
+            />
+          </div>
+          <div>
+            <NSLabel htmlFor="privacyContent">Política de privacidad</NSLabel>
+            <NSTextarea
+              id="privacyContent"
+              name="privacyContent"
+              defaultValue={settings.privacyContent}
+              rows={8}
+              placeholder="Pega o escribe aquí tu política de privacidad..."
+            />
+          </div>
+        </div>
+      </DSCard>
+
       <DSCard title="Apariencia" description="El color de acento de tu tienda pública — botones, enlaces y detalles.">
         <label className="flex items-center gap-2 text-sm text-foreground">
           <input

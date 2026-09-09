@@ -1296,3 +1296,28 @@ create index if not exists ds_audit_log_created_at_idx on ds_audit_log (created_
 create index if not exists ds_audit_log_tenant_id_idx on ds_audit_log (tenant_id);
 
 commit;
+
+-- =====================================================================
+-- DS Catalog — páginas legales (Términos y Política de Privacidad)
+-- =====================================================================
+-- Free-text content for a "Términos y condiciones" and "Política de
+-- privacidad" page — one pair per tenant (ns_settings, for their own
+-- storefront customers) and one pair for the platform itself
+-- (platform_settings, shown at /terminos and /privacidad, for people
+-- signing up at /registro). Deliberately plain nullable text with NO
+-- seeded content: this app never fabricates legal text on anyone's
+-- behalf — see NSSettingsForm / NSPlatformSettingsForm's own copy, which
+-- tells the person filling this in to write or have a lawyer review it.
+-- Null/empty = the page and its footer link simply don't exist yet,
+-- rather than showing a blank or fake legal page.
+--
+-- Safe to re-run: add-column-if-not-exists only.
+
+begin;
+
+alter table ns_settings add column if not exists terms_content text;
+alter table ns_settings add column if not exists privacy_content text;
+alter table platform_settings add column if not exists terms_content text;
+alter table platform_settings add column if not exists privacy_content text;
+
+commit;

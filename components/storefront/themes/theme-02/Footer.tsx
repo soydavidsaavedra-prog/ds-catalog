@@ -99,8 +99,22 @@ export async function Footer({ tenantSlug }: { tenantSlug: string }) {
         </div>
       </div>
 
-      <div className="border-t border-border px-4 py-6 text-center text-xs text-muted-foreground sm:px-6 lg:px-8">
-        © {new Date().getFullYear()} {settings.brandName}. Todos los derechos reservados.
+      <div className="flex flex-col items-center gap-2 border-t border-border px-4 py-6 text-center text-xs text-muted-foreground sm:flex-row sm:justify-between sm:px-6 lg:px-8">
+        <p>© {new Date().getFullYear()} {settings.brandName}. Todos los derechos reservados.</p>
+        {settings.termsContent || settings.privacyContent ? (
+          <div className="flex gap-4">
+            {settings.termsContent ? (
+              <Link href={`${base}/terminos`} className="hover:text-accent">
+                Términos y condiciones
+              </Link>
+            ) : null}
+            {settings.privacyContent ? (
+              <Link href={`${base}/privacidad`} className="hover:text-accent">
+                Política de privacidad
+              </Link>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </footer>
   );

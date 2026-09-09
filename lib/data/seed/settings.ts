@@ -54,4 +54,6 @@ export const settingsSeed: SiteSettings = {
   storyStepLabel3: null,
   storyStepLabel4: null,
   storyStepLabel5: null,
+  termsContent: "",
+  privacyContent: "",
 };

@@ -49,6 +49,8 @@ function makeSettings(overrides: Partial<SiteSettings> = {}): SiteSettings {
     storyStepLabel3: null,
     storyStepLabel4: null,
     storyStepLabel5: null,
+    termsContent: "",
+    privacyContent: "",
     ...overrides,
   };
 }

@@ -60,6 +60,8 @@ function fromRow(row: SettingsRow): SiteSettings {
     storyStepLabel3: row.story_step_label3 ?? null,
     storyStepLabel4: row.story_step_label4 ?? null,
     storyStepLabel5: row.story_step_label5 ?? null,
+    termsContent: row.terms_content ?? "",
+    privacyContent: row.privacy_content ?? "",
   };
 }
 
@@ -110,6 +112,8 @@ function toRow(patch: Partial<SiteSettings>): Partial<SettingsRow> {
   if (patch.storyStepLabel3 !== undefined) row.story_step_label3 = patch.storyStepLabel3;
   if (patch.storyStepLabel4 !== undefined) row.story_step_label4 = patch.storyStepLabel4;
   if (patch.storyStepLabel5 !== undefined) row.story_step_label5 = patch.storyStepLabel5;
+  if (patch.termsContent !== undefined) row.terms_content = patch.termsContent;
+  if (patch.privacyContent !== undefined) row.privacy_content = patch.privacyContent;
   return row;
 }
 

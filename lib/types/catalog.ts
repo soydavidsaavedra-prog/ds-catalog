@@ -163,6 +163,15 @@ export interface SiteSettings {
   storyStepLabel3: string | null;
   storyStepLabel4: string | null;
   storyStepLabel5: string | null;
+  /**
+   * Free text for /{tenant}/terminos and /{tenant}/privacidad — editable
+   * from /admin/configuracion. Empty string = that page doesn't exist
+   * (404) and its footer link is hidden; this app never writes a default
+   * here, since real legal text has to come from the business owner (or
+   * their lawyer), never be fabricated.
+   */
+  termsContent: string;
+  privacyContent: string;
 }
 
 export type SortOption =

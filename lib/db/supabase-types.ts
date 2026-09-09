@@ -57,6 +57,8 @@ export interface PlatformSettingsRow {
   id: boolean;
   support_whatsapp_number: string;
   support_whatsapp_display: string;
+  terms_content: string | null;
+  privacy_content: string | null;
   updated_at: string;
 }
 
@@ -237,6 +239,9 @@ export interface SettingsRow {
   story_step_label3: string | null;
   story_step_label4: string | null;
   story_step_label5: string | null;
+  /** Null/empty = no legal page for this tenant yet — see the "páginas legales" schema.sql block. */
+  terms_content: string | null;
+  privacy_content: string | null;
 }
 
 // Each Row/Insert/Update is intersected with Record<string, unknown> so the

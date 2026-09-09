@@ -495,6 +495,8 @@ export async function updateSettingsAction(
       accentColor: customAccentColor ? accentColor : null,
       accentColorStrong: customAccentColor ? accentColorStrong : null,
       accentForeground: customAccentColor ? readableForegroundFor(accentColor) : null,
+      termsContent: String(formData.get("termsContent") ?? "").trim(),
+      privacyContent: String(formData.get("privacyContent") ?? "").trim(),
     });
   } catch (err) {
     return { error: friendlyDbErrorMessage(err) };

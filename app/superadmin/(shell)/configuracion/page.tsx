@@ -25,6 +25,10 @@ export default async function SuperadminConfiguracionPage() {
         </p>
         <NSPlatformSettingsForm settings={settings} />
       </div>
+      <p className="text-xs text-muted-foreground">
+        Cada cliente tiene su propio Términos/Privacidad para su catálogo, editable desde su panel — ver
+        &quot;Legal&quot; en /admin/configuracion.
+      </p>
     </div>
   );
 }

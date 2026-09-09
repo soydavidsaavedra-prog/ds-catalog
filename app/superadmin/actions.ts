@@ -584,15 +584,20 @@ export async function updatePlatformSettingsAction(
 
   const supportWhatsappNumber = String(formData.get("supportWhatsappNumber") ?? "").replace(/[^0-9]/g, "");
   const supportWhatsappDisplay = String(formData.get("supportWhatsappDisplay") ?? "").trim();
+  const termsContent = String(formData.get("termsContent") ?? "").trim();
+  const privacyContent = String(formData.get("privacyContent") ?? "").trim();
 
   if (!supportWhatsappNumber) {
     return { error: "Escribe el número de soporte (solo dígitos, con código de país)." };
   }
 
-  await updatePlatformSettings({ supportWhatsappNumber, supportWhatsappDisplay });
+  await updatePlatformSettings({ supportWhatsappNumber, supportWhatsappDisplay, termsContent, privacyContent });
 
   revalidatePath("/superadmin/configuracion");
   revalidatePath("/");
+  revalidatePath("/registro");
+  revalidatePath("/terminos");
+  revalidatePath("/privacidad");
   await recordAuditLog({
     actorEmail: superadmin.email,
     action: "platform_settings.updated",

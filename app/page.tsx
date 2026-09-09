@@ -156,11 +156,23 @@ export default async function RootLandingPage() {
         </section>
       ) : null}
 
-      <footer className="mx-auto flex max-w-6xl flex-col items-center gap-2 px-6 py-10 text-center text-xs text-ink-500 sm:flex-row sm:justify-between sm:text-left">
+      <footer className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-6 py-10 text-center text-xs text-ink-500 sm:flex-row sm:justify-between sm:text-left">
         <p>DS Catalog — plataforma de catálogos multiempresa.</p>
-        <Link href="/acceder" className="font-medium text-ink-400 hover:text-accent">
-          Acceder a mi panel
-        </Link>
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+          {platformSettings.termsContent ? (
+            <Link href="/terminos" className="hover:text-accent">
+              Términos y condiciones
+            </Link>
+          ) : null}
+          {platformSettings.privacyContent ? (
+            <Link href="/privacidad" className="hover:text-accent">
+              Política de privacidad
+            </Link>
+          ) : null}
+          <Link href="/acceder" className="font-medium text-ink-400 hover:text-accent">
+            Acceder a mi panel
+          </Link>
+        </div>
       </footer>
     </div>
   );
