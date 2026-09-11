@@ -356,6 +356,40 @@
 }
 
 /*
+ * Fixed-dark shell for the platform's own public marketing/auth pages
+ * (root landing at app/page.tsx, /registro) — there's no light/dark
+ * toggle on these, and they're meant to look the same dark-carbon-and-
+ * teal regardless of the visitor's OS *or* of a data-theme choice made
+ * elsewhere. NSThemeToggle persists its choice to a single origin-wide
+ * localStorage key/documentElement[data-theme] shared by every route
+ * (including a tenant's own /admin), so without a scope like this one,
+ * these pages read the bare :root tokens directly — and mixed a
+ * hardcoded `bg-ink-950` with token-based text (NSButton's outline/
+ * ghost variants use `text-foreground`), so "Ya tengo cuenta"/"Acceder"
+ * silently went black-on-black whenever the resolved :root --foreground
+ * happened to be the light-mode dark value. Scoped exactly like
+ * .ds-platform/.tenant-preview above — matches values 1:1 with the
+ * :root dark override further up this file — so no component needs to
+ * change, only what its tokens resolve to inside this scope.
+ */
+.ds-landing-dark {
+  --background: #0a0a09;
+  --foreground: #f7f7f6;
+  --surface: #121110;
+  --surface-elevated: #1c1b1a;
+  --surface-inverted: #ffffff;
+  --muted: #8a8a84;
+  --muted-foreground: #8a8a84;
+  --border: #302e2c;
+  --border-strong: #454340;
+  --accent: #00a19a;
+  --accent-strong: #006e69;
+  --accent-foreground: #0a0a09;
+  --overlay: rgba(0, 0, 0, 0.72);
+  color-scheme: dark;
+}
+
+/*
  * Theme 02's own DEFAULT identity, scoped exactly like .ds-platform above
  * but applied to the STOREFRONT (see the tenant.theme-keyed wrapper div in
  * app/[tenant]/(storefront)/layout.tsx) instead of platform chrome. Every

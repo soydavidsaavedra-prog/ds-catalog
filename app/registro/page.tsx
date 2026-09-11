@@ -15,7 +15,7 @@ export default async function RegistroPage() {
   const hasPrivacy = Boolean(platformSettings.privacyContent);
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-ink-950 px-4 py-16 text-ink-0">
+    <div className="ds-landing-dark flex min-h-dvh items-center justify-center bg-ink-950 px-4 py-16 text-ink-0">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
           <Link href="/">

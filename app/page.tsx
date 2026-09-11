@@ -53,7 +53,7 @@ export default async function RootLandingPage() {
   const supportNumber = platformSettings.supportWhatsappNumber;
 
   return (
-    <div className="min-h-dvh bg-ink-950 text-ink-0">
+    <div className="ds-landing-dark min-h-dvh bg-ink-950 text-ink-0">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
         <div className="flex items-center gap-2">
           <DSPlatformMark className="h-8 w-8" />
