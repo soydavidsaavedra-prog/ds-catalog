@@ -1,10 +1,50 @@
+import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { getSettings } from "@/lib/repositories/settings-repository";
 import { isSubscriptionFrozen } from "@/lib/tenant/plan-limits";
 import { resolveTheme } from "@/lib/themes/registry";
 import { NSWhatsAppButton } from "@/components/whatsapp/NSWhatsAppButton";
+import { NSPwaRegister } from "@/components/pwa/NSPwaRegister";
 import { buildAccentOverrideVars } from "@/lib/utils/brand";
+import { parsePlaceholder } from "@/lib/media/placeholder";
+
+const FALLBACK_ICON = "/ds-catalog-mark.png";
+
+/** So "Agregar a inicio" installs each tenant's OWN catalog — their name, their logo, their accent — see app/[tenant]/manifest.webmanifest/route.ts for the manifest itself. */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ tenant: string }>;
+}): Promise<Metadata> {
+  const { tenant: tenantSlug } = await params;
+  const tenant = await resolveTenant(tenantSlug);
+  const settings = await getSettings(tenant.id);
+  const hasRealLogo = Boolean(settings.brandLogo) && !parsePlaceholder(settings.brandLogo);
+
+  return {
+    manifest: `/${tenantSlug}/manifest.webmanifest`,
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: settings.brandName,
+    },
+    icons: {
+      apple: hasRealLogo ? settings.brandLogo : FALLBACK_ICON,
+    },
+  };
+}
+
+export async function generateViewport({
+  params,
+}: {
+  params: Promise<{ tenant: string }>;
+}): Promise<Viewport> {
+  const { tenant: tenantSlug } = await params;
+  const tenant = await resolveTenant(tenantSlug);
+  const settings = await getSettings(tenant.id);
+  return { themeColor: settings.accentColor ?? "#00a19a" };
+}
 
 export default async function StorefrontLayout({
   children,
@@ -49,6 +89,7 @@ export default async function StorefrontLayout({
         brandName={settings.brandName}
       />
       <NSWhatsAppButton whatsappNumber={settings.whatsappNumber} variant="floating" />
+      <NSPwaRegister />
     </div>
   );
 }
