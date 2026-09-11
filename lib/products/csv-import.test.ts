@@ -19,7 +19,7 @@ function makeCategory(overrides: Partial<Category> = {}): Category {
   };
 }
 
-const HEADER = "referencia,nombre,precio,precio_mayorista,descripcion,categoria,tallas,disponibilidad,destacado,nuevo,oferta";
+const HEADER = "referencia,nombre,precio,precio_anterior,descripcion,categoria,tallas,disponibilidad,destacado,nuevo,oferta";
 
 describe("parseProductImportCsv", () => {
   it("parses a valid row into a ready-to-insert ProductInput", () => {
@@ -34,7 +34,7 @@ describe("parseProductImportCsv", () => {
       reference: "REF-1",
       name: "Taladro",
       price: 49.99,
-      wholesalePrice: 30,
+      previousPrice: 30,
       description: "Un taladro bueno",
       categorySlug: "herramientas",
       availability: "in_stock",
@@ -132,6 +132,59 @@ describe("parseProductImportCsv", () => {
     const csv = `${HEADER}\nREF-1,A,10,,,herramientas,,,,,\n`;
     const { rows } = parseProductImportCsv(csv, categories, new Set());
     expect(rows[0]!.input.availability).toBe("in_stock");
+  });
+
+  it("matches a row's photo by filename, case/whitespace-insensitively", () => {
+    const categories = [makeCategory()];
+    const csv = `${HEADER},foto\nREF-1,Taladro,49.99,,,herramientas,,,,,,  TALADRO.JPG \n`;
+    const { rows, warnings } = parseProductImportCsv(csv, categories, new Set(), [
+      { filename: "taladro.jpg", url: "https://cdn/taladro.jpg" },
+    ]);
+    expect(warnings).toEqual([]);
+    expect(rows[0]!.input.images).toEqual(["https://cdn/taladro.jpg"]);
+  });
+
+  it("keeps the placeholder image and reports a warning (not an error) when the photo column doesn't match anything uploaded", () => {
+    const categories = [makeCategory()];
+    const csv = `${HEADER},foto\nREF-1,Taladro,49.99,,,herramientas,,,,,,no-subida.jpg\n`;
+    const { rows, errors, warnings } = parseProductImportCsv(csv, categories, new Set(), []);
+    expect(errors).toEqual([]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.input.images).toEqual(["placeholder:herramientas:new"]);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]!.reason).toMatch(/no-subida\.jpg/);
+  });
+
+  it("uses the placeholder with no warning when the foto column is left empty", () => {
+    const categories = [makeCategory()];
+    const csv = `${HEADER}\nREF-1,Taladro,49.99,,,herramientas,,,,,\n`;
+    const { rows, warnings } = parseProductImportCsv(csv, categories, new Set());
+    expect(warnings).toEqual([]);
+    expect(rows[0]!.input.images).toEqual(["placeholder:herramientas:new"]);
+  });
+
+  it("defaults stock to null and keeps the disponibilidad column in charge when stock isn't given", () => {
+    const categories = [makeCategory()];
+    const csv = `${HEADER}\nREF-1,Taladro,49.99,,,herramientas,,pocas unidades,,,\n`;
+    const { rows } = parseProductImportCsv(csv, categories, new Set());
+    expect(rows[0]!.input.stock).toBeNull();
+    expect(rows[0]!.input.availability).toBe("low_stock");
+  });
+
+  it("derives availability from stock when the stock column is given, overriding disponibilidad", () => {
+    const categories = [makeCategory()];
+    const csv = `${HEADER},stock\nREF-1,Taladro,49.99,,,herramientas,,disponible,,,,0\n`;
+    const { rows } = parseProductImportCsv(csv, categories, new Set());
+    expect(rows[0]!.input.stock).toBe(0);
+    expect(rows[0]!.input.availability).toBe("out_of_stock");
+  });
+
+  it("ignores a negative or non-numeric stock value, falling back to null", () => {
+    const categories = [makeCategory()];
+    const csv = `${HEADER},stock\nREF-1,Taladro,49.99,,,herramientas,,,,,,-5\nREF-2,Martillo,10,,,herramientas,,,,,,abc\n`;
+    const { rows } = parseProductImportCsv(csv, categories, new Set());
+    expect(rows[0]!.input.stock).toBeNull();
+    expect(rows[1]!.input.stock).toBeNull();
   });
 
   it("flags a file with more than MAX_IMPORT_ROWS rows instead of silently truncating without notice", () => {

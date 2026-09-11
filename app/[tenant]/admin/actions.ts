@@ -7,11 +7,15 @@ import {
   countProducts,
   createProduct,
   deleteProduct,
+  getNextReference,
   getProductById,
   isSlugTaken,
+  listProducts,
   updateProduct,
   type ProductInput,
 } from "@/lib/repositories/product-repository";
+import { findDuplicateProduct } from "@/lib/products/duplicates";
+import { deriveAvailabilityFromStock } from "@/lib/products/stock";
 import { getEffectivePlanForTenant } from "@/lib/tenant/plan-limits";
 import { getPlanById } from "@/lib/repositories/plans-repository";
 import { assignPlanToTenant } from "@/lib/repositories/subscriptions-repository";
@@ -32,8 +36,10 @@ import {
 } from "@/lib/repositories/hero-slide-repository";
 import { updateOrderStatus } from "@/lib/repositories/order-repository";
 import { getSettings, updateSettings } from "@/lib/repositories/settings-repository";
-import { completeOnboarding, updateTenantTheme } from "@/lib/repositories/tenant-repository";
+import { completeOnboarding, getTenantById, updateTenantTheme } from "@/lib/repositories/tenant-repository";
+import { getAppUserByTenantId } from "@/lib/repositories/app-users-repository";
 import { deleteStorageFilesByUrls } from "@/lib/repositories/storage-repository";
+import { notifyNewTenantRegistration } from "@/lib/notifications/tenant-notifications";
 import { slugify } from "@/lib/utils/slug";
 import { HEX_COLOR, readableForegroundFor } from "@/lib/utils/brand";
 import type { Availability, Audience, CardAspectRatio, ImageFit, ProductColor } from "@/lib/types/catalog";
@@ -103,6 +109,18 @@ export async function completeOnboardingAction(
   } catch (err) {
     return { error: friendlyDbErrorMessage(err) };
   }
+
+  const [tenant, owner] = await Promise.all([getTenantById(tenantId), getAppUserByTenantId(tenantId)]);
+  if (tenant && owner) {
+    await notifyNewTenantRegistration({
+      tenantId,
+      tenantName: tenant.name,
+      tenantSlug,
+      ownerEmail: owner.email,
+      planName: plan.name,
+    });
+  }
+
   revalidatePath(`/${tenantSlug}`, "layout");
   redirect(`/${tenantSlug}/admin`);
 }
@@ -152,13 +170,15 @@ async function parseProductInput(tenantId: string, formData: FormData): Promise<
   const categorySlug = String(formData.get("categorySlug") ?? "");
   const cardAspectRatioInput = String(formData.get("cardAspectRatio") ?? "");
   const imageFitInput = String(formData.get("imageFit") ?? "");
+  const stockRaw = String(formData.get("stock") ?? "").trim();
+  const stock = stockRaw === "" ? null : Math.max(0, Math.floor(Number(stockRaw)));
 
   return {
     slug: slugify(slugInput || `${reference}-${name}`),
     reference,
     name,
     price: Number(formData.get("price") ?? 0),
-    wholesalePrice: formData.get("wholesalePrice") ? Number(formData.get("wholesalePrice")) : null,
+    previousPrice: formData.get("previousPrice") ? Number(formData.get("previousPrice")) : null,
     description: String(formData.get("description") ?? "").trim(),
     categorySlug,
     audience: await resolveAudienceForCategory(tenantId, categorySlug),
@@ -169,12 +189,18 @@ async function parseProductInput(tenantId: string, formData: FormData): Promise<
     imageFit: IMAGE_FIT_VALUES.includes(imageFitInput as ImageFit) ? (imageFitInput as ImageFit) : "cover",
     sizes,
     colors,
-    availability: String(formData.get("availability") ?? "in_stock") as Availability,
+    // The server is the source of truth for this derivation, not just the
+    // form's own live preview: a tracked product's availability always
+    // comes from its stock, regardless of what the (possibly stale)
+    // "availability" field in the submitted form happens to carry.
+    availability:
+      stock !== null ? deriveAvailabilityFromStock(stock) : (String(formData.get("availability") ?? "in_stock") as Availability),
     featured: formData.get("featured") === "on",
     isNew: formData.get("isNew") === "on",
     onSale: formData.get("onSale") === "on",
     active: formData.get("active") === "on",
     hidePaymentBadge: formData.get("hidePaymentBadge") === "on",
+    stock,
   };
 }
 
@@ -187,6 +213,10 @@ export async function createProductAction(
   const input = await parseProductInput(tenantId, formData);
   if (!input.name || !input.reference || !input.categorySlug) {
     return { error: "Nombre, referencia y categoría son obligatorios." };
+  }
+  const duplicate = findDuplicateProduct(await listProducts(tenantId), input);
+  if (duplicate) {
+    return { error: `Ya existe un producto con ese nombre o referencia: "${duplicate.name}" (${duplicate.reference}).` };
   }
   if (await isSlugTaken(tenantId, input.slug)) {
     return { error: `La referencia/slug "${input.slug}" ya existe.` };
@@ -221,6 +251,10 @@ export async function updateProductAction(
   if (!input.name || !input.reference || !input.categorySlug) {
     return { error: "Nombre, referencia y categoría son obligatorios." };
   }
+  const duplicate = findDuplicateProduct(await listProducts(tenantId), input, id);
+  if (duplicate) {
+    return { error: `Ya existe otro producto con ese nombre o referencia: "${duplicate.name}" (${duplicate.reference}).` };
+  }
   if (await isSlugTaken(tenantId, input.slug, id)) {
     return { error: `La referencia/slug "${input.slug}" ya existe.` };
   }
@@ -248,6 +282,44 @@ export async function deleteProductAction(tenantId: string, tenantSlug: string, 
   revalidatePath(`/${tenantSlug}/admin/productos`);
 }
 
+/**
+ * Bulk sibling of deleteProductAction — same per-item cleanup (Storage
+ * files, storefront revalidation), just looped. Never all-or-nothing: a
+ * product that fails to delete (or was already gone) is skipped rather
+ * than aborting the rest, same philosophy as the CSV/image-batch imports.
+ */
+export async function deleteProductsAction(tenantId: string, tenantSlug: string, ids: string[]): Promise<void> {
+  for (const id of ids) {
+    const existing = await getProductById(tenantId, id);
+    if (!existing) continue;
+    try {
+      await deleteProduct(tenantId, id);
+      await cleanupReplacedImages(existing.images, []);
+      revalidateStorefront(tenantSlug, existing.categorySlug, existing.slug);
+    } catch (err) {
+      console.error(`[productos] failed to bulk-delete ${id}:`, err);
+    }
+  }
+  revalidatePath(`/${tenantSlug}/admin/productos`);
+}
+
+/**
+ * Bulk sibling of toggleProductFlagAction, scoped to just "active" (the
+ * one flag the products list lets you bulk-change) — e.g. activating
+ * every draft from a lote-fotos batch at once instead of one by one.
+ */
+export async function setProductsActiveAction(tenantId: string, tenantSlug: string, ids: string[], active: boolean): Promise<void> {
+  for (const id of ids) {
+    try {
+      const updated = await updateProduct(tenantId, id, { active });
+      if (updated) revalidateStorefront(tenantSlug, updated.categorySlug, updated.slug);
+    } catch (err) {
+      console.error(`[productos] failed to bulk-${active ? "activate" : "deactivate"} ${id}:`, err);
+    }
+  }
+  revalidatePath(`/${tenantSlug}/admin/productos`);
+}
+
 export async function toggleProductFlagAction(
   tenantId: string,
   tenantSlug: string,
@@ -257,6 +329,133 @@ export async function toggleProductFlagAction(
 ): Promise<void> {
   const updated = await updateProduct(tenantId, id, { [flag]: value });
   if (updated) revalidateStorefront(tenantSlug, updated.categorySlug, updated.slug);
+  revalidatePath(`/${tenantSlug}/admin/productos`);
+}
+
+/**
+ * Shortcut for the products list (NSProductsTable) — lets a tenant fix a
+ * provisional name/reference (the common case right after a lote-fotos
+ * batch) without opening the full edit page. Called directly as a function
+ * from the client on blur, not via a <form action>, so it can return a
+ * typed result the row can show inline instead of relying on Next's error
+ * boundary. Same duplicate-name/reference guard as the full create/edit
+ * forms — reused here so this shortcut can't create the exact mix-up it's
+ * meant to help clean up.
+ */
+export async function updateProductQuickFieldsAction(
+  tenantId: string,
+  tenantSlug: string,
+  id: string,
+  fields: { name: string; reference: string; price: number },
+): Promise<{ error?: string }> {
+  const name = fields.name.trim();
+  const reference = fields.reference.trim();
+  if (!name || !reference) {
+    return { error: "El nombre y la referencia no pueden quedar vacíos." };
+  }
+  if (!Number.isFinite(fields.price) || fields.price < 0) {
+    return { error: "El precio debe ser un número válido." };
+  }
+
+  const existingProducts = await listProducts(tenantId);
+  const duplicate = findDuplicateProduct(existingProducts, { name, reference }, id);
+  if (duplicate) {
+    return { error: `Ya existe otro producto con ese nombre o referencia: "${duplicate.name}" (${duplicate.reference}).` };
+  }
+
+  const existing = existingProducts.find((p) => p.id === id);
+  if (!existing) return { error: "Producto no encontrado." };
+
+  let updated;
+  try {
+    updated = await updateProduct(tenantId, id, { name, reference, price: fields.price });
+  } catch (err) {
+    return { error: friendlyDbErrorMessage(err) };
+  }
+  if (!updated) return { error: "Producto no encontrado." };
+
+  revalidateStorefront(tenantSlug, updated.categorySlug, updated.slug);
+  revalidatePath(`/${tenantSlug}/admin/productos`);
+  return {};
+}
+
+/**
+ * Quick stock edit from the products list, for a product that already has
+ * inventory tracking on (stock !== null) — recomputes `availability` from
+ * the new count in the same write, same rule placeOrderAction applies when
+ * an order decrements it. Never offered for a product with stock === null:
+ * turning tracking on is a deliberate choice made on the full edit form,
+ * not a side effect of a quick list edit.
+ */
+export async function updateProductStockAction(
+  tenantId: string,
+  tenantSlug: string,
+  id: string,
+  stock: number,
+): Promise<{ error?: string }> {
+  if (!Number.isFinite(stock) || stock < 0) {
+    return { error: "El stock debe ser un número válido." };
+  }
+
+  let updated;
+  try {
+    updated = await updateProduct(tenantId, id, { stock, availability: deriveAvailabilityFromStock(stock) });
+  } catch (err) {
+    return { error: friendlyDbErrorMessage(err) };
+  }
+  if (!updated) return { error: "Producto no encontrado." };
+
+  revalidateStorefront(tenantSlug, updated.categorySlug, updated.slug);
+  revalidatePath(`/${tenantSlug}/admin/productos`);
+  return {};
+}
+
+/**
+ * Clones a product as a new inactive draft — same data, fresh id/reference/
+ * slug and no images (Storage files belong to the original; copying the
+ * URLs would mean deleting one product's photos could silently break the
+ * other's). For catalogs with many near-identical variants, the fastest
+ * path is duplicate-then-tweak rather than filling the full form again.
+ */
+export async function duplicateProductAction(tenantId: string, tenantSlug: string, id: string): Promise<void> {
+  const existing = await getProductById(tenantId, id);
+  if (!existing) return;
+
+  const nextReference = await getNextReference(tenantId);
+  let name = `${existing.name} (copia)`;
+  let slug = slugify(`${nextReference}-${name}`);
+  if (await isSlugTaken(tenantId, slug)) {
+    name = `${existing.name} (copia ${Date.now().toString().slice(-4)})`;
+    slug = slugify(`${nextReference}-${name}`);
+  }
+
+  try {
+    await createProduct(tenantId, {
+      slug,
+      reference: nextReference,
+      name,
+      price: existing.price,
+      previousPrice: existing.previousPrice,
+      description: existing.description,
+      categorySlug: existing.categorySlug,
+      audience: existing.audience,
+      images: [`placeholder:${existing.categorySlug}:new`],
+      cardAspectRatio: existing.cardAspectRatio,
+      imageFit: existing.imageFit,
+      sizes: existing.sizes,
+      colors: existing.colors,
+      availability: existing.availability,
+      featured: existing.featured,
+      isNew: existing.isNew,
+      onSale: existing.onSale,
+      active: false,
+      hidePaymentBadge: existing.hidePaymentBadge,
+      stock: existing.stock,
+    });
+  } catch (err) {
+    console.error(`[productos] failed to duplicate ${id}:`, err);
+    return;
+  }
   revalidatePath(`/${tenantSlug}/admin/productos`);
 }
 

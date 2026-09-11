@@ -10,6 +10,8 @@ import { NSImageUploader } from "@/components/admin/NSImageUploader";
 import { NSVariantListEditor } from "@/components/admin/NSVariantListEditor";
 import { NSProductCardPreview } from "@/components/admin/NSProductCardPreview";
 import { buildAccentOverrideVars } from "@/lib/utils/brand";
+import { availabilityLabel } from "@/lib/utils/format";
+import { deriveAvailabilityFromStock } from "@/lib/products/stock";
 
 const initialState: ActionState = {};
 
@@ -49,10 +51,13 @@ export function NSProductForm({
   // stays uncontrolled/defaultValue, unchanged from before.
   const [name, setName] = useState(product?.name ?? "");
   const [price, setPrice] = useState(product?.price ?? 0);
+  const [previousPrice, setPreviousPrice] = useState(product?.previousPrice ?? null);
   const [isNew, setIsNew] = useState(product?.isNew ?? false);
   const [onSale, setOnSale] = useState(product?.onSale ?? false);
   const [hidePaymentBadge, setHidePaymentBadge] = useState(product?.hidePaymentBadge ?? false);
   const [availability, setAvailability] = useState<Availability>(product?.availability ?? "in_stock");
+  const [stock, setStock] = useState<number | null>(product?.stock ?? null);
+  const effectiveAvailability = stock !== null ? deriveAvailabilityFromStock(stock) : availability;
   const [cardAspectRatio, setCardAspectRatio] = useState<CardAspectRatio>(product?.cardAspectRatio ?? "portrait");
   const [imageFit, setImageFit] = useState<ImageFit>(product?.imageFit ?? "cover");
   const [images, setImages] = useState<string[]>(product?.images ?? []);
@@ -120,7 +125,7 @@ export function NSProductForm({
         </DSCard>
 
         <DSCard title="Precio y disponibilidad">
-          <div className="grid gap-5 sm:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2">
             <div>
               <NSLabel htmlFor="price">Precio detal (USD)</NSLabel>
               <NSInput
@@ -135,21 +140,59 @@ export function NSProductForm({
               />
             </div>
             <div>
-              <NSLabel htmlFor="wholesalePrice">Precio mayorista (USD, interno)</NSLabel>
-              <NSInput id="wholesalePrice" name="wholesalePrice" type="number" min="0" step="0.01" defaultValue={product?.wholesalePrice ?? ""} />
+              <NSLabel htmlFor="previousPrice">Precio anterior (opcional)</NSLabel>
+              <NSInput
+                id="previousPrice"
+                name="previousPrice"
+                type="number"
+                min="0"
+                step="0.01"
+                value={previousPrice ?? ""}
+                onChange={(e) => setPreviousPrice(e.target.value === "" ? null : Number(e.target.value))}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Ponlo solo si está en oferta: si es mayor al precio detal, sale tachado junto al precio nuevo.
+              </p>
+            </div>
+            <div>
+              <NSLabel htmlFor="stock">Stock (opcional)</NSLabel>
+              <NSInput
+                id="stock"
+                name="stock"
+                type="number"
+                min="0"
+                step="1"
+                value={stock ?? ""}
+                onChange={(e) => setStock(e.target.value === "" ? null : Math.max(0, Math.floor(Number(e.target.value))))}
+                placeholder="Sin control de inventario"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Ponle una cantidad para llevar inventario real: la disponibilidad se calcula sola a partir de ella y
+                baja con cada pedido enviado por WhatsApp. Déjalo vacío para seguir eligiendo la disponibilidad a mano.
+              </p>
             </div>
             <div>
               <NSLabel htmlFor="availability">Disponibilidad</NSLabel>
-              <NSSelect
-                id="availability"
-                name="availability"
-                value={availability}
-                onChange={(e) => setAvailability(e.target.value as Availability)}
-              >
-                <option value="in_stock">Disponible</option>
-                <option value="low_stock">Pocas unidades</option>
-                <option value="out_of_stock">Agotado</option>
-              </NSSelect>
+              {stock !== null ? (
+                <>
+                  <input type="hidden" name="availability" value={effectiveAvailability} />
+                  <div className="flex h-11 items-center rounded-control border border-border bg-surface px-3.5 text-sm text-muted-foreground">
+                    {availabilityLabel[effectiveAvailability]}
+                    <span className="ml-1.5 text-xs">(según el stock)</span>
+                  </div>
+                </>
+              ) : (
+                <NSSelect
+                  id="availability"
+                  name="availability"
+                  value={availability}
+                  onChange={(e) => setAvailability(e.target.value as Availability)}
+                >
+                  <option value="in_stock">Disponible</option>
+                  <option value="low_stock">Pocas unidades</option>
+                  <option value="out_of_stock">Agotado</option>
+                </NSSelect>
+              )}
             </div>
           </div>
         </DSCard>
@@ -214,55 +257,72 @@ export function NSProductForm({
           </div>
         </DSCard>
 
-        <DSCard title="Visibilidad">
-          <div className="flex flex-wrap gap-6">
-            <label className="flex items-center gap-2 text-sm font-medium">
-              <input
-                type="checkbox"
-                name="featured"
-                defaultChecked={product?.featured}
-                className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
-              />
-              Destacado
-            </label>
-            <label className="flex items-center gap-2 text-sm font-medium">
-              <input
-                type="checkbox"
-                name="isNew"
-                checked={isNew}
-                onChange={(e) => setIsNew(e.target.checked)}
-                className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
-              />
-              Nuevo
-            </label>
-            <label className="flex items-center gap-2 text-sm font-medium">
-              <input
-                type="checkbox"
-                name="onSale"
-                checked={onSale}
-                onChange={(e) => setOnSale(e.target.checked)}
-                className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
-              />
-              En oferta
-            </label>
-            <label className="flex items-center gap-2 text-sm font-medium">
+        <DSCard title="Visibilidad" description="Estado del producto y las etiquetas que se muestran sobre su foto en el catálogo.">
+          <div className="flex flex-col gap-5">
+            <label className="flex items-start gap-3 rounded-control border border-border bg-surface px-4 py-3 has-[:checked]:border-accent-strong has-[:checked]:bg-accent/5">
               <input
                 type="checkbox"
                 name="active"
                 defaultChecked={product?.active ?? true}
-                className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-border-strong accent-[var(--accent)]"
               />
-              Activo (visible en la tienda)
+              <span>
+                <span className="text-sm font-medium">Activo</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  Visible para tus clientes en el catálogo público. Desmárcalo para ocultarlo sin borrarlo.
+                </span>
+              </span>
             </label>
-            <label className="flex items-center gap-2 text-sm font-medium">
+
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Etiquetas de la tarjeta</p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <label className="flex items-center gap-2 rounded-control border border-border bg-surface px-3.5 py-2.5 text-sm font-medium has-[:checked]:border-accent-strong has-[:checked]:bg-accent/5">
+                  <input
+                    type="checkbox"
+                    name="featured"
+                    defaultChecked={product?.featured}
+                    className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
+                  />
+                  Destacado
+                </label>
+                <label className="flex items-center gap-2 rounded-control border border-border bg-surface px-3.5 py-2.5 text-sm font-medium has-[:checked]:border-accent-strong has-[:checked]:bg-accent/5">
+                  <input
+                    type="checkbox"
+                    name="isNew"
+                    checked={isNew}
+                    onChange={(e) => setIsNew(e.target.checked)}
+                    className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
+                  />
+                  Nuevo
+                </label>
+                <label className="flex items-center gap-2 rounded-control border border-border bg-surface px-3.5 py-2.5 text-sm font-medium has-[:checked]:border-accent-strong has-[:checked]:bg-accent/5">
+                  <input
+                    type="checkbox"
+                    name="onSale"
+                    checked={onSale}
+                    onChange={(e) => setOnSale(e.target.checked)}
+                    className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
+                  />
+                  En oferta
+                </label>
+              </div>
+            </div>
+
+            <label className="flex items-start gap-3 rounded-control border border-border bg-surface px-4 py-3 has-[:checked]:border-accent-strong has-[:checked]:bg-accent/5">
               <input
                 type="checkbox"
                 name="hidePaymentBadge"
                 checked={hidePaymentBadge}
                 onChange={(e) => setHidePaymentBadge(e.target.checked)}
-                className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-border-strong accent-[var(--accent)]"
               />
-              Ocultar ícono de método de pago (ej. Cashea) en este producto
+              <span>
+                <span className="text-sm font-medium">Ocultar ícono de método de pago</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  Oculta el ícono (ej. Cashea) que normalmente aparece sobre la foto de este producto.
+                </span>
+              </span>
             </label>
           </div>
         </DSCard>
@@ -270,6 +330,9 @@ export function NSProductForm({
         <div className="sticky bottom-0 -mx-1 flex items-center gap-3 border-t border-border bg-surface/95 px-1 py-4 backdrop-blur">
           <NSButton type="submit" loading={pending}>
             {submitLabel}
+          </NSButton>
+          <NSButton href={`/${tenantSlug}/admin/productos`} variant="outline">
+            Cancelar
           </NSButton>
         </div>
       </form>
@@ -288,9 +351,10 @@ export function NSProductForm({
             name={name}
             reference={product?.reference ?? nextReference ?? ""}
             price={price}
+            previousPrice={previousPrice}
             isNew={isNew}
             onSale={onSale}
-            outOfStock={availability === "out_of_stock"}
+            outOfStock={effectiveAvailability === "out_of_stock"}
             hidePaymentBadge={hidePaymentBadge}
             paymentBadge={{ icon: settings.paymentBadgeIcon, label: settings.paymentBadgeLabel }}
             cardAspectRatio={cardAspectRatio}

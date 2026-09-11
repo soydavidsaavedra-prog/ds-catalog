@@ -49,8 +49,8 @@ export interface Product {
   name: string;
   /** Public retail price shown to every visitor. */
   price: number;
-  /** Internal wholesale price — never rendered on public pages (see section 21). */
-  wholesalePrice: number | null;
+  /** Optional "before" price for a discount — shown crossed out next to `price` on public pages when it's set higher than `price` (see NSPrice's `compareAt`). Stored in the same DB column that used to hold an internal wholesale price (see supabase/schema.sql). */
+  previousPrice: number | null;
   description: string;
   categorySlug: string;
   audience: Audience;
@@ -66,6 +66,8 @@ export interface Product {
   active: boolean;
   /** Opt this product out of the site-wide payment-method badge (e.g. Cashea) shown on cards/detail. */
   hidePaymentBadge: boolean;
+  /** Null = no inventory tracking, `availability` is set by hand as always. A number = real stock: an order decrements it, and it drives `availability` automatically (see lib/products/stock.ts). */
+  stock: number | null;
   createdAt: string;
   updatedAt: string;
 }

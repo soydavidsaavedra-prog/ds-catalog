@@ -61,6 +61,10 @@ create table if not exists ns_products (
   reference text not null,
   name text not null,
   price numeric(10, 2) not null default 0,
+  -- Column name kept as-is to avoid a rename migration; the app now uses it
+  -- as an optional "precio anterior" (shown crossed out for a discount when
+  -- higher than `price`) instead of an internal wholesale price. See
+  -- Product.previousPrice in lib/types/catalog.ts.
   wholesale_price numeric(10, 2),
   description text not null default '',
   category_slug text not null references ns_categories (slug) on update cascade,
@@ -76,12 +80,18 @@ create table if not exists ns_products (
   on_sale boolean not null default false,
   active boolean not null default true,
   hide_payment_badge boolean not null default false,
+  -- Null = the tenant manages `availability` by hand (the original behavior).
+  -- A number = real inventory tracking: an order decrements it, and it in
+  -- turn drives `availability` automatically. See lib/products/stock.ts.
+  stock integer,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 -- Backfills hide_payment_badge on a table created by an earlier version of this schema.
 alter table ns_products add column if not exists hide_payment_badge boolean not null default false;
+-- Backfills stock on a table created by an earlier version of this schema.
+alter table ns_products add column if not exists stock integer;
 
 create index if not exists ns_products_category_slug_idx on ns_products (category_slug);
 

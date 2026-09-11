@@ -82,7 +82,7 @@ export function ProductCard({
           {outOfStock ? "Agotado" : product.availability === "low_stock" ? "Pocas unidades" : "Disponible"}
         </span>
         <div className="mt-auto flex items-end justify-between pt-1.5">
-          <NSPrice amount={product.price} className="text-accent-strong" />
+          <NSPrice amount={product.price} compareAt={product.previousPrice} className="text-accent-strong" />
           <span
             aria-hidden
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-accent text-accent-foreground transition-transform duration-normal group-hover:scale-105"

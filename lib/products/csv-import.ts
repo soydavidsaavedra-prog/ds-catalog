@@ -2,6 +2,7 @@ import { parse } from "csv-parse/sync";
 import { slugify } from "@/lib/utils/slug";
 import type { Audience, Availability, Category } from "@/lib/types/catalog";
 import type { ProductInput } from "@/lib/repositories/product-repository";
+import { deriveAvailabilityFromStock } from "@/lib/products/stock";
 
 /**
  * Bulk product import from a CSV a tenant uploads at /admin/productos/importar
@@ -49,9 +50,18 @@ export interface ProductImportRow {
   input: ProductInput;
 }
 
+export interface ProductImportPhoto {
+  /** Original filename, matched against the CSV's optional "foto" column case/whitespace-insensitively. */
+  filename: string;
+  /** Public Storage URL — already uploaded by the time this module sees it. */
+  url: string;
+}
+
 export interface ProductImportResult {
   rows: ProductImportRow[];
   errors: ProductImportError[];
+  /** A row still imports (with the usual placeholder image) when its "foto" column doesn't match any uploaded photo — this is reported here, separately from `errors`, since it isn't a reason to skip the row. */
+  warnings: ProductImportError[];
 }
 
 function normalize(value: string): string {
@@ -97,6 +107,7 @@ export function parseProductImportCsv(
   csvText: string,
   categories: Category[],
   existingSlugs: Set<string>,
+  photos: ProductImportPhoto[] = [],
 ): ProductImportResult {
   const records = parse(csvText, {
     columns: true,
@@ -109,9 +120,11 @@ export function parseProductImportCsv(
   // CSV's own "categoria" column needs slug (or name) -> Category.
   const categoriesById = new Map(categories.map((c) => [c.id, c] as const));
   const categoriesBySlug = new Map(categories.map((c) => [c.slug, c] as const));
+  const photosByFilename = new Map(photos.map((p) => [normalize(p.filename), p.url] as const));
 
   const rows: ProductImportRow[] = [];
   const errors: ProductImportError[] = [];
+  const warnings: ProductImportError[] = [];
   const seenSlugs = new Set(existingSlugs);
 
   if (records.length > MAX_IMPORT_ROWS) {
@@ -153,46 +166,66 @@ export function parseProductImportCsv(
     }
     seenSlugs.add(slug);
 
-    const wholesalePriceRaw = (record.precio_mayorista ?? "").trim();
-    const wholesalePrice = wholesalePriceRaw ? Number(wholesalePriceRaw.replace(",", ".")) : null;
+    const previousPriceRaw = (record.precio_anterior ?? "").trim();
+    const previousPrice = previousPriceRaw ? Number(previousPriceRaw.replace(",", ".")) : null;
+
+    const stockRaw = (record.stock ?? "").trim();
+    const parsedStock = stockRaw ? Number(stockRaw) : null;
+    const stock = parsedStock !== null && Number.isFinite(parsedStock) && parsedStock >= 0 ? Math.floor(parsedStock) : null;
 
     const sizes = (record.tallas ?? "")
       .split(";")
       .map((s) => s.trim())
       .filter(Boolean);
 
+    const photoFilename = (record.foto ?? "").trim();
+    let images = [`placeholder:${category.slug}:new`];
+    if (photoFilename) {
+      const matchedUrl = photosByFilename.get(normalize(photoFilename));
+      if (matchedUrl) {
+        images = [matchedUrl];
+      } else {
+        warnings.push({
+          line,
+          reason: `Foto "${photoFilename}" no encontrada entre las imágenes subidas — se usó un marcador de posición.`,
+        });
+      }
+    }
+
     const input: ProductInput = {
       slug,
       reference,
       name,
       price,
-      wholesalePrice: wholesalePrice !== null && Number.isFinite(wholesalePrice) ? wholesalePrice : null,
+      previousPrice: previousPrice !== null && Number.isFinite(previousPrice) ? previousPrice : null,
       description: (record.descripcion ?? "").trim(),
       categorySlug: category.slug,
       audience: resolveAudience(category, categoriesById),
-      images: [`placeholder:${category.slug}:new`],
+      images,
       cardAspectRatio: "portrait",
       imageFit: "cover",
       sizes,
       colors: [],
-      availability: resolveAvailability(record.disponibilidad),
+      availability: stock !== null ? deriveAvailabilityFromStock(stock) : resolveAvailability(record.disponibilidad),
       featured: parseBoolean(record.destacado),
       isNew: parseBoolean(record.nuevo),
       onSale: parseBoolean(record.oferta),
       active: true,
       hidePaymentBadge: false,
+      stock,
     };
 
     rows.push({ line, input });
   });
 
-  return { rows, errors };
+  return { rows, errors, warnings };
 }
 
 /** The downloadable template's exact header row + one filled-in example — kept in code (not a static file) so it can never silently drift from what parseProductImportCsv actually reads. */
 export function buildProductImportTemplateCsv(): string {
-  const header = "referencia,nombre,precio,precio_mayorista,descripcion,categoria,tallas,disponibilidad,destacado,nuevo,oferta";
+  const header =
+    "referencia,nombre,precio,precio_anterior,descripcion,categoria,tallas,disponibilidad,destacado,nuevo,oferta,foto,stock";
   const example =
-    "REF-001,Ejemplo de producto,29.99,,Descripción breve del producto,nombre-de-tu-categoria,S;M;L,disponible,no,si,no";
+    "REF-001,Ejemplo de producto,29.99,,Descripción breve del producto,nombre-de-tu-categoria,S;M;L,disponible,no,si,no,foto-ejemplo.jpg,";
   return `${header}\n${example}\n`;
 }

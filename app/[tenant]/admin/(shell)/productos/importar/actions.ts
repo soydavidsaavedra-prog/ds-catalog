@@ -4,36 +4,34 @@ import { revalidatePath } from "next/cache";
 import { listCategories } from "@/lib/repositories/category-repository";
 import { createProduct, listProducts } from "@/lib/repositories/product-repository";
 import { getEffectivePlanForTenant } from "@/lib/tenant/plan-limits";
-import { parseProductImportCsv, type ProductImportError } from "@/lib/products/csv-import";
+import { parseProductImportCsv, type ProductImportError, type ProductImportPhoto } from "@/lib/products/csv-import";
 
 export interface ImportProductsResult {
   imported: number;
   errors: ProductImportError[];
+  warnings: ProductImportError[];
 }
 
-export type ImportProductsActionState = { error?: string; result?: ImportProductsResult };
-
 /**
- * Reads the uploaded CSV, validates every row via parseProductImportCsv
- * (pure, unit-tested separately — see lib/products/csv-import.ts), then
- * inserts each valid row with a plain createProduct call. Never an
- * all-or-nothing import: a bad row is reported and skipped, every good
- * row still gets created, same as how a single manual product form only
- * ever fails the one save it's given.
+ * Validates every row via parseProductImportCsv (pure, unit-tested
+ * separately — see lib/products/csv-import.ts), then inserts each valid
+ * row with a plain createProduct call. Never an all-or-nothing import: a
+ * bad row is reported and skipped, every good row still gets created, same
+ * as how a single manual product form only ever fails the one save it's
+ * given.
+ *
+ * Called directly as a function from the client (NSProductImportForm.tsx),
+ * not via a <form action> — when photos are attached, they're already
+ * uploaded to Storage client-side before this runs (same reasoning as
+ * createProductBatchAction), so there's no native form submission left to
+ * hook into.
  */
 export async function importProductsAction(
   tenantId: string,
   tenantSlug: string,
-  _prev: ImportProductsActionState,
-  formData: FormData,
-): Promise<ImportProductsActionState> {
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) {
-    return { error: "Selecciona un archivo CSV." };
-  }
-
-  const csvText = await file.text();
-
+  csvText: string,
+  photos: ProductImportPhoto[],
+): Promise<{ error?: string; result?: ImportProductsResult }> {
   const [categories, existingProducts, plan] = await Promise.all([
     listCategories(tenantId),
     listProducts(tenantId),
@@ -43,7 +41,7 @@ export async function importProductsAction(
 
   let parsed;
   try {
-    parsed = parseProductImportCsv(csvText, categories, existingSlugs);
+    parsed = parseProductImportCsv(csvText, categories, existingSlugs, photos);
   } catch (err) {
     console.error("[importar productos] failed to parse CSV:", err);
     return { error: "No se pudo leer el archivo. Verifica que sea un CSV separado por comas, con la primera fila de encabezados." };
@@ -51,6 +49,7 @@ export async function importProductsAction(
 
   let rowsToImport = parsed.rows;
   const errors = [...parsed.errors];
+  const warnings = parsed.warnings;
 
   if (plan?.maxProducts != null) {
     const remaining = Math.max(0, plan.maxProducts - existingProducts.length);
@@ -83,5 +82,11 @@ export async function importProductsAction(
     revalidatePath(`/${tenantSlug}/admin/productos`);
   }
 
-  return { result: { imported, errors: errors.sort((a, b) => a.line - b.line) } };
+  return {
+    result: {
+      imported,
+      errors: errors.sort((a, b) => a.line - b.line),
+      warnings: warnings.sort((a, b) => a.line - b.line),
+    },
+  };
 }

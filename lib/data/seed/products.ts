@@ -282,7 +282,7 @@ function toProduct(seed: Seed): Product {
     reference: seed.ref,
     name: seed.name,
     price: seed.price,
-    wholesalePrice: seed.wholesale,
+    previousPrice: seed.wholesale,
     description: seed.description,
     categorySlug: `${seed.audience}-${seed.category}`,
     audience: seed.audience,
@@ -297,6 +297,7 @@ function toProduct(seed: Seed): Product {
     onSale: seed.onSale ?? false,
     active: seed.active ?? true,
     hidePaymentBadge: false,
+    stock: null,
     createdAt: now,
     updatedAt: now,
   };

@@ -12,7 +12,7 @@ function fromRow(row: ProductRow): Product {
     reference: row.reference,
     name: row.name,
     price: Number(row.price),
-    wholesalePrice: row.wholesale_price === null ? null : Number(row.wholesale_price),
+    previousPrice: row.wholesale_price === null ? null : Number(row.wholesale_price),
     description: row.description,
     categorySlug: row.category_slug,
     audience: row.audience,
@@ -31,6 +31,7 @@ function fromRow(row: ProductRow): Product {
     onSale: row.on_sale,
     active: row.active,
     hidePaymentBadge: row.hide_payment_badge,
+    stock: row.stock === undefined ? null : row.stock,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -42,7 +43,7 @@ function toRow(input: Partial<ProductInput>): Partial<ProductRow> {
   if (input.reference !== undefined) row.reference = input.reference;
   if (input.name !== undefined) row.name = input.name;
   if (input.price !== undefined) row.price = input.price;
-  if (input.wholesalePrice !== undefined) row.wholesale_price = input.wholesalePrice;
+  if (input.previousPrice !== undefined) row.wholesale_price = input.previousPrice;
   if (input.description !== undefined) row.description = input.description;
   if (input.categorySlug !== undefined) row.category_slug = input.categorySlug;
   if (input.audience !== undefined) row.audience = input.audience;
@@ -57,6 +58,7 @@ function toRow(input: Partial<ProductInput>): Partial<ProductRow> {
   if (input.onSale !== undefined) row.on_sale = input.onSale;
   if (input.active !== undefined) row.active = input.active;
   if (input.hidePaymentBadge !== undefined) row.hide_payment_badge = input.hidePaymentBadge;
+  if (input.stock !== undefined) row.stock = input.stock;
   return row;
 }
 

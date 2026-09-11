@@ -42,7 +42,12 @@ export default async function StorefrontLayout({
       <theme.Header tenantSlug={tenant.slug} />
       <main className="flex-1">{children}</main>
       <theme.Footer tenantSlug={tenant.slug} />
-      <theme.CartDrawer tenantSlug={tenant.slug} whatsappNumber={settings.whatsappNumber} brandName={settings.brandName} />
+      <theme.CartDrawer
+        tenantId={tenant.id}
+        tenantSlug={tenant.slug}
+        whatsappNumber={settings.whatsappNumber}
+        brandName={settings.brandName}
+      />
       <NSWhatsAppButton whatsappNumber={settings.whatsappNumber} variant="floating" />
     </div>
   );

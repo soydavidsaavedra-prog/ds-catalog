@@ -68,7 +68,7 @@ export function NSProductPurchasePanel({
         </p>
         <h1 className="mt-1 font-display text-3xl uppercase tracking-wide sm:text-4xl">{product.name}</h1>
         <div className="mt-3 flex items-center gap-4">
-          <NSPrice amount={product.price} size="lg" />
+          <NSPrice amount={product.price} compareAt={product.previousPrice} size="lg" />
           <NSAvailabilityBadge availability={product.availability} />
         </div>
         {showPaymentBadge ? (
