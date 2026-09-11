@@ -165,8 +165,8 @@ export function parseProductImportCsv(
     }
     seenSlugs.add(slug);
 
-    const wholesalePriceRaw = (record.precio_mayorista ?? "").trim();
-    const wholesalePrice = wholesalePriceRaw ? Number(wholesalePriceRaw.replace(",", ".")) : null;
+    const previousPriceRaw = (record.precio_anterior ?? "").trim();
+    const previousPrice = previousPriceRaw ? Number(previousPriceRaw.replace(",", ".")) : null;
 
     const sizes = (record.tallas ?? "")
       .split(";")
@@ -192,7 +192,7 @@ export function parseProductImportCsv(
       reference,
       name,
       price,
-      wholesalePrice: wholesalePrice !== null && Number.isFinite(wholesalePrice) ? wholesalePrice : null,
+      previousPrice: previousPrice !== null && Number.isFinite(previousPrice) ? previousPrice : null,
       description: (record.descripcion ?? "").trim(),
       categorySlug: category.slug,
       audience: resolveAudience(category, categoriesById),
@@ -218,7 +218,7 @@ export function parseProductImportCsv(
 /** The downloadable template's exact header row + one filled-in example — kept in code (not a static file) so it can never silently drift from what parseProductImportCsv actually reads. */
 export function buildProductImportTemplateCsv(): string {
   const header =
-    "referencia,nombre,precio,precio_mayorista,descripcion,categoria,tallas,disponibilidad,destacado,nuevo,oferta,foto";
+    "referencia,nombre,precio,precio_anterior,descripcion,categoria,tallas,disponibilidad,destacado,nuevo,oferta,foto";
   const example =
     "REF-001,Ejemplo de producto,29.99,,Descripción breve del producto,nombre-de-tu-categoria,S;M;L,disponible,no,si,no,foto-ejemplo.jpg";
   return `${header}\n${example}\n`;

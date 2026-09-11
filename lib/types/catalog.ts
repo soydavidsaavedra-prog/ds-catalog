@@ -49,8 +49,8 @@ export interface Product {
   name: string;
   /** Public retail price shown to every visitor. */
   price: number;
-  /** Internal wholesale price — never rendered on public pages (see section 21). */
-  wholesalePrice: number | null;
+  /** Optional "before" price for a discount — shown crossed out next to `price` on public pages when it's set higher than `price` (see NSPrice's `compareAt`). Stored in the same DB column that used to hold an internal wholesale price (see supabase/schema.sql). */
+  previousPrice: number | null;
   description: string;
   categorySlug: string;
   audience: Audience;

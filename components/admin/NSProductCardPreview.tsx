@@ -18,6 +18,7 @@ export function NSProductCardPreview({
   name,
   reference,
   price,
+  previousPrice,
   isNew,
   onSale,
   outOfStock,
@@ -31,6 +32,7 @@ export function NSProductCardPreview({
   name: string;
   reference: string;
   price: number;
+  previousPrice?: number | null;
   isNew: boolean;
   onSale: boolean;
   outOfStock: boolean;
@@ -79,7 +81,7 @@ export function NSProductCardPreview({
       <div className="mt-3 flex flex-col gap-1">
         <p className="truncate text-sm font-medium text-foreground">{name || "Nombre del producto"}</p>
         <p className="text-xs text-muted-foreground">{reference || "REF"}</p>
-        <NSPrice amount={price} />
+        <NSPrice amount={price} compareAt={previousPrice} />
       </div>
     </div>
   );

@@ -141,7 +141,7 @@ export function buildBatchProductDrafts(input: BuildBatchDraftsInput): BuildBatc
         reference,
         name,
         price: input.price ?? 0,
-        wholesalePrice: null,
+        previousPrice: null,
         description: "",
         categorySlug: input.category.slug,
         audience,

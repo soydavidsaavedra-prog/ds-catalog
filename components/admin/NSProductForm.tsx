@@ -49,6 +49,7 @@ export function NSProductForm({
   // stays uncontrolled/defaultValue, unchanged from before.
   const [name, setName] = useState(product?.name ?? "");
   const [price, setPrice] = useState(product?.price ?? 0);
+  const [previousPrice, setPreviousPrice] = useState(product?.previousPrice ?? null);
   const [isNew, setIsNew] = useState(product?.isNew ?? false);
   const [onSale, setOnSale] = useState(product?.onSale ?? false);
   const [hidePaymentBadge, setHidePaymentBadge] = useState(product?.hidePaymentBadge ?? false);
@@ -135,8 +136,19 @@ export function NSProductForm({
               />
             </div>
             <div>
-              <NSLabel htmlFor="wholesalePrice">Precio mayorista (USD, interno)</NSLabel>
-              <NSInput id="wholesalePrice" name="wholesalePrice" type="number" min="0" step="0.01" defaultValue={product?.wholesalePrice ?? ""} />
+              <NSLabel htmlFor="previousPrice">Precio anterior (opcional)</NSLabel>
+              <NSInput
+                id="previousPrice"
+                name="previousPrice"
+                type="number"
+                min="0"
+                step="0.01"
+                value={previousPrice ?? ""}
+                onChange={(e) => setPreviousPrice(e.target.value === "" ? null : Number(e.target.value))}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Ponlo solo si está en oferta: si es mayor al precio detal, sale tachado junto al precio nuevo.
+              </p>
             </div>
             <div>
               <NSLabel htmlFor="availability">Disponibilidad</NSLabel>
@@ -305,6 +317,7 @@ export function NSProductForm({
             name={name}
             reference={product?.reference ?? nextReference ?? ""}
             price={price}
+            previousPrice={previousPrice}
             isNew={isNew}
             onSale={onSale}
             outOfStock={availability === "out_of_stock"}

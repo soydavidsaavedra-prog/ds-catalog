@@ -16,7 +16,7 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     reference: "REF-1",
     name: "Producto 1",
     price: 100,
-    wholesalePrice: null,
+    previousPrice: null,
     description: "Descripción del producto",
     categorySlug: "herramientas",
     audience: "unisex",

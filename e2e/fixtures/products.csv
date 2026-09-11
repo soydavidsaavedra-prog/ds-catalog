@@ -1,3 +1,3 @@
-referencia,nombre,precio,precio_mayorista,descripcion,categoria,tallas,disponibilidad,destacado,nuevo,oferta
+referencia,nombre,precio,precio_anterior,descripcion,categoria,tallas,disponibilidad,destacado,nuevo,oferta
 E2E-001,Taladro de prueba,49.99,30,Producto creado por la suite E2E,herramientas,,disponible,si,no,no
 E2E-002,Martillo de prueba,15,,Segundo producto de la suite E2E,herramientas,,disponible,no,si,no

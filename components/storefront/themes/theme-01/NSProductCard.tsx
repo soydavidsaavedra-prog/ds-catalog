@@ -83,7 +83,7 @@ export function NSProductCard({
         <p className="truncate text-sm font-medium text-foreground">{product.name}</p>
         <p className="text-xs text-muted-foreground">{product.reference}</p>
         <div className="mt-0.5 flex items-center justify-between">
-          <NSPrice amount={product.price} />
+          <NSPrice amount={product.price} compareAt={product.previousPrice} />
           {product.colors.length > 0 ? (
             <div className="flex items-center gap-1" aria-hidden>
               {product.colors.slice(0, 4).map((c) => (

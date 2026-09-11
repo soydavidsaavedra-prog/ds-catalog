@@ -61,6 +61,10 @@ create table if not exists ns_products (
   reference text not null,
   name text not null,
   price numeric(10, 2) not null default 0,
+  -- Column name kept as-is to avoid a rename migration; the app now uses it
+  -- as an optional "precio anterior" (shown crossed out for a discount when
+  -- higher than `price`) instead of an internal wholesale price. See
+  -- Product.previousPrice in lib/types/catalog.ts.
   wholesale_price numeric(10, 2),
   description text not null default '',
   category_slug text not null references ns_categories (slug) on update cascade,

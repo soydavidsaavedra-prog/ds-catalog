@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { importProductsAction, type ImportProductsResult } from "@/app/[tenant]/admin/(shell)/productos/importar/actions";
 import type { ProductImportPhoto } from "@/lib/products/csv-import";
 import { compressImageBeforeUpload } from "@/lib/utils/image-compress";
@@ -16,7 +15,6 @@ type Phase =
   | { status: "error"; message: string };
 
 export function NSProductImportForm({ tenantId, tenantSlug }: { tenantId: string; tenantSlug: string }) {
-  const router = useRouter();
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [phase, setPhase] = useState<Phase>({ status: "idle" });
@@ -57,9 +55,6 @@ export function NSProductImportForm({ tenantId, tenantSlug }: { tenantId: string
     setCsvFile(null);
     setPhotoFiles([]);
     setPhase({ status: "done", result: response.result! });
-    if (response.result!.imported > 0 && response.result!.errors.length === 0) {
-      router.push(`/${tenantSlug}/admin/productos`);
-    }
   }
 
   return (
@@ -74,12 +69,17 @@ export function NSProductImportForm({ tenantId, tenantSlug }: { tenantId: string
             categoría debe existir ya en tu catálogo (por nombre o por slug).
           </li>
           <li>
-            <span className="font-medium text-foreground">precio_mayorista, descripcion, tallas, disponibilidad,
+            <span className="font-medium text-foreground">precio_anterior, descripcion, tallas, disponibilidad,
             destacado, nuevo, oferta, foto</span> — opcionales.
           </li>
           <li>
             <span className="font-medium text-foreground">tallas</span> se separan con punto y coma dentro de la celda
             (ej. <code className="rounded bg-surface px-1">S;M;L</code>).
+          </li>
+          <li>
+            <span className="font-medium text-foreground">precio_anterior</span> es opcional — si pones ahí un valor
+            mayor al de <span className="font-medium text-foreground">precio</span>, el producto se muestra en oferta
+            con ese precio tachado.
           </li>
           <li>
             <span className="font-medium text-foreground">foto</span> es el nombre exacto de un archivo que subas junto

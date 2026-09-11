@@ -19,7 +19,7 @@ function makeCategory(overrides: Partial<Category> = {}): Category {
   };
 }
 
-const HEADER = "referencia,nombre,precio,precio_mayorista,descripcion,categoria,tallas,disponibilidad,destacado,nuevo,oferta";
+const HEADER = "referencia,nombre,precio,precio_anterior,descripcion,categoria,tallas,disponibilidad,destacado,nuevo,oferta";
 
 describe("parseProductImportCsv", () => {
   it("parses a valid row into a ready-to-insert ProductInput", () => {
@@ -34,7 +34,7 @@ describe("parseProductImportCsv", () => {
       reference: "REF-1",
       name: "Taladro",
       price: 49.99,
-      wholesalePrice: 30,
+      previousPrice: 30,
       description: "Un taladro bueno",
       categorySlug: "herramientas",
       availability: "in_stock",

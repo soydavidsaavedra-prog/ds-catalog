@@ -113,7 +113,7 @@ async function seedProducts(tenantId: string) {
     reference: p.reference,
     name: p.name,
     price: p.price,
-    wholesale_price: p.wholesalePrice,
+    wholesale_price: p.previousPrice,
     description: p.description,
     category_slug: p.categorySlug,
     audience: p.audience,
