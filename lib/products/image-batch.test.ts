@@ -104,4 +104,33 @@ describe("buildBatchProductDrafts", () => {
     });
     expect(drafts[0]!.input.slug).toBe("ns-001-foto-2");
   });
+
+  it("defaults to price 0 and inactive when price/active are not given", () => {
+    const drafts = buildBatchProductDrafts({
+      items: [{ filename: "a.jpg", url: "u" }],
+      category: dama,
+      categories,
+      startingReferenceNumber: 1,
+      existingSlugs: new Set(),
+    });
+    expect(drafts[0]!.input.price).toBe(0);
+    expect(drafts[0]!.input.active).toBe(false);
+  });
+
+  it("applies a shared price and active flag to every draft when given", () => {
+    const drafts = buildBatchProductDrafts({
+      items: [
+        { filename: "a.jpg", url: "u1" },
+        { filename: "b.jpg", url: "u2" },
+      ],
+      category: dama,
+      categories,
+      startingReferenceNumber: 1,
+      existingSlugs: new Set(),
+      price: 19.99,
+      active: true,
+    });
+    expect(drafts.every((d) => d.input.price === 19.99)).toBe(true);
+    expect(drafts.every((d) => d.input.active === true)).toBe(true);
+  });
 });

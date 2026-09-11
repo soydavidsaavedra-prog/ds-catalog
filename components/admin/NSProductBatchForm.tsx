@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Category } from "@/lib/types/catalog";
 import { createProductBatchAction, type ProductBatchError } from "@/app/[tenant]/admin/(shell)/productos/lote-fotos/actions";
 import { MAX_BATCH_IMAGES } from "@/lib/products/image-batch";
 import { compressImageBeforeUpload } from "@/lib/utils/image-compress";
-import { NSLabel, NSSelect } from "@/components/ui/NSInput";
+import { NSInput, NSLabel, NSSelect } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import { DSCard } from "@/components/ui/DSCard";
 
@@ -27,10 +27,24 @@ export function NSProductBatchForm({
 }) {
   const [categorySlug, setCategorySlug] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [truncated, setTruncated] = useState(0);
+  const [price, setPrice] = useState("");
+  const [createActive, setCreateActive] = useState(false);
   const [phase, setPhase] = useState<Phase>({ status: "idle" });
 
   const busy = phase.status === "uploading" || phase.status === "creating";
+
+  // Thumbnail previews so a tenant can see what's about to be uploaded (and
+  // drop a wrong shot) before committing to the batch — object URLs only
+  // ever live in this tab, revoked as soon as the file list changes.
+  useEffect(() => {
+    const urls = files.map((file) => URL.createObjectURL(file));
+    setPreviews(urls);
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [files]);
 
   function handleFilesSelected(fileList: FileList | null) {
     if (!fileList) return;
@@ -38,6 +52,10 @@ export function NSProductBatchForm({
     setTruncated(fileList.length - selected.length);
     setFiles(selected);
     setPhase({ status: "idle" });
+  }
+
+  function removeFile(index: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   }
 
   async function handleSubmit() {
@@ -75,7 +93,11 @@ export function NSProductBatchForm({
 
     setPhase({ status: "creating" });
     try {
-      const result = await createProductBatchAction(tenantId, tenantSlug, categorySlug, items);
+      const parsedPrice = price.trim() === "" ? undefined : Number(price);
+      const result = await createProductBatchAction(tenantId, tenantSlug, categorySlug, items, {
+        price: parsedPrice != null && Number.isFinite(parsedPrice) ? parsedPrice : undefined,
+        active: createActive,
+      });
       setPhase({ status: "done", created: result.created, errors: [...uploadErrors, ...result.errors] });
     } catch {
       setPhase({ status: "error", message: "No se pudieron crear los productos. Intenta de nuevo en un momento." });
@@ -136,6 +158,66 @@ export function NSProductBatchForm({
               Solo se usarán las primeras {MAX_BATCH_IMAGES} — quedaron {truncated} fuera. Súbelas en otro lote.
             </p>
           ) : null}
+          {previews.length > 0 ? (
+            <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
+              {previews.map((src, i) => (
+                <div key={src} className="group relative aspect-square overflow-hidden rounded-control border border-border bg-surface">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- local blob: preview, next/image can't optimize these */}
+                  <img src={src} alt={files[i]?.name ?? ""} className="h-full w-full object-cover" />
+                  {!busy ? (
+                    <button
+                      type="button"
+                      onClick={() => removeFile(i)}
+                      aria-label={`Quitar ${files[i]?.name ?? "esta foto"}`}
+                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-foreground/70 text-xs font-bold leading-none text-background opacity-0 transition-opacity group-hover:opacity-100"
+                    >
+                      ×
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </DSCard>
+
+      <DSCard
+        title="3. Opciones (opcional)"
+        description="Déjalas como están si prefieres revisar cada producto antes de publicarlo."
+      >
+        <div className="flex flex-col gap-5">
+          <div className="max-w-xs">
+            <NSLabel htmlFor="batchPrice">Precio inicial para todo el lote (USD)</NSLabel>
+            <NSInput
+              id="batchPrice"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              disabled={busy}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Se asigna a los {files.length || ""} productos del lote — puedes ajustarlo por producto después.
+            </p>
+          </div>
+          <label className="flex items-start gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              checked={createActive}
+              onChange={(e) => setCreateActive(e.target.checked)}
+              disabled={busy}
+              className="mt-0.5 h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
+            />
+            <span>
+              Crear los productos ya activos (visibles en tu catálogo de inmediato)
+              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                Si no marcas esto, quedan en borrador oculto hasta que los revises y actives — la opción más segura si
+                usas nombres provisionales.
+              </span>
+            </span>
+          </label>
         </div>
       </DSCard>
 
@@ -162,9 +244,10 @@ export function NSProductBatchForm({
       {phase.status === "done" ? (
         <DSCard>
           <p className="text-sm font-medium text-foreground">
-            {phase.created} producto{phase.created === 1 ? "" : "s"} creado{phase.created === 1 ? "" : "s"} en
-            borrador (oculto{phase.created === 1 ? "" : "s"} del catálogo público hasta que lo{phase.created === 1 ? "" : "s"}{" "}
-            actives).
+            {phase.created} producto{phase.created === 1 ? "" : "s"} creado{phase.created === 1 ? "" : "s"}
+            {createActive
+              ? ` — ya visible${phase.created === 1 ? "" : "s"} en tu catálogo.`
+              : ` en borrador (oculto${phase.created === 1 ? "" : "s"} del catálogo público hasta que lo${phase.created === 1 ? "" : "s"} actives).`}
           </p>
           {phase.errors.length > 0 ? (
             <>
@@ -181,8 +264,13 @@ export function NSProductBatchForm({
             </>
           ) : null}
           {phase.created > 0 ? (
-            <NSButton href={`/${tenantSlug}/admin/productos?estado=inactivo`} variant="outline" size="sm" className="mt-4">
-              Ver borradores
+            <NSButton
+              href={`/${tenantSlug}/admin/productos${createActive ? "" : "?estado=inactivo"}`}
+              variant="outline"
+              size="sm"
+              className="mt-4"
+            >
+              {createActive ? "Ver productos" : "Ver borradores"}
             </NSButton>
           ) : null}
         </DSCard>

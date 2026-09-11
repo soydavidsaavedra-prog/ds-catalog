@@ -36,6 +36,7 @@ export async function createProductBatchAction(
   tenantSlug: string,
   categorySlug: string,
   items: BatchImageItem[],
+  options?: { price?: number; active?: boolean },
 ): Promise<ProductBatchResult> {
   const errors: ProductBatchError[] = [];
   let itemsToCreate = items;
@@ -81,6 +82,8 @@ export async function createProductBatchAction(
     categories,
     startingReferenceNumber,
     existingSlugs,
+    price: options?.price,
+    active: options?.active,
   });
 
   let created = 0;
@@ -95,10 +98,14 @@ export async function createProductBatchAction(
   }
 
   if (created > 0) {
-    // Every product here is created inactive — no storefront path needs
-    // revalidating yet, only the admin list where the tenant will find and
-    // edit them.
     revalidatePath(`/${tenantSlug}/admin/productos`);
+    if (options?.active) {
+      // Unlike the default (inactive) path, these drafts are visible to
+      // real customers immediately — the storefront pages need refreshing too.
+      revalidatePath(`/${tenantSlug}`);
+      revalidatePath(`/${tenantSlug}/catalogo`);
+      revalidatePath(`/${tenantSlug}/${categorySlug}`);
+    }
   }
 
   return { created, errors };

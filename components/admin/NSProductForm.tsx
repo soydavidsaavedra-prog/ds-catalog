@@ -214,55 +214,72 @@ export function NSProductForm({
           </div>
         </DSCard>
 
-        <DSCard title="Visibilidad">
-          <div className="flex flex-wrap gap-6">
-            <label className="flex items-center gap-2 text-sm font-medium">
-              <input
-                type="checkbox"
-                name="featured"
-                defaultChecked={product?.featured}
-                className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
-              />
-              Destacado
-            </label>
-            <label className="flex items-center gap-2 text-sm font-medium">
-              <input
-                type="checkbox"
-                name="isNew"
-                checked={isNew}
-                onChange={(e) => setIsNew(e.target.checked)}
-                className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
-              />
-              Nuevo
-            </label>
-            <label className="flex items-center gap-2 text-sm font-medium">
-              <input
-                type="checkbox"
-                name="onSale"
-                checked={onSale}
-                onChange={(e) => setOnSale(e.target.checked)}
-                className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
-              />
-              En oferta
-            </label>
-            <label className="flex items-center gap-2 text-sm font-medium">
+        <DSCard title="Visibilidad" description="Estado del producto y las etiquetas que se muestran sobre su foto en el catálogo.">
+          <div className="flex flex-col gap-5">
+            <label className="flex items-start gap-3 rounded-control border border-border bg-surface px-4 py-3 has-[:checked]:border-accent-strong has-[:checked]:bg-accent/5">
               <input
                 type="checkbox"
                 name="active"
                 defaultChecked={product?.active ?? true}
-                className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-border-strong accent-[var(--accent)]"
               />
-              Activo (visible en la tienda)
+              <span>
+                <span className="text-sm font-medium">Activo</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  Visible para tus clientes en el catálogo público. Desmárcalo para ocultarlo sin borrarlo.
+                </span>
+              </span>
             </label>
-            <label className="flex items-center gap-2 text-sm font-medium">
+
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Etiquetas de la tarjeta</p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <label className="flex items-center gap-2 rounded-control border border-border bg-surface px-3.5 py-2.5 text-sm font-medium has-[:checked]:border-accent-strong has-[:checked]:bg-accent/5">
+                  <input
+                    type="checkbox"
+                    name="featured"
+                    defaultChecked={product?.featured}
+                    className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
+                  />
+                  Destacado
+                </label>
+                <label className="flex items-center gap-2 rounded-control border border-border bg-surface px-3.5 py-2.5 text-sm font-medium has-[:checked]:border-accent-strong has-[:checked]:bg-accent/5">
+                  <input
+                    type="checkbox"
+                    name="isNew"
+                    checked={isNew}
+                    onChange={(e) => setIsNew(e.target.checked)}
+                    className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
+                  />
+                  Nuevo
+                </label>
+                <label className="flex items-center gap-2 rounded-control border border-border bg-surface px-3.5 py-2.5 text-sm font-medium has-[:checked]:border-accent-strong has-[:checked]:bg-accent/5">
+                  <input
+                    type="checkbox"
+                    name="onSale"
+                    checked={onSale}
+                    onChange={(e) => setOnSale(e.target.checked)}
+                    className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
+                  />
+                  En oferta
+                </label>
+              </div>
+            </div>
+
+            <label className="flex items-start gap-3 rounded-control border border-border bg-surface px-4 py-3 has-[:checked]:border-accent-strong has-[:checked]:bg-accent/5">
               <input
                 type="checkbox"
                 name="hidePaymentBadge"
                 checked={hidePaymentBadge}
                 onChange={(e) => setHidePaymentBadge(e.target.checked)}
-                className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-border-strong accent-[var(--accent)]"
               />
-              Ocultar ícono de método de pago (ej. Cashea) en este producto
+              <span>
+                <span className="text-sm font-medium">Ocultar ícono de método de pago</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  Oculta el ícono (ej. Cashea) que normalmente aparece sobre la foto de este producto.
+                </span>
+              </span>
             </label>
           </div>
         </DSCard>

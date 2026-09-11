@@ -81,6 +81,10 @@ export interface BuildBatchDraftsInput {
   /** First reference number to use (e.g. 46 for "NS-046") — the caller computes this once via getNextReference, then this function increments it locally per item so two batches submitted close together can never collide on the same number (same reasoning as createHeroSlideAction's `order` in app/[tenant]/admin/actions.ts). */
   startingReferenceNumber: number;
   existingSlugs: Set<string>;
+  /** Shared starting price applied to every product in the batch — still just a placeholder the tenant can fix per item, but saves re-typing the same number on every draft when a whole lote shares one price. Defaults to 0 (the original behavior). */
+  price?: number;
+  /** When true, every draft is created visible on the storefront immediately instead of as a hidden draft — for a tenant who trusts the batch as-is and wants to skip the activate step entirely. Defaults to false (the original, safer behavior). */
+  active?: boolean;
 }
 
 /** Builds ready-to-insert ProductInput drafts, one per image — never throws; a batch is always as many valid drafts as items given. */
@@ -110,7 +114,7 @@ export function buildBatchProductDrafts(input: BuildBatchDraftsInput): BatchProd
         slug,
         reference,
         name,
-        price: 0,
+        price: input.price ?? 0,
         wholesalePrice: null,
         description: "",
         categorySlug: input.category.slug,
@@ -124,11 +128,12 @@ export function buildBatchProductDrafts(input: BuildBatchDraftsInput): BatchProd
         featured: false,
         isNew: false,
         onSale: false,
-        // Deliberately inactive — a draft with a provisional name/price of 0
-        // must never be visible to real customers before the tenant edits
-        // it. See NSProductsTable's Activo/Inactivo filter for how they're
-        // found afterward.
-        active: false,
+        // Inactive by default — a draft with a provisional name must never
+        // be visible to real customers before the tenant edits it. See
+        // NSProductsTable's Activo/Inactivo filter for how they're found
+        // afterward. The tenant can opt into `active: true` explicitly
+        // when they trust the batch as-is (see NSProductBatchForm.tsx).
+        active: input.active ?? false,
         hidePaymentBadge: false,
       },
     };
