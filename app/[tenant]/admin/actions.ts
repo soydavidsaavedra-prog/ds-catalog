@@ -16,6 +16,7 @@ import {
 } from "@/lib/repositories/product-repository";
 import { findDuplicateProduct } from "@/lib/products/duplicates";
 import { deriveAvailabilityFromStock } from "@/lib/products/stock";
+import { deriveReferencePrefix } from "@/lib/products/reference-prefix";
 import { getEffectivePlanForTenant } from "@/lib/tenant/plan-limits";
 import { getPlanById } from "@/lib/repositories/plans-repository";
 import { assignPlanToTenant } from "@/lib/repositories/subscriptions-repository";
@@ -418,10 +419,10 @@ export async function updateProductStockAction(
  * path is duplicate-then-tweak rather than filling the full form again.
  */
 export async function duplicateProductAction(tenantId: string, tenantSlug: string, id: string): Promise<void> {
-  const existing = await getProductById(tenantId, id);
+  const [existing, tenant] = await Promise.all([getProductById(tenantId, id), getTenantById(tenantId)]);
   if (!existing) return;
 
-  const nextReference = await getNextReference(tenantId);
+  const nextReference = await getNextReference(tenantId, deriveReferencePrefix(tenant?.name ?? ""));
   let name = `${existing.name} (copia)`;
   let slug = slugify(`${nextReference}-${name}`);
   if (await isSlugTaken(tenantId, slug)) {

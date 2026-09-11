@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Product } from "@/lib/types/catalog";
 import { NSSectionHeading } from "@/components/ui/NSSectionHeading";
 import { NSProductGrid } from "./NSProductGrid";
+import { NSProductCarousel } from "./NSProductCarousel";
 import { NSButton } from "@/components/ui/NSButton";
 import { cn } from "@/lib/utils/cn";
 import type { PaymentBadgeInfo } from "./NSProductCard";
@@ -33,7 +34,7 @@ export function NSFeaturedProducts({
 }) {
   const [tab, setTab] = useState<TabKey>("nuevos");
   const byTab: Record<TabKey, Product[]> = { nuevos, destacados, ofertas };
-  const active = byTab[tab].slice(0, 8);
+  const active = byTab[tab].slice(0, tab === "destacados" ? 12 : 8);
 
   return (
     <section className="bg-surface py-20 sm:py-28">
@@ -68,14 +69,25 @@ export function NSFeaturedProducts({
         </div>
 
         <div className="mt-8">
-          <NSProductGrid
-            tenantSlug={tenantSlug}
-            products={active}
-            emptyTitle="Muy pronto"
-            emptyDescription="Estamos preparando esta selección."
-            paymentBadge={paymentBadge}
-            brandName={brandName}
-          />
+          {tab === "destacados" ? (
+            <NSProductCarousel
+              tenantSlug={tenantSlug}
+              products={active}
+              emptyTitle="Muy pronto"
+              emptyDescription="Estamos preparando esta selección."
+              paymentBadge={paymentBadge}
+              brandName={brandName}
+            />
+          ) : (
+            <NSProductGrid
+              tenantSlug={tenantSlug}
+              products={active}
+              emptyTitle="Muy pronto"
+              emptyDescription="Estamos preparando esta selección."
+              paymentBadge={paymentBadge}
+              brandName={brandName}
+            />
+          )}
         </div>
       </div>
     </section>

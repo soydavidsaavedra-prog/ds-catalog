@@ -115,13 +115,16 @@ export function NSProductsTable({
     }
   }
 
-  // Only offered for a product that already tracks stock (stock !== null) —
-  // turning tracking on is a deliberate choice made on the full edit form.
+  // Also how a product starts tracking stock in the first place: typing a
+  // number here for a product that had none (stock === null) turns
+  // tracking on for it immediately, same as filling the Stock field on the
+  // full edit form — no need to open that page just to set the first number.
   async function saveStock(product: Product, input: HTMLInputElement) {
     const raw = input.value.trim();
+    const revertTo = product.stock === null ? "" : String(product.stock);
     const parsed = Number(raw);
     if (raw === "" || !Number.isFinite(parsed) || parsed < 0) {
-      input.value = String(product.stock);
+      input.value = revertTo;
       return;
     }
     const nextStock = Math.floor(parsed);
@@ -129,7 +132,7 @@ export function NSProductsTable({
 
     const result = await updateProductStockAction(tenantId, tenantSlug, product.id, nextStock);
     if (result.error) {
-      input.value = String(product.stock);
+      input.value = revertTo;
       setFieldErrors((prev) => ({ ...prev, [product.id]: result.error! }));
     } else {
       setFieldErrors((prev) => {
@@ -359,22 +362,18 @@ export function NSProductsTable({
               </div>
             </td>
             <td className="px-4 py-3">
-              {product.stock !== null ? (
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  defaultValue={product.stock}
-                  aria-label={`Stock de ${product.name}`}
-                  onBlur={(e) => saveStock(product, e.currentTarget)}
-                  onKeyDown={(e) => handleQuickFieldKeyDown(e, String(product.stock))}
-                  className="w-16 min-w-0 rounded border border-transparent bg-transparent px-1 py-0.5 -mx-1 tabular-nums hover:border-border focus:border-accent-strong focus:bg-surface focus:outline-none focus:ring-1 focus:ring-accent/40"
-                />
-              ) : (
-                <span className="text-xs text-muted-foreground" title="Sin control de inventario — edítalo desde la página del producto para activarlo">
-                  —
-                </span>
-              )}
+              <input
+                type="number"
+                min="0"
+                step="1"
+                defaultValue={product.stock ?? ""}
+                placeholder="—"
+                title={product.stock === null ? "Sin inventario — pon un número para empezar a llevar el conteo" : undefined}
+                aria-label={`Stock de ${product.name}`}
+                onBlur={(e) => saveStock(product, e.currentTarget)}
+                onKeyDown={(e) => handleQuickFieldKeyDown(e, product.stock === null ? "" : String(product.stock))}
+                className="w-16 min-w-0 rounded border border-transparent bg-transparent px-1 py-0.5 -mx-1 tabular-nums hover:border-border focus:border-accent-strong focus:bg-surface focus:outline-none focus:ring-1 focus:ring-accent/40"
+              />
             </td>
             <td className="px-4 py-3">
               <DSStatusBadge label={availabilityLabel[product.availability]} tone={AVAILABILITY_TONE[product.availability]} />

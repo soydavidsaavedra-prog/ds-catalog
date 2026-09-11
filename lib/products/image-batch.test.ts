@@ -45,6 +45,7 @@ describe("buildBatchProductDrafts", () => {
       items: [{ filename: "foto1.jpg", url: "https://cdn/foto1.jpg" }],
       category: jeans,
       categories,
+      referencePrefix: "NS",
       startingReferenceNumber: 1,
       existingSlugs: new Set(),
     });
@@ -61,6 +62,7 @@ describe("buildBatchProductDrafts", () => {
       items: [{ filename: "a.jpg", url: "u" }],
       category: jeans,
       categories,
+      referencePrefix: "NS",
       startingReferenceNumber: 1,
       existingSlugs: new Set(),
     });
@@ -73,6 +75,7 @@ describe("buildBatchProductDrafts", () => {
       items: [{ filename: "a.jpg", url: "u" }],
       category: ferreteria,
       categories: [ferreteria],
+      referencePrefix: "NS",
       startingReferenceNumber: 1,
       existingSlugs: new Set(),
     });
@@ -88,10 +91,23 @@ describe("buildBatchProductDrafts", () => {
       ],
       category: dama,
       categories,
+      referencePrefix: "NS",
       startingReferenceNumber: 45,
       existingSlugs: new Set(),
     });
     expect(drafts.map((d) => d.input.reference)).toEqual(["NS-045", "NS-046", "NS-047"]);
+  });
+
+  it("uses the given reference prefix instead of a hardcoded one", () => {
+    const { drafts } = buildBatchProductDrafts({
+      items: [{ filename: "a.jpg", url: "u1" }],
+      category: dama,
+      categories,
+      referencePrefix: "FT",
+      startingReferenceNumber: 1,
+      existingSlugs: new Set(),
+    });
+    expect(drafts[0]!.input.reference).toBe("FT-001");
   });
 
   it("appends a numeric suffix when the computed slug already exists", () => {
@@ -99,6 +115,7 @@ describe("buildBatchProductDrafts", () => {
       items: [{ filename: "foto.jpg", url: "u1" }],
       category: dama,
       categories,
+      referencePrefix: "NS",
       startingReferenceNumber: 1,
       existingSlugs: new Set(["ns-001-foto"]),
     });
@@ -110,6 +127,7 @@ describe("buildBatchProductDrafts", () => {
       items: [{ filename: "a.jpg", url: "u" }],
       category: dama,
       categories,
+      referencePrefix: "NS",
       startingReferenceNumber: 1,
       existingSlugs: new Set(),
     });
@@ -125,6 +143,7 @@ describe("buildBatchProductDrafts", () => {
       ],
       category: dama,
       categories,
+      referencePrefix: "NS",
       startingReferenceNumber: 1,
       existingSlugs: new Set(),
       price: 19.99,
@@ -139,6 +158,7 @@ describe("buildBatchProductDrafts", () => {
       items: [{ filename: "camisa_azul.jpg", url: "u1" }],
       category: dama,
       categories,
+      referencePrefix: "NS",
       startingReferenceNumber: 1,
       existingSlugs: new Set(),
       existingNames: ["Camisa Azul"],
@@ -152,6 +172,7 @@ describe("buildBatchProductDrafts", () => {
       items: [{ filename: "  CAMISA_azul .jpg", url: "u1" }],
       category: dama,
       categories,
+      referencePrefix: "NS",
       startingReferenceNumber: 1,
       existingSlugs: new Set(),
       existingNames: ["camisa azul"],
@@ -169,6 +190,7 @@ describe("buildBatchProductDrafts", () => {
       ],
       category: dama,
       categories,
+      referencePrefix: "NS",
       startingReferenceNumber: 1,
       existingSlugs: new Set(),
     });
@@ -182,6 +204,7 @@ describe("buildBatchProductDrafts", () => {
       items: [{ filename: "a.jpg", url: "u1" }],
       category: dama,
       categories,
+      referencePrefix: "NS",
       startingReferenceNumber: 1,
       existingSlugs: new Set(),
     });

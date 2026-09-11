@@ -83,7 +83,7 @@ export function NSProductForm({
                 id="reference"
                 name="reference"
                 defaultValue={product?.reference ?? nextReference}
-                placeholder="NS-001"
+                placeholder="REF-001"
                 required
               />
               {!product ? (

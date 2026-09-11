@@ -79,7 +79,9 @@ export interface BuildBatchDraftsInput {
   category: Category;
   /** Full tree, needed only to resolve `category`'s top-level parent for audience. */
   categories: Category[];
-  /** First reference number to use (e.g. 46 for "NS-046") — the caller computes this once via getNextReference, then this function increments it locally per item so two batches submitted close together can never collide on the same number (same reasoning as createHeroSlideAction's `order` in app/[tenant]/admin/actions.ts). */
+  /** This tenant's own reference prefix (see lib/products/reference-prefix.ts) — e.g. "NS" for "NS-046", derived from their business name or detected from their existing products. */
+  referencePrefix: string;
+  /** First reference number to use (e.g. 46 for "NS-046") — the caller computes this once, then this function increments it locally per item so two batches submitted close together can never collide on the same number (same reasoning as createHeroSlideAction's `order` in app/[tenant]/admin/actions.ts). */
   startingReferenceNumber: number;
   existingSlugs: Set<string>;
   /** Shared starting price applied to every product in the batch — still just a placeholder the tenant can fix per item, but saves re-typing the same number on every draft when a whole lote shares one price. Defaults to 0 (the original behavior). */
@@ -122,7 +124,7 @@ export function buildBatchProductDrafts(input: BuildBatchDraftsInput): BuildBatc
     }
     seenNames.set(normalizedName, name);
 
-    const reference = `NS-${String(referenceNumber).padStart(3, "0")}`;
+    const reference = `${input.referencePrefix}-${String(referenceNumber).padStart(3, "0")}`;
     referenceNumber += 1;
 
     const baseSlug = slugify(`${reference}-${name}`);
