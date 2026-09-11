@@ -12,6 +12,7 @@ import { NSProductCardPreview } from "@/components/admin/NSProductCardPreview";
 import { buildAccentOverrideVars } from "@/lib/utils/brand";
 import { availabilityLabel } from "@/lib/utils/format";
 import { deriveAvailabilityFromStock } from "@/lib/products/stock";
+import { useNSFloatingPanelDismiss } from "@/components/ui/NSFloatingPanel";
 
 const initialState: ActionState = {};
 
@@ -45,6 +46,11 @@ export function NSProductForm({
   settings: SiteSettings;
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
+  // Set only when this form is rendered inside NSFloatingPanel (currently
+  // just "Nuevo producto") — pushing to the same closeHref there wouldn't
+  // dismiss the modal (see NSFloatingPanel's own comment on this), so
+  // "Cancelar" needs to trigger the same handler as the panel's own ×.
+  const dismissPanel = useNSFloatingPanelDismiss();
 
   // Controlled just enough to drive the live preview — everything else on
   // this form (reference, slug, category, description, sizes, colors...)
@@ -331,9 +337,15 @@ export function NSProductForm({
           <NSButton type="submit" loading={pending}>
             {submitLabel}
           </NSButton>
-          <NSButton href={`/${tenantSlug}/admin/productos`} variant="outline">
-            Cancelar
-          </NSButton>
+          {dismissPanel ? (
+            <NSButton type="button" variant="outline" onClick={dismissPanel}>
+              Cancelar
+            </NSButton>
+          ) : (
+            <NSButton href={`/${tenantSlug}/admin/productos`} variant="outline">
+              Cancelar
+            </NSButton>
+          )}
         </div>
       </form>
 

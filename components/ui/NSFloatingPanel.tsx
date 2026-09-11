@@ -1,10 +1,22 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
 
 type PanelState = "normal" | "minimized" | "maximized";
+
+/**
+ * Lets a child deep inside `children` (NSProductForm's own "Cancelar"
+ * button) trigger the exact same dismissal as the panel's own × — see the
+ * comment on handleDismiss below for why this can't just be a Link/push.
+ */
+const NSFloatingPanelDismissContext = createContext<(() => void) | null>(null);
+
+/** Reads the current panel's dismiss handler, or null when not rendered inside one (e.g. the edit-product page, which has no floating panel). */
+export function useNSFloatingPanelDismiss() {
+  return useContext(NSFloatingPanelDismissContext);
+}
 
 /**
  * Window chrome (minimize/maximize/close) around a form that used to be
@@ -29,15 +41,33 @@ export function NSFloatingPanel({
   children,
 }: {
   title: string;
-  /** Where "Cerrar" (×) navigates — discarding the form, same as a Cancel button. */
+  /** Where "Cerrar" (×) ends up — used only as a fallback when there's no history entry to go back to (e.g. a hard reload landed straight on this URL). */
   closeHref: string;
   children: ReactNode;
 }) {
   const router = useRouter();
   const [state, setState] = useState<PanelState>("normal");
 
+  // This panel is normally reached via an *intercepted* route
+  // (productos/@modal/(.)nuevo), which keeps the products list mounted
+  // behind it. Dismissing with router.push(closeHref) doesn't work there:
+  // on a client-side transition, Next.js keeps a parallel-route slot's
+  // last active state when the target URL doesn't include that slot,
+  // so the modal never collapses back to its default.tsx — the × and
+  // "Cancelar" would silently do nothing. router.back() pops the actual
+  // history entry instead, which Next resolves correctly. Only fall back
+  // to push when there's truly nothing to go back to (a hard reload / a
+  // fresh tab landed directly on the standalone /productos/nuevo route).
+  function handleDismiss() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push(closeHref);
+    }
+  }
+
   return (
-    <>
+    <NSFloatingPanelDismissContext.Provider value={handleDismiss}>
       {state !== "minimized" ? <div className="fixed inset-0 z-40 bg-[var(--overlay)]" aria-hidden /> : null}
 
       <div
@@ -75,7 +105,7 @@ export function NSFloatingPanel({
             </button>
             <button
               type="button"
-              onClick={() => router.push(closeHref)}
+              onClick={handleDismiss}
               aria-label="Cerrar"
               title="Cerrar"
               className="flex h-7 w-7 items-center justify-center rounded-control text-muted-foreground hover:bg-danger/10 hover:text-danger"
@@ -91,6 +121,6 @@ export function NSFloatingPanel({
           {children}
         </div>
       </div>
-    </>
+    </NSFloatingPanelDismissContext.Provider>
   );
 }
