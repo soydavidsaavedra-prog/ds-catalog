@@ -262,6 +262,44 @@ export async function deleteProductAction(tenantId: string, tenantSlug: string, 
   revalidatePath(`/${tenantSlug}/admin/productos`);
 }
 
+/**
+ * Bulk sibling of deleteProductAction — same per-item cleanup (Storage
+ * files, storefront revalidation), just looped. Never all-or-nothing: a
+ * product that fails to delete (or was already gone) is skipped rather
+ * than aborting the rest, same philosophy as the CSV/image-batch imports.
+ */
+export async function deleteProductsAction(tenantId: string, tenantSlug: string, ids: string[]): Promise<void> {
+  for (const id of ids) {
+    const existing = await getProductById(tenantId, id);
+    if (!existing) continue;
+    try {
+      await deleteProduct(tenantId, id);
+      await cleanupReplacedImages(existing.images, []);
+      revalidateStorefront(tenantSlug, existing.categorySlug, existing.slug);
+    } catch (err) {
+      console.error(`[productos] failed to bulk-delete ${id}:`, err);
+    }
+  }
+  revalidatePath(`/${tenantSlug}/admin/productos`);
+}
+
+/**
+ * Bulk sibling of toggleProductFlagAction, scoped to just "active" (the
+ * one flag the products list lets you bulk-change) — e.g. activating
+ * every draft from a lote-fotos batch at once instead of one by one.
+ */
+export async function setProductsActiveAction(tenantId: string, tenantSlug: string, ids: string[], active: boolean): Promise<void> {
+  for (const id of ids) {
+    try {
+      const updated = await updateProduct(tenantId, id, { active });
+      if (updated) revalidateStorefront(tenantSlug, updated.categorySlug, updated.slug);
+    } catch (err) {
+      console.error(`[productos] failed to bulk-${active ? "activate" : "deactivate"} ${id}:`, err);
+    }
+  }
+  revalidatePath(`/${tenantSlug}/admin/productos`);
+}
+
 export async function toggleProductFlagAction(
   tenantId: string,
   tenantSlug: string,
