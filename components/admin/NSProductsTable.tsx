@@ -328,7 +328,7 @@ export function NSProductsTable({
                     aria-label={`Nombre de ${product.name}`}
                     onBlur={(e) => saveQuickField(product, "name", e.currentTarget)}
                     onKeyDown={(e) => handleQuickFieldKeyDown(e, product.name)}
-                    className="w-full truncate rounded border border-transparent bg-transparent px-1 py-0.5 -mx-1 text-sm font-medium hover:border-border focus:border-accent-strong focus:bg-surface focus:outline-none focus:ring-1 focus:ring-accent/40"
+                    className="w-full truncate rounded border border-transparent bg-transparent px-1 py-0.5 -mx-1 text-sm font-medium text-foreground hover:border-border focus:border-accent-strong focus:bg-surface focus:outline-none focus:ring-1 focus:ring-accent/40"
                   />
                   <input
                     defaultValue={product.reference}
@@ -357,7 +357,7 @@ export function NSProductsTable({
                   aria-label={`Precio de ${product.name}`}
                   onBlur={(e) => saveQuickField(product, "price", e.currentTarget)}
                   onKeyDown={(e) => handleQuickFieldKeyDown(e, String(product.price))}
-                  className="w-20 min-w-0 bg-transparent tabular-nums focus:outline-none"
+                  className="w-20 min-w-0 bg-transparent text-foreground tabular-nums focus:outline-none"
                 />
               </div>
             </td>
@@ -372,7 +372,7 @@ export function NSProductsTable({
                 aria-label={`Stock de ${product.name}`}
                 onBlur={(e) => saveStock(product, e.currentTarget)}
                 onKeyDown={(e) => handleQuickFieldKeyDown(e, product.stock === null ? "" : String(product.stock))}
-                className="w-16 min-w-0 rounded border border-transparent bg-transparent px-1 py-0.5 -mx-1 tabular-nums hover:border-border focus:border-accent-strong focus:bg-surface focus:outline-none focus:ring-1 focus:ring-accent/40"
+                className="w-16 min-w-0 rounded border border-transparent bg-transparent px-1 py-0.5 -mx-1 text-foreground tabular-nums hover:border-border focus:border-accent-strong focus:bg-surface focus:outline-none focus:ring-1 focus:ring-accent/40"
               />
             </td>
             <td className="px-4 py-3">
