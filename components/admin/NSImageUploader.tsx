@@ -29,8 +29,29 @@ export function NSImageUploader({
   }
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const atLimit = images.length >= MAX_IMAGES;
+
+  // Drag-to-reorder — which photo is "Principal" (the first one) depends
+  // purely on array order, so this is the only way to change it besides
+  // deleting and re-adding. Native HTML5 drag-and-drop, desktop-only (no
+  // touch support), which fits this being an admin-only control.
+  function handleDrop(targetIndex: number) {
+    setDropIndex(null);
+    if (dragIndex === null || dragIndex === targetIndex) {
+      setDragIndex(null);
+      return;
+    }
+    setImages((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(dragIndex, 1);
+      next.splice(targetIndex, 0, moved!);
+      return next;
+    });
+    setDragIndex(null);
+  }
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -70,7 +91,27 @@ export function NSImageUploader({
       <input type="hidden" name={name} value={JSON.stringify(images)} />
       <div className="flex flex-wrap gap-3">
         {images.map((src, index) => (
-          <div key={src + index} className="group relative h-24 w-20 overflow-hidden rounded-control border border-border">
+          <div
+            key={src + index}
+            draggable
+            onDragStart={() => setDragIndex(index)}
+            onDragOver={(e) => {
+              e.preventDefault();
+              if (dropIndex !== index) setDropIndex(index);
+            }}
+            onDragLeave={() => setDropIndex((prev) => (prev === index ? null : prev))}
+            onDrop={(e) => {
+              e.preventDefault();
+              handleDrop(index);
+            }}
+            onDragEnd={() => {
+              setDragIndex(null);
+              setDropIndex(null);
+            }}
+            className={`group relative h-24 w-20 cursor-move overflow-hidden rounded-control border transition-opacity ${
+              dragIndex === index ? "opacity-40" : ""
+            } ${dropIndex === index && dragIndex !== index ? "border-accent-strong ring-2 ring-accent/40" : "border-border"}`}
+          >
             <NSMedia src={src} alt={`Imagen ${index + 1}`} sizes="80px" />
             {index === 0 ? (
               <span className="absolute left-1 top-1 rounded bg-ink-950/80 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-ink-0">
@@ -109,8 +150,8 @@ export function NSImageUploader({
       />
       {error ? <p className="mt-2 text-xs text-danger">{error}</p> : null}
       <p className="mt-2 text-xs text-muted-foreground">
-        La primera imagen es la principal. Sin imágenes, se usa un placeholder de marca. Máximo {MAX_IMAGES} fotos por
-        producto ({images.length}/{MAX_IMAGES}).
+        La primera imagen es la principal — arrastra las fotos para cambiar el orden. Sin imágenes, se usa un
+        placeholder de marca. Máximo {MAX_IMAGES} fotos por producto ({images.length}/{MAX_IMAGES}).
       </p>
     </div>
   );
