@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Bebas_Neue } from "next/font/google";
 import { MotionConfig } from "motion/react";
 import Script from "next/script";
+import { NSPwaRegister } from "@/components/pwa/NSPwaRegister";
 import "./globals.css";
 
 /**
@@ -50,6 +51,12 @@ export const metadata: Metadata = {
     template: "%s | DS Catalog",
   },
   description: "DS Catalog aloja catálogos y tiendas conversacionales independientes bajo un solo motor.",
+  // A tenant's own storefront (app/[tenant]/(storefront)/layout.tsx) overrides
+  // this with its own logo — this is only what shows on the root landing
+  // page (and any other route with no more specific override, e.g. /admin)
+  // when "added to home screen": DS Catalog's own mark, never a generic
+  // browser-generated initials badge.
+  icons: { apple: "/ds-catalog-mark.png" },
 };
 
 export const viewport: Viewport = {
@@ -78,6 +85,7 @@ export default function RootLayout({
           {THEME_INIT_SCRIPT}
         </Script>
         <MotionConfig reducedMotion="user">{children}</MotionConfig>
+        <NSPwaRegister />
       </body>
     </html>
   );
