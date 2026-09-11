@@ -2,6 +2,7 @@ import "server-only";
 import { getSupabaseClient } from "@/lib/db/supabaseClient";
 import type { ProductRow } from "@/lib/db/supabase-types";
 import type { Product } from "@/lib/types/catalog";
+import { detectExistingReferencePrefix } from "@/lib/products/reference-prefix";
 
 export type ProductInput = Omit<Product, "id" | "createdAt" | "updatedAt">;
 
@@ -170,18 +171,42 @@ export async function deleteProduct(tenantId: string, id: string): Promise<void>
   if (error) throw error;
 }
 
-export async function getNextReference(tenantId: string): Promise<string> {
+/**
+ * `fallbackPrefix` (see deriveReferencePrefix, lib/products/reference-prefix.ts)
+ * is only used for a tenant with no products yet — one that already has
+ * products keeps whatever prefix those already use (detected from an
+ * actual reference), so this never collides with an existing row or
+ * restarts numbering just because a tenant's name-derived prefix today
+ * differs from what their earlier products carry. A caller that needs to
+ * know the resolved prefix itself (not just one formatted reference —
+ * e.g. to number several new drafts at once) should call
+ * resolveTenantReferencePrefix directly instead.
+ */
+export async function resolveTenantReferencePrefix(tenantId: string, fallbackPrefix: string): Promise<string> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.from("ns_products").select("reference").eq("tenant_id", tenantId);
   if (error) throw error;
 
-  const max = (data as { reference: string }[]).reduce((highest, { reference }) => {
-    const match = /^NS-(\d+)$/.exec(reference.trim());
+  const references = (data as { reference: string }[]).map((row) => row.reference);
+  return detectExistingReferencePrefix(references) ?? fallbackPrefix;
+}
+
+export async function getNextReference(tenantId: string, fallbackPrefix: string): Promise<string> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.from("ns_products").select("reference").eq("tenant_id", tenantId);
+  if (error) throw error;
+
+  const references = (data as { reference: string }[]).map((row) => row.reference);
+  const prefix = detectExistingReferencePrefix(references) ?? fallbackPrefix;
+  const pattern = new RegExp(`^${prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}-(\\d+)$`);
+
+  const max = references.reduce((highest, reference) => {
+    const match = pattern.exec(reference.trim());
     if (!match) return highest;
     return Math.max(highest, Number(match[1]));
   }, 0);
 
-  return `NS-${String(max + 1).padStart(3, "0")}`;
+  return `${prefix}-${String(max + 1).padStart(3, "0")}`;
 }
 
 export async function isSlugTaken(tenantId: string, slug: string, excludeId?: string): Promise<boolean> {

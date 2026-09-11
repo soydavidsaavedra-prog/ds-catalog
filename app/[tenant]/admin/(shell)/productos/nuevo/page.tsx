@@ -3,8 +3,9 @@ import { listCategories } from "@/lib/repositories/category-repository";
 import { getNextReference } from "@/lib/repositories/product-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
 import { getBusinessTypeProfile } from "@/lib/tenant/business-type";
+import { deriveReferencePrefix } from "@/lib/products/reference-prefix";
 import { NSProductForm } from "@/components/admin/NSProductForm";
-import { DSPageHeader } from "@/components/ui/DSPageHeader";
+import { NSFloatingPanel } from "@/components/ui/NSFloatingPanel";
 import { createProductAction } from "@/app/[tenant]/admin/actions";
 
 export default async function AdminNewProductPage({
@@ -16,15 +17,15 @@ export default async function AdminNewProductPage({
   const tenant = await resolveTenant(tenantSlug);
   const [categories, nextReference, settings] = await Promise.all([
     listCategories(tenant.id),
-    getNextReference(tenant.id),
+    getNextReference(tenant.id, deriveReferencePrefix(tenant.name)),
     getSettings(tenant.id),
   ]);
   const action = createProductAction.bind(null, tenant.id, tenantSlug);
   const profile = getBusinessTypeProfile(tenant.businessType);
 
   return (
-    <div className="flex flex-col gap-6">
-      <DSPageHeader title="Nuevo producto" description="Completa los datos para publicarlo en el catálogo." />
+    <NSFloatingPanel title="Nuevo producto" closeHref={`/${tenantSlug}/admin/productos`}>
+      <p className="mb-6 text-sm text-muted-foreground">Completa los datos para publicarlo en el catálogo.</p>
       <NSProductForm
         tenantSlug={tenantSlug}
         action={action}
@@ -35,6 +36,6 @@ export default async function AdminNewProductPage({
         showColors={profile.showColors}
         settings={settings}
       />
-    </div>
+    </NSFloatingPanel>
   );
 }
