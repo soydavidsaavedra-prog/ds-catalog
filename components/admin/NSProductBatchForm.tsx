@@ -236,19 +236,21 @@ export function NSProductBatchForm({
         </div>
       </DSCard>
 
-      <div>
+      <div className="flex items-center gap-3">
         <NSButton
           type="button"
           onClick={handleSubmit}
           disabled={files.length === 0 || !categorySlug}
           loading={busy}
-          className="self-start"
         >
           {phase.status === "uploading"
             ? `Subiendo ${phase.done}/${phase.total}...`
             : phase.status === "creating"
               ? "Creando productos..."
               : "Crear productos"}
+        </NSButton>
+        <NSButton href={`/${tenantSlug}/admin/productos`} variant="outline">
+          Cancelar
         </NSButton>
       </div>
 

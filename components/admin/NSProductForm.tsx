@@ -331,6 +331,9 @@ export function NSProductForm({
           <NSButton type="submit" loading={pending}>
             {submitLabel}
           </NSButton>
+          <NSButton href={`/${tenantSlug}/admin/productos`} variant="outline">
+            Cancelar
+          </NSButton>
         </div>
       </form>
 

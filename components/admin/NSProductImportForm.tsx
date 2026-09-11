@@ -141,13 +141,18 @@ export function NSProductImportForm({ tenantId, tenantSlug }: { tenantId: string
             ) : null}
           </div>
 
-          <NSButton type="button" onClick={handleSubmit} disabled={!csvFile} loading={busy} className="self-start">
-            {phase.status === "uploading"
-              ? `Subiendo fotos ${phase.done}/${phase.total}...`
-              : phase.status === "importing"
-                ? "Importando..."
-                : "Importar"}
-          </NSButton>
+          <div className="flex items-center gap-3">
+            <NSButton type="button" onClick={handleSubmit} disabled={!csvFile} loading={busy}>
+              {phase.status === "uploading"
+                ? `Subiendo fotos ${phase.done}/${phase.total}...`
+                : phase.status === "importing"
+                  ? "Importando..."
+                  : "Importar"}
+            </NSButton>
+            <NSButton href={`/${tenantSlug}/admin/productos`} variant="outline">
+              Cancelar
+            </NSButton>
+          </div>
         </div>
       </DSCard>
 
