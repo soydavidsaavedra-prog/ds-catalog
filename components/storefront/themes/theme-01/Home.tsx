@@ -8,7 +8,11 @@ import { NSBrandStatement } from "./NSBrandStatement";
 /** Theme 01's home page composition — moved here verbatim from app/[tenant]/(storefront)/page.tsx, which now just fetches data and renders this. */
 export function Home({ tenantSlug, settings, categories, products, heroSlides }: ThemeHomeProps) {
   const nuevos = products.filter((p) => p.isNew);
-  const destacados = products.filter((p) => p.featured);
+  // "Destacados" shows the most recently uploaded products automatically
+  // (products is already sorted newest-first) instead of requiring the
+  // separate "Destacado" checkbox — that flag stays reserved for the
+  // catalog page's own "Destacados" sort option.
+  const destacados = products;
   const ofertas = products.filter((p) => p.onSale);
 
   const topLevelCategories = categories.filter((c) => c.parentId === null && c.featured);

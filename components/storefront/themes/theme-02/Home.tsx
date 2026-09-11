@@ -7,6 +7,7 @@ import { NSReveal } from "@/components/ui/NSReveal";
 import { Hero } from "./Hero";
 import { BrandStatement } from "./BrandStatement";
 import { ProductGrid } from "./ProductGrid";
+import { ProductCarousel } from "./ProductCarousel";
 
 const TRUST_BAR: { title: string; description: string; icon: ReactNode }[] = [
   { title: "Calidad garantizada", description: "Productos seleccionados de las mejores marcas", icon: <ShieldIcon /> },
@@ -40,7 +41,11 @@ export function Home({ tenantSlug, settings, categories, products, heroSlides }:
   const heroPositionY = heroSlides[0]?.positionY ?? settings.heroImagePositionY;
 
   const topLevelCategories = categories.filter((c) => c.parentId === null && c.featured);
-  const destacados = products.filter((p) => p.featured);
+  // "Destacados" shows the most recently uploaded products automatically
+  // (products is already sorted newest-first) instead of requiring the
+  // separate "Destacado" checkbox — that flag stays reserved for the
+  // catalog page's own "Destacados" sort option.
+  const destacados = products;
   const nuevos = products.filter((p) => p.isNew);
   const ofertas = products.filter((p) => p.onSale);
   const paymentBadge = { icon: settings.paymentBadgeIcon, label: settings.paymentBadgeLabel };
@@ -121,9 +126,9 @@ export function Home({ tenantSlug, settings, categories, products, heroSlides }:
             </Link>
           </div>
           <div className="mt-8">
-            <ProductGrid
+            <ProductCarousel
               tenantSlug={tenantSlug}
-              products={destacados.slice(0, 8)}
+              products={destacados.slice(0, 12)}
               emptyTitle="Muy pronto"
               emptyDescription="Estamos preparando esta selección."
               paymentBadge={paymentBadge}
