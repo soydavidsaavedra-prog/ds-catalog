@@ -1,6 +1,7 @@
 import { slugify } from "@/lib/utils/slug";
 import type { Audience, Category } from "@/lib/types/catalog";
 import type { ProductInput } from "@/lib/repositories/product-repository";
+import { normalizeForDuplicateCheck } from "@/lib/products/duplicates";
 
 /**
  * Bulk product creation from a batch of already-uploaded images — one
@@ -85,17 +86,42 @@ export interface BuildBatchDraftsInput {
   price?: number;
   /** When true, every draft is created visible on the storefront immediately instead of as a hidden draft — for a tenant who trusts the batch as-is and wants to skip the activate step entirely. Defaults to false (the original, safer behavior). */
   active?: boolean;
+  /** Names of products the tenant already has — an image whose derived name matches one is skipped as a likely re-upload instead of creating a duplicate. Also catches two images in the same batch that happen to derive the same name. */
+  existingNames?: string[];
 }
 
-/** Builds ready-to-insert ProductInput drafts, one per image — never throws; a batch is always as many valid drafts as items given. */
-export function buildBatchProductDrafts(input: BuildBatchDraftsInput): BatchProductDraft[] {
+export interface BatchDuplicateSkip {
+  filename: string;
+  /** The already-existing name it collided with — same string when the collision is against another item earlier in this same batch. */
+  matchedName: string;
+}
+
+export interface BuildBatchDraftsResult {
+  drafts: BatchProductDraft[];
+  duplicates: BatchDuplicateSkip[];
+}
+
+/** Builds ready-to-insert ProductInput drafts, one per image, skipping any whose derived name already exists — never throws. */
+export function buildBatchProductDrafts(input: BuildBatchDraftsInput): BuildBatchDraftsResult {
   const categoriesById = new Map(input.categories.map((c) => [c.id, c] as const));
   const audience = resolveAudience(input.category, categoriesById);
   const seenSlugs = new Set(input.existingSlugs);
+  const seenNames = new Map((input.existingNames ?? []).map((n) => [normalizeForDuplicateCheck(n), n] as const));
   let referenceNumber = input.startingReferenceNumber;
 
-  return input.items.map((item) => {
+  const drafts: BatchProductDraft[] = [];
+  const duplicates: BatchDuplicateSkip[] = [];
+
+  for (const item of input.items) {
     const name = deriveNameFromFilename(item.filename);
+    const normalizedName = normalizeForDuplicateCheck(name);
+    const existingMatch = seenNames.get(normalizedName);
+    if (existingMatch) {
+      duplicates.push({ filename: item.filename, matchedName: existingMatch });
+      continue;
+    }
+    seenNames.set(normalizedName, name);
+
     const reference = `NS-${String(referenceNumber).padStart(3, "0")}`;
     referenceNumber += 1;
 
@@ -108,7 +134,7 @@ export function buildBatchProductDrafts(input: BuildBatchDraftsInput): BatchProd
     }
     seenSlugs.add(slug);
 
-    const draft: BatchProductDraft = {
+    drafts.push({
       filename: item.filename,
       input: {
         slug,
@@ -136,7 +162,8 @@ export function buildBatchProductDrafts(input: BuildBatchDraftsInput): BatchProd
         active: input.active ?? false,
         hidePaymentBadge: false,
       },
-    };
-    return draft;
-  });
+    });
+  }
+
+  return { drafts, duplicates };
 }

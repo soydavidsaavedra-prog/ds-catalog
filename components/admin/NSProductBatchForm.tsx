@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Category } from "@/lib/types/catalog";
 import { createProductBatchAction, type ProductBatchError } from "@/app/[tenant]/admin/(shell)/productos/lote-fotos/actions";
 import { MAX_BATCH_IMAGES } from "@/lib/products/image-batch";
@@ -25,6 +26,7 @@ export function NSProductBatchForm({
   tenantSlug: string;
   categories: Category[];
 }) {
+  const router = useRouter();
   const [categorySlug, setCategorySlug] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
@@ -98,8 +100,21 @@ export function NSProductBatchForm({
         price: parsedPrice != null && Number.isFinite(parsedPrice) ? parsedPrice : undefined,
         active: createActive,
       });
-      setPhase({ status: "done", created: result.created, errors: [...uploadErrors, ...result.errors] });
+      const allErrors = [...uploadErrors, ...result.errors];
+      // Clear the selection the moment createProductBatchAction has run (success
+      // or not) — leaving the same files in place is what let a second click on
+      // "Crear productos" silently re-upload and duplicate everything that just
+      // succeeded.
+      setFiles([]);
+      setPhase({ status: "done", created: result.created, errors: allErrors });
+      if (result.created > 0 && allErrors.length === 0) {
+        // Fully successful batch: leave the page entirely instead of leaving the
+        // button re-enabled here, which is the other half of the same
+        // double-submit risk.
+        router.push(`/${tenantSlug}/admin/productos${createActive ? "" : "?estado=inactivo"}`);
+      }
     } catch {
+      setFiles([]);
       setPhase({ status: "error", message: "No se pudieron crear los productos. Intenta de nuevo en un momento." });
     }
   }

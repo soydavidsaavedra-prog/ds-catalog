@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type KeyboardEvent } from "react";
 import Link from "next/link";
 import type { Availability, Product } from "@/lib/types/catalog";
 import { formatPrice, availabilityLabel } from "@/lib/utils/format";
@@ -14,8 +14,10 @@ import { cn } from "@/lib/utils/cn";
 import {
   deleteProductAction,
   deleteProductsAction,
+  duplicateProductAction,
   setProductsActiveAction,
   toggleProductFlagAction,
+  updateProductQuickFieldsAction,
 } from "@/app/[tenant]/admin/actions";
 
 const AVAILABILITY_TONE: Record<Availability, "success" | "warning" | "danger"> = {
@@ -49,7 +51,44 @@ export function NSProductsTable({
   const [sortKey, setSortKey] = useState<SortKey | undefined>();
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const categoryName = new Map(categoryOptions);
+
+  // Inline shortcut for the two fields tenants most often need to fix right
+  // after a lote-fotos batch (provisional name/reference) without opening
+  // the full edit page. Uncontrolled inputs: value only ever needs to move
+  // from the DOM to the server, and back to the DOM on a rejected save.
+  async function saveQuickField(product: Product, field: "name" | "reference", input: HTMLInputElement) {
+    const trimmed = input.value.trim();
+    const currentValue = field === "name" ? product.name : product.reference;
+    if (trimmed === currentValue) return;
+
+    const fields =
+      field === "name" ? { name: trimmed, reference: product.reference } : { name: product.name, reference: trimmed };
+    const result = await updateProductQuickFieldsAction(tenantId, tenantSlug, product.id, fields);
+
+    if (result.error) {
+      input.value = currentValue;
+      setFieldErrors((prev) => ({ ...prev, [product.id]: result.error! }));
+    } else {
+      setFieldErrors((prev) => {
+        if (!(product.id in prev)) return prev;
+        const next = { ...prev };
+        delete next[product.id];
+        return next;
+      });
+    }
+  }
+
+  function handleQuickFieldKeyDown(e: KeyboardEvent<HTMLInputElement>, revertTo: string) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.currentTarget.blur();
+    } else if (e.key === "Escape") {
+      e.currentTarget.value = revertTo;
+      e.currentTarget.blur();
+    }
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -218,9 +257,24 @@ export function NSProductsTable({
                 <div className="h-12 w-10 shrink-0 overflow-hidden rounded-control">
                   <NSMedia src={product.images[0]} alt={product.name} reference={product.reference} sizes="40px" />
                 </div>
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{product.name}</p>
-                  <p className="text-xs text-muted-foreground">{product.reference}</p>
+                <div className="min-w-0 flex-1">
+                  <input
+                    defaultValue={product.name}
+                    aria-label={`Nombre de ${product.name}`}
+                    onBlur={(e) => saveQuickField(product, "name", e.currentTarget)}
+                    onKeyDown={(e) => handleQuickFieldKeyDown(e, product.name)}
+                    className="w-full truncate rounded border border-transparent bg-transparent px-1 py-0.5 -mx-1 text-sm font-medium hover:border-border focus:border-accent-strong focus:bg-surface focus:outline-none focus:ring-1 focus:ring-accent/40"
+                  />
+                  <input
+                    defaultValue={product.reference}
+                    aria-label={`Referencia de ${product.name}`}
+                    onBlur={(e) => saveQuickField(product, "reference", e.currentTarget)}
+                    onKeyDown={(e) => handleQuickFieldKeyDown(e, product.reference)}
+                    className="mt-0.5 w-full truncate rounded border border-transparent bg-transparent px-1 py-0.5 -mx-1 text-xs text-muted-foreground hover:border-border focus:border-accent-strong focus:bg-surface focus:outline-none focus:ring-1 focus:ring-accent/40"
+                  />
+                  {fieldErrors[product.id] ? (
+                    <p className="mt-0.5 text-[11px] text-danger">{fieldErrors[product.id]}</p>
+                  ) : null}
                 </div>
               </div>
             </td>
@@ -267,6 +321,15 @@ export function NSProductsTable({
                 >
                   Editar
                 </Link>
+                <form action={duplicateProductAction.bind(null, tenantId, tenantSlug, product.id)}>
+                  <button
+                    type="submit"
+                    title="Crea una copia en borrador de este producto"
+                    className="text-xs font-semibold uppercase text-muted-foreground hover:text-foreground hover:underline"
+                  >
+                    Duplicar
+                  </button>
+                </form>
                 <NSAdminDeleteButton
                   action={deleteProductAction.bind(null, tenantId, tenantSlug, product.id)}
                   confirmMessage={`¿Eliminar "${product.name}"? Esta acción no se puede deshacer.`}

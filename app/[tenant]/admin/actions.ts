@@ -7,11 +7,14 @@ import {
   countProducts,
   createProduct,
   deleteProduct,
+  getNextReference,
   getProductById,
   isSlugTaken,
+  listProducts,
   updateProduct,
   type ProductInput,
 } from "@/lib/repositories/product-repository";
+import { findDuplicateProduct } from "@/lib/products/duplicates";
 import { getEffectivePlanForTenant } from "@/lib/tenant/plan-limits";
 import { getPlanById } from "@/lib/repositories/plans-repository";
 import { assignPlanToTenant } from "@/lib/repositories/subscriptions-repository";
@@ -202,6 +205,10 @@ export async function createProductAction(
   if (!input.name || !input.reference || !input.categorySlug) {
     return { error: "Nombre, referencia y categoría son obligatorios." };
   }
+  const duplicate = findDuplicateProduct(await listProducts(tenantId), input);
+  if (duplicate) {
+    return { error: `Ya existe un producto con ese nombre o referencia: "${duplicate.name}" (${duplicate.reference}).` };
+  }
   if (await isSlugTaken(tenantId, input.slug)) {
     return { error: `La referencia/slug "${input.slug}" ya existe.` };
   }
@@ -234,6 +241,10 @@ export async function updateProductAction(
   const input = await parseProductInput(tenantId, formData);
   if (!input.name || !input.reference || !input.categorySlug) {
     return { error: "Nombre, referencia y categoría son obligatorios." };
+  }
+  const duplicate = findDuplicateProduct(await listProducts(tenantId), input, id);
+  if (duplicate) {
+    return { error: `Ya existe otro producto con ese nombre o referencia: "${duplicate.name}" (${duplicate.reference}).` };
   }
   if (await isSlugTaken(tenantId, input.slug, id)) {
     return { error: `La referencia/slug "${input.slug}" ya existe.` };
@@ -309,6 +320,98 @@ export async function toggleProductFlagAction(
 ): Promise<void> {
   const updated = await updateProduct(tenantId, id, { [flag]: value });
   if (updated) revalidateStorefront(tenantSlug, updated.categorySlug, updated.slug);
+  revalidatePath(`/${tenantSlug}/admin/productos`);
+}
+
+/**
+ * Shortcut for the products list (NSProductsTable) — lets a tenant fix a
+ * provisional name/reference (the common case right after a lote-fotos
+ * batch) without opening the full edit page. Called directly as a function
+ * from the client on blur, not via a <form action>, so it can return a
+ * typed result the row can show inline instead of relying on Next's error
+ * boundary. Same duplicate-name/reference guard as the full create/edit
+ * forms — reused here so this shortcut can't create the exact mix-up it's
+ * meant to help clean up.
+ */
+export async function updateProductQuickFieldsAction(
+  tenantId: string,
+  tenantSlug: string,
+  id: string,
+  fields: { name: string; reference: string },
+): Promise<{ error?: string }> {
+  const name = fields.name.trim();
+  const reference = fields.reference.trim();
+  if (!name || !reference) {
+    return { error: "El nombre y la referencia no pueden quedar vacíos." };
+  }
+
+  const existingProducts = await listProducts(tenantId);
+  const duplicate = findDuplicateProduct(existingProducts, { name, reference }, id);
+  if (duplicate) {
+    return { error: `Ya existe otro producto con ese nombre o referencia: "${duplicate.name}" (${duplicate.reference}).` };
+  }
+
+  const existing = existingProducts.find((p) => p.id === id);
+  if (!existing) return { error: "Producto no encontrado." };
+
+  let updated;
+  try {
+    updated = await updateProduct(tenantId, id, { name, reference });
+  } catch (err) {
+    return { error: friendlyDbErrorMessage(err) };
+  }
+  if (!updated) return { error: "Producto no encontrado." };
+
+  revalidateStorefront(tenantSlug, updated.categorySlug, updated.slug);
+  revalidatePath(`/${tenantSlug}/admin/productos`);
+  return {};
+}
+
+/**
+ * Clones a product as a new inactive draft — same data, fresh id/reference/
+ * slug and no images (Storage files belong to the original; copying the
+ * URLs would mean deleting one product's photos could silently break the
+ * other's). For catalogs with many near-identical variants, the fastest
+ * path is duplicate-then-tweak rather than filling the full form again.
+ */
+export async function duplicateProductAction(tenantId: string, tenantSlug: string, id: string): Promise<void> {
+  const existing = await getProductById(tenantId, id);
+  if (!existing) return;
+
+  const nextReference = await getNextReference(tenantId);
+  let name = `${existing.name} (copia)`;
+  let slug = slugify(`${nextReference}-${name}`);
+  if (await isSlugTaken(tenantId, slug)) {
+    name = `${existing.name} (copia ${Date.now().toString().slice(-4)})`;
+    slug = slugify(`${nextReference}-${name}`);
+  }
+
+  try {
+    await createProduct(tenantId, {
+      slug,
+      reference: nextReference,
+      name,
+      price: existing.price,
+      wholesalePrice: existing.wholesalePrice,
+      description: existing.description,
+      categorySlug: existing.categorySlug,
+      audience: existing.audience,
+      images: [`placeholder:${existing.categorySlug}:new`],
+      cardAspectRatio: existing.cardAspectRatio,
+      imageFit: existing.imageFit,
+      sizes: existing.sizes,
+      colors: existing.colors,
+      availability: existing.availability,
+      featured: existing.featured,
+      isNew: existing.isNew,
+      onSale: existing.onSale,
+      active: false,
+      hidePaymentBadge: existing.hidePaymentBadge,
+    });
+  } catch (err) {
+    console.error(`[productos] failed to duplicate ${id}:`, err);
+    return;
+  }
   revalidatePath(`/${tenantSlug}/admin/productos`);
 }
 

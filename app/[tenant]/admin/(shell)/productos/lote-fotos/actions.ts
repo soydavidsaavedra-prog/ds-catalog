@@ -76,7 +76,7 @@ export async function createProductBatchAction(
     }
   }
 
-  const drafts = buildBatchProductDrafts({
+  const { drafts, duplicates } = buildBatchProductDrafts({
     items: itemsToCreate,
     category,
     categories,
@@ -84,7 +84,11 @@ export async function createProductBatchAction(
     existingSlugs,
     price: options?.price,
     active: options?.active,
+    existingNames: existingProducts.map((p) => p.name),
   });
+  for (const dup of duplicates) {
+    errors.push({ filename: dup.filename, reason: `Ya existe un producto llamado "${dup.matchedName}" — no se creó de nuevo.` });
+  }
 
   let created = 0;
   for (const draft of drafts) {
