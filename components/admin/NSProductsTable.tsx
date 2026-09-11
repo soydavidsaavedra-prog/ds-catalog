@@ -3,7 +3,8 @@
 import { useMemo, useState, type KeyboardEvent } from "react";
 import Link from "next/link";
 import type { Availability, Product } from "@/lib/types/catalog";
-import { formatPrice, availabilityLabel } from "@/lib/utils/format";
+import { availabilityLabel } from "@/lib/utils/format";
+import { siteConfig } from "@/lib/config/site";
 import { NSInput, NSSelect } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSMedia } from "@/components/ui/NSMedia";
@@ -19,6 +20,8 @@ import {
   toggleProductFlagAction,
   updateProductQuickFieldsAction,
 } from "@/app/[tenant]/admin/actions";
+
+const currencySymbol = siteConfig.commerce.currencySymbol;
 
 const AVAILABILITY_TONE: Record<Availability, "success" | "warning" | "danger"> = {
   in_stock: "success",
@@ -54,17 +57,48 @@ export function NSProductsTable({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const categoryName = new Map(categoryOptions);
 
-  // Inline shortcut for the two fields tenants most often need to fix right
-  // after a lote-fotos batch (provisional name/reference) without opening
-  // the full edit page. Uncontrolled inputs: value only ever needs to move
-  // from the DOM to the server, and back to the DOM on a rejected save.
-  async function saveQuickField(product: Product, field: "name" | "reference", input: HTMLInputElement) {
-    const trimmed = input.value.trim();
+  // Inline shortcut for the fields tenants most often need to fix right
+  // after a lote-fotos batch (provisional name/reference/price) without
+  // opening the full edit page. Uncontrolled inputs: value only ever needs
+  // to move from the DOM to the server, and back to the DOM on a rejected
+  // (or invalid) save.
+  async function saveQuickField(product: Product, field: "name" | "reference" | "price", input: HTMLInputElement) {
+    const raw = input.value.trim();
+
+    if (field === "price") {
+      const parsedPrice = Number(raw);
+      if (raw === "" || !Number.isFinite(parsedPrice) || parsedPrice < 0) {
+        input.value = String(product.price);
+        return;
+      }
+      if (parsedPrice === product.price) return;
+
+      const result = await updateProductQuickFieldsAction(tenantId, tenantSlug, product.id, {
+        name: product.name,
+        reference: product.reference,
+        price: parsedPrice,
+      });
+      if (result.error) {
+        input.value = String(product.price);
+        setFieldErrors((prev) => ({ ...prev, [product.id]: result.error! }));
+      } else {
+        setFieldErrors((prev) => {
+          if (!(product.id in prev)) return prev;
+          const next = { ...prev };
+          delete next[product.id];
+          return next;
+        });
+      }
+      return;
+    }
+
     const currentValue = field === "name" ? product.name : product.reference;
-    if (trimmed === currentValue) return;
+    if (raw === currentValue) return;
 
     const fields =
-      field === "name" ? { name: trimmed, reference: product.reference } : { name: product.name, reference: trimmed };
+      field === "name"
+        ? { name: raw, reference: product.reference, price: product.price }
+        : { name: product.name, reference: raw, price: product.price };
     const result = await updateProductQuickFieldsAction(tenantId, tenantSlug, product.id, fields);
 
     if (result.error) {
@@ -281,7 +315,21 @@ export function NSProductsTable({
             <td className="px-4 py-3 text-muted-foreground">
               {categoryName.get(product.categorySlug) ?? product.categorySlug}
             </td>
-            <td className="px-4 py-3 tabular-nums">{formatPrice(product.price)}</td>
+            <td className="px-4 py-3">
+              <div className="flex items-center gap-1 rounded border border-transparent px-1 py-0.5 -mx-1 hover:border-border has-[:focus]:border-accent-strong has-[:focus]:bg-surface has-[:focus]:ring-1 has-[:focus]:ring-accent/40">
+                <span className="text-xs text-muted-foreground">{currencySymbol}</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  defaultValue={product.price}
+                  aria-label={`Precio de ${product.name}`}
+                  onBlur={(e) => saveQuickField(product, "price", e.currentTarget)}
+                  onKeyDown={(e) => handleQuickFieldKeyDown(e, String(product.price))}
+                  className="w-20 min-w-0 bg-transparent tabular-nums focus:outline-none"
+                />
+              </div>
+            </td>
             <td className="px-4 py-3">
               <DSStatusBadge label={availabilityLabel[product.availability]} tone={AVAILABILITY_TONE[product.availability]} />
             </td>

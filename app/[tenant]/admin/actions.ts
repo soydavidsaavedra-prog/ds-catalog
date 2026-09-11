@@ -337,12 +337,15 @@ export async function updateProductQuickFieldsAction(
   tenantId: string,
   tenantSlug: string,
   id: string,
-  fields: { name: string; reference: string },
+  fields: { name: string; reference: string; price: number },
 ): Promise<{ error?: string }> {
   const name = fields.name.trim();
   const reference = fields.reference.trim();
   if (!name || !reference) {
     return { error: "El nombre y la referencia no pueden quedar vacíos." };
+  }
+  if (!Number.isFinite(fields.price) || fields.price < 0) {
+    return { error: "El precio debe ser un número válido." };
   }
 
   const existingProducts = await listProducts(tenantId);
@@ -356,7 +359,7 @@ export async function updateProductQuickFieldsAction(
 
   let updated;
   try {
-    updated = await updateProduct(tenantId, id, { name, reference });
+    updated = await updateProduct(tenantId, id, { name, reference, price: fields.price });
   } catch (err) {
     return { error: friendlyDbErrorMessage(err) };
   }
