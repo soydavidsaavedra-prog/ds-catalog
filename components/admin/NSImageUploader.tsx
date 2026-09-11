@@ -1,11 +1,14 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { NSMedia } from "@/components/ui/NSMedia";
 import { compressImageBeforeUpload } from "@/lib/utils/image-compress";
 
 /** Carousel cap — enforced here for immediate feedback, and again server-side in parseProductInput (app/[tenant]/admin/actions.ts) since a form POST doesn't have to go through this component. */
 const MAX_IMAGES = 10;
+
+/** Pixels of movement before a press counts as a drag rather than a tap — lets the remove (×) button and simple taps still work. */
+const DRAG_START_THRESHOLD = 6;
 
 export function NSImageUploader({
   tenantSlug,
@@ -27,6 +30,11 @@ export function NSImageUploader({
       return next;
     });
   }
+  // Mirrors the latest onChange without needing it in the drag effect's
+  // dependency array below (which must stay [] — it only wires up window
+  // listeners once, for the lifetime of the component).
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -36,21 +44,64 @@ export function NSImageUploader({
 
   // Drag-to-reorder — which photo is "Principal" (the first one) depends
   // purely on array order, so this is the only way to change it besides
-  // deleting and re-adding. Native HTML5 drag-and-drop, desktop-only (no
-  // touch support), which fits this being an admin-only control.
-  function handleDrop(targetIndex: number) {
-    setDropIndex(null);
-    if (dragIndex === null || dragIndex === targetIndex) {
-      setDragIndex(null);
-      return;
+  // deleting and re-adding. Uses Pointer Events (not native HTML5
+  // drag-and-drop) so it also works with touch on a phone — most tenants
+  // manage their catalog from a phone, and native HTML5 DnD has no touch
+  // support at all.
+  const pointerStateRef = useRef<{ index: number; startX: number; startY: number; dragging: boolean } | null>(null);
+  const dropIndexRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    function handlePointerMove(e: PointerEvent) {
+      const state = pointerStateRef.current;
+      if (!state) return;
+      if (!state.dragging) {
+        const moved = Math.hypot(e.clientX - state.startX, e.clientY - state.startY);
+        if (moved < DRAG_START_THRESHOLD) return;
+        state.dragging = true;
+        setDragIndex(state.index);
+      }
+      e.preventDefault();
+      const target = document.elementFromPoint(e.clientX, e.clientY);
+      const thumb = target instanceof Element ? target.closest<HTMLElement>("[data-image-index]") : null;
+      const overIndex = thumb ? Number(thumb.dataset.imageIndex) : null;
+      if (overIndex !== dropIndexRef.current) {
+        dropIndexRef.current = overIndex;
+        setDropIndex(overIndex);
+      }
     }
-    setImages((prev) => {
-      const next = [...prev];
-      const [moved] = next.splice(dragIndex, 1);
-      next.splice(targetIndex, 0, moved!);
-      return next;
-    });
-    setDragIndex(null);
+
+    function finishDrag() {
+      const state = pointerStateRef.current;
+      pointerStateRef.current = null;
+      const targetIndex = dropIndexRef.current;
+      dropIndexRef.current = null;
+      setDragIndex(null);
+      setDropIndex(null);
+      if (!state?.dragging || targetIndex === null || targetIndex === state.index) return;
+      setImagesState((prev) => {
+        const next = [...prev];
+        const [moved] = next.splice(state.index, 1);
+        next.splice(targetIndex, 0, moved!);
+        onChangeRef.current?.(next);
+        return next;
+      });
+    }
+
+    window.addEventListener("pointermove", handlePointerMove, { passive: false });
+    window.addEventListener("pointerup", finishDrag);
+    window.addEventListener("pointercancel", finishDrag);
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", finishDrag);
+      window.removeEventListener("pointercancel", finishDrag);
+    };
+  }, []);
+
+  function onThumbPointerDown(e: ReactPointerEvent<HTMLDivElement>, index: number) {
+    if (e.target instanceof HTMLElement && e.target.closest("button")) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    pointerStateRef.current = { index, startX: e.clientX, startY: e.clientY, dragging: false };
   }
 
   const handleFiles = async (files: FileList | null) => {
@@ -93,23 +144,10 @@ export function NSImageUploader({
         {images.map((src, index) => (
           <div
             key={src + index}
-            draggable
-            onDragStart={() => setDragIndex(index)}
-            onDragOver={(e) => {
-              e.preventDefault();
-              if (dropIndex !== index) setDropIndex(index);
-            }}
-            onDragLeave={() => setDropIndex((prev) => (prev === index ? null : prev))}
-            onDrop={(e) => {
-              e.preventDefault();
-              handleDrop(index);
-            }}
-            onDragEnd={() => {
-              setDragIndex(null);
-              setDropIndex(null);
-            }}
-            className={`group relative h-24 w-20 cursor-move overflow-hidden rounded-control border transition-opacity ${
-              dragIndex === index ? "opacity-40" : ""
+            data-image-index={index}
+            onPointerDown={(e) => onThumbPointerDown(e, index)}
+            className={`group relative h-24 w-20 touch-none select-none overflow-hidden rounded-control border transition-opacity ${
+              dragIndex === index ? "cursor-grabbing opacity-40" : "cursor-grab"
             } ${dropIndex === index && dragIndex !== index ? "border-accent-strong ring-2 ring-accent/40" : "border-border"}`}
           >
             <NSMedia src={src} alt={`Imagen ${index + 1}`} sizes="80px" />

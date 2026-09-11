@@ -10,11 +10,14 @@ type PanelState = "normal" | "minimized" | "maximized";
  * Window chrome (minimize/maximize/close) around a form that used to be
  * just a plain full-page route — for a tenant who opened "Nuevo producto"
  * by mistake, or wants to park it half-filled and go do something else in
- * the dashboard without losing what they've typed. The sidebar/shell this
- * sits inside (see the (shell) route group) was already visible on this
- * page before this component existed; what it adds is the ability to
- * shrink out of the way or expand, instead of only "leave the page
- * entirely" vs. "full content-area form".
+ * the dashboard without losing what they've typed.
+ *
+ * Rendered from productos/@modal/(.)nuevo (an intercepted route), the
+ * products list stays mounted behind this panel the whole time — "normal"
+ * and "maximized" sit on top of it as a dialog (with a dimming backdrop,
+ * so the list isn't accidentally clicked through); "minimized" drops the
+ * backdrop entirely and shrinks to a small corner card, so the list is
+ * fully visible and editable again while the form waits.
  *
  * `children` stays mounted in the DOM in every state — minimizing hides it
  * with `hidden` (not a conditional `{state !== "minimized" && ...}`),
@@ -35,15 +38,14 @@ export function NSFloatingPanel({
 
   return (
     <>
-      {state === "maximized" ? (
-        <div className="fixed inset-0 z-40 bg-[var(--overlay)]" aria-hidden onClick={() => setState("normal")} />
-      ) : null}
+      {state !== "minimized" ? <div className="fixed inset-0 z-40 bg-[var(--overlay)]" aria-hidden /> : null}
 
       <div
         className={cn(
-          "flex flex-col rounded-card border border-border bg-surface-elevated shadow-modal",
-          state === "maximized" ? "fixed inset-4 z-50 sm:inset-10" : "",
-          state === "minimized" ? "fixed bottom-4 right-4 z-50 w-64" : "",
+          "fixed z-50 flex flex-col rounded-card border border-border bg-surface-elevated shadow-modal",
+          state === "normal" ? "inset-4 sm:inset-x-0 sm:inset-y-10 sm:mx-auto sm:w-full sm:max-w-2xl" : "",
+          state === "maximized" ? "inset-4 sm:inset-10" : "",
+          state === "minimized" ? "bottom-4 right-4 w-64" : "",
         )}
       >
         <div className="flex shrink-0 items-center justify-between gap-3 rounded-t-card border-b border-border bg-surface px-4 py-3">
@@ -85,7 +87,7 @@ export function NSFloatingPanel({
           </div>
         </div>
 
-        <div hidden={state === "minimized"} className={cn("min-h-0 flex-1 overflow-y-auto p-5", state === "maximized" ? "" : "")}>
+        <div hidden={state === "minimized"} className="min-h-0 flex-1 overflow-y-auto p-5">
           {children}
         </div>
       </div>
