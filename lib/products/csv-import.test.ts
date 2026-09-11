@@ -134,6 +134,35 @@ describe("parseProductImportCsv", () => {
     expect(rows[0]!.input.availability).toBe("in_stock");
   });
 
+  it("matches a row's photo by filename, case/whitespace-insensitively", () => {
+    const categories = [makeCategory()];
+    const csv = `${HEADER},foto\nREF-1,Taladro,49.99,,,herramientas,,,,,,  TALADRO.JPG \n`;
+    const { rows, warnings } = parseProductImportCsv(csv, categories, new Set(), [
+      { filename: "taladro.jpg", url: "https://cdn/taladro.jpg" },
+    ]);
+    expect(warnings).toEqual([]);
+    expect(rows[0]!.input.images).toEqual(["https://cdn/taladro.jpg"]);
+  });
+
+  it("keeps the placeholder image and reports a warning (not an error) when the photo column doesn't match anything uploaded", () => {
+    const categories = [makeCategory()];
+    const csv = `${HEADER},foto\nREF-1,Taladro,49.99,,,herramientas,,,,,,no-subida.jpg\n`;
+    const { rows, errors, warnings } = parseProductImportCsv(csv, categories, new Set(), []);
+    expect(errors).toEqual([]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.input.images).toEqual(["placeholder:herramientas:new"]);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]!.reason).toMatch(/no-subida\.jpg/);
+  });
+
+  it("uses the placeholder with no warning when the foto column is left empty", () => {
+    const categories = [makeCategory()];
+    const csv = `${HEADER}\nREF-1,Taladro,49.99,,,herramientas,,,,,\n`;
+    const { rows, warnings } = parseProductImportCsv(csv, categories, new Set());
+    expect(warnings).toEqual([]);
+    expect(rows[0]!.input.images).toEqual(["placeholder:herramientas:new"]);
+  });
+
   it("flags a file with more than MAX_IMPORT_ROWS rows instead of silently truncating without notice", () => {
     const categories = [makeCategory()];
     const lines = Array.from({ length: MAX_IMPORT_ROWS + 5 }, (_, i) => `REF-${i},Producto ${i},10,,,herramientas,,,,,`);
