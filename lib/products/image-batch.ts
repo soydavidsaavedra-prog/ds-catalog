@@ -161,6 +161,7 @@ export function buildBatchProductDrafts(input: BuildBatchDraftsInput): BuildBatc
         // when they trust the batch as-is (see NSProductBatchForm.tsx).
         active: input.active ?? false,
         hidePaymentBadge: false,
+        stock: null,
       },
     });
   }

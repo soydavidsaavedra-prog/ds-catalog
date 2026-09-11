@@ -31,6 +31,7 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     onSale: false,
     active: true,
     hidePaymentBadge: false,
+    stock: null,
     createdAt: "2024-01-01T00:00:00.000Z",
     updatedAt: "2024-01-01T00:00:00.000Z",
     ...overrides,

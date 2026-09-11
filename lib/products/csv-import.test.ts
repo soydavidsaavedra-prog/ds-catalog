@@ -163,6 +163,30 @@ describe("parseProductImportCsv", () => {
     expect(rows[0]!.input.images).toEqual(["placeholder:herramientas:new"]);
   });
 
+  it("defaults stock to null and keeps the disponibilidad column in charge when stock isn't given", () => {
+    const categories = [makeCategory()];
+    const csv = `${HEADER}\nREF-1,Taladro,49.99,,,herramientas,,pocas unidades,,,\n`;
+    const { rows } = parseProductImportCsv(csv, categories, new Set());
+    expect(rows[0]!.input.stock).toBeNull();
+    expect(rows[0]!.input.availability).toBe("low_stock");
+  });
+
+  it("derives availability from stock when the stock column is given, overriding disponibilidad", () => {
+    const categories = [makeCategory()];
+    const csv = `${HEADER},stock\nREF-1,Taladro,49.99,,,herramientas,,disponible,,,,0\n`;
+    const { rows } = parseProductImportCsv(csv, categories, new Set());
+    expect(rows[0]!.input.stock).toBe(0);
+    expect(rows[0]!.input.availability).toBe("out_of_stock");
+  });
+
+  it("ignores a negative or non-numeric stock value, falling back to null", () => {
+    const categories = [makeCategory()];
+    const csv = `${HEADER},stock\nREF-1,Taladro,49.99,,,herramientas,,,,,,-5\nREF-2,Martillo,10,,,herramientas,,,,,,abc\n`;
+    const { rows } = parseProductImportCsv(csv, categories, new Set());
+    expect(rows[0]!.input.stock).toBeNull();
+    expect(rows[1]!.input.stock).toBeNull();
+  });
+
   it("flags a file with more than MAX_IMPORT_ROWS rows instead of silently truncating without notice", () => {
     const categories = [makeCategory()];
     const lines = Array.from({ length: MAX_IMPORT_ROWS + 5 }, (_, i) => `REF-${i},Producto ${i},10,,,herramientas,,,,,`);

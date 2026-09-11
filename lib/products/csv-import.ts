@@ -2,6 +2,7 @@ import { parse } from "csv-parse/sync";
 import { slugify } from "@/lib/utils/slug";
 import type { Audience, Availability, Category } from "@/lib/types/catalog";
 import type { ProductInput } from "@/lib/repositories/product-repository";
+import { deriveAvailabilityFromStock } from "@/lib/products/stock";
 
 /**
  * Bulk product import from a CSV a tenant uploads at /admin/productos/importar
@@ -168,6 +169,10 @@ export function parseProductImportCsv(
     const previousPriceRaw = (record.precio_anterior ?? "").trim();
     const previousPrice = previousPriceRaw ? Number(previousPriceRaw.replace(",", ".")) : null;
 
+    const stockRaw = (record.stock ?? "").trim();
+    const parsedStock = stockRaw ? Number(stockRaw) : null;
+    const stock = parsedStock !== null && Number.isFinite(parsedStock) && parsedStock >= 0 ? Math.floor(parsedStock) : null;
+
     const sizes = (record.tallas ?? "")
       .split(";")
       .map((s) => s.trim())
@@ -201,12 +206,13 @@ export function parseProductImportCsv(
       imageFit: "cover",
       sizes,
       colors: [],
-      availability: resolveAvailability(record.disponibilidad),
+      availability: stock !== null ? deriveAvailabilityFromStock(stock) : resolveAvailability(record.disponibilidad),
       featured: parseBoolean(record.destacado),
       isNew: parseBoolean(record.nuevo),
       onSale: parseBoolean(record.oferta),
       active: true,
       hidePaymentBadge: false,
+      stock,
     };
 
     rows.push({ line, input });
@@ -218,8 +224,8 @@ export function parseProductImportCsv(
 /** The downloadable template's exact header row + one filled-in example — kept in code (not a static file) so it can never silently drift from what parseProductImportCsv actually reads. */
 export function buildProductImportTemplateCsv(): string {
   const header =
-    "referencia,nombre,precio,precio_anterior,descripcion,categoria,tallas,disponibilidad,destacado,nuevo,oferta,foto";
+    "referencia,nombre,precio,precio_anterior,descripcion,categoria,tallas,disponibilidad,destacado,nuevo,oferta,foto,stock";
   const example =
-    "REF-001,Ejemplo de producto,29.99,,Descripción breve del producto,nombre-de-tu-categoria,S;M;L,disponible,no,si,no,foto-ejemplo.jpg";
+    "REF-001,Ejemplo de producto,29.99,,Descripción breve del producto,nombre-de-tu-categoria,S;M;L,disponible,no,si,no,foto-ejemplo.jpg,";
   return `${header}\n${example}\n`;
 }

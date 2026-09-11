@@ -24,6 +24,7 @@ export interface ThemeFooterProps {
 }
 
 export interface ThemeCartDrawerProps {
+  tenantId: string;
   tenantSlug: string;
   whatsappNumber: string;
   brandName?: string;

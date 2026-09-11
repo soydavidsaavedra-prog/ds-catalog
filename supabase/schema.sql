@@ -80,12 +80,18 @@ create table if not exists ns_products (
   on_sale boolean not null default false,
   active boolean not null default true,
   hide_payment_badge boolean not null default false,
+  -- Null = the tenant manages `availability` by hand (the original behavior).
+  -- A number = real inventory tracking: an order decrements it, and it in
+  -- turn drives `availability` automatically. See lib/products/stock.ts.
+  stock integer,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 -- Backfills hide_payment_badge on a table created by an earlier version of this schema.
 alter table ns_products add column if not exists hide_payment_badge boolean not null default false;
+-- Backfills stock on a table created by an earlier version of this schema.
+alter table ns_products add column if not exists stock integer;
 
 create index if not exists ns_products_category_slug_idx on ns_products (category_slug);
 

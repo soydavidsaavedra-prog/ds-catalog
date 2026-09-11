@@ -15,6 +15,7 @@ import {
   type ProductInput,
 } from "@/lib/repositories/product-repository";
 import { findDuplicateProduct } from "@/lib/products/duplicates";
+import { deriveAvailabilityFromStock } from "@/lib/products/stock";
 import { getEffectivePlanForTenant } from "@/lib/tenant/plan-limits";
 import { getPlanById } from "@/lib/repositories/plans-repository";
 import { assignPlanToTenant } from "@/lib/repositories/subscriptions-repository";
@@ -169,6 +170,8 @@ async function parseProductInput(tenantId: string, formData: FormData): Promise<
   const categorySlug = String(formData.get("categorySlug") ?? "");
   const cardAspectRatioInput = String(formData.get("cardAspectRatio") ?? "");
   const imageFitInput = String(formData.get("imageFit") ?? "");
+  const stockRaw = String(formData.get("stock") ?? "").trim();
+  const stock = stockRaw === "" ? null : Math.max(0, Math.floor(Number(stockRaw)));
 
   return {
     slug: slugify(slugInput || `${reference}-${name}`),
@@ -186,12 +189,18 @@ async function parseProductInput(tenantId: string, formData: FormData): Promise<
     imageFit: IMAGE_FIT_VALUES.includes(imageFitInput as ImageFit) ? (imageFitInput as ImageFit) : "cover",
     sizes,
     colors,
-    availability: String(formData.get("availability") ?? "in_stock") as Availability,
+    // The server is the source of truth for this derivation, not just the
+    // form's own live preview: a tracked product's availability always
+    // comes from its stock, regardless of what the (possibly stale)
+    // "availability" field in the submitted form happens to carry.
+    availability:
+      stock !== null ? deriveAvailabilityFromStock(stock) : (String(formData.get("availability") ?? "in_stock") as Availability),
     featured: formData.get("featured") === "on",
     isNew: formData.get("isNew") === "on",
     onSale: formData.get("onSale") === "on",
     active: formData.get("active") === "on",
     hidePaymentBadge: formData.get("hidePaymentBadge") === "on",
+    stock,
   };
 }
 
@@ -371,6 +380,37 @@ export async function updateProductQuickFieldsAction(
 }
 
 /**
+ * Quick stock edit from the products list, for a product that already has
+ * inventory tracking on (stock !== null) — recomputes `availability` from
+ * the new count in the same write, same rule placeOrderAction applies when
+ * an order decrements it. Never offered for a product with stock === null:
+ * turning tracking on is a deliberate choice made on the full edit form,
+ * not a side effect of a quick list edit.
+ */
+export async function updateProductStockAction(
+  tenantId: string,
+  tenantSlug: string,
+  id: string,
+  stock: number,
+): Promise<{ error?: string }> {
+  if (!Number.isFinite(stock) || stock < 0) {
+    return { error: "El stock debe ser un número válido." };
+  }
+
+  let updated;
+  try {
+    updated = await updateProduct(tenantId, id, { stock, availability: deriveAvailabilityFromStock(stock) });
+  } catch (err) {
+    return { error: friendlyDbErrorMessage(err) };
+  }
+  if (!updated) return { error: "Producto no encontrado." };
+
+  revalidateStorefront(tenantSlug, updated.categorySlug, updated.slug);
+  revalidatePath(`/${tenantSlug}/admin/productos`);
+  return {};
+}
+
+/**
  * Clones a product as a new inactive draft — same data, fresh id/reference/
  * slug and no images (Storage files belong to the original; copying the
  * URLs would mean deleting one product's photos could silently break the
@@ -410,6 +450,7 @@ export async function duplicateProductAction(tenantId: string, tenantSlug: strin
       onSale: existing.onSale,
       active: false,
       hidePaymentBadge: existing.hidePaymentBadge,
+      stock: existing.stock,
     });
   } catch (err) {
     console.error(`[productos] failed to duplicate ${id}:`, err);

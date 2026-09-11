@@ -70,7 +70,7 @@ export function NSProductImportForm({ tenantId, tenantSlug }: { tenantId: string
           </li>
           <li>
             <span className="font-medium text-foreground">precio_anterior, descripcion, tallas, disponibilidad,
-            destacado, nuevo, oferta, foto</span> — opcionales.
+            destacado, nuevo, oferta, foto, stock</span> — opcionales.
           </li>
           <li>
             <span className="font-medium text-foreground">tallas</span> se separan con punto y coma dentro de la celda
@@ -86,6 +86,11 @@ export function NSProductImportForm({ tenantId, tenantSlug }: { tenantId: string
             con el CSV más abajo (ej. <code className="rounded bg-surface px-1">camisa-azul.jpg</code>) — así cada
             producto sale con su foto real en vez del marcador de posición. Sin esa columna, o si el nombre no
             coincide con ninguna foto subida, el producto igual se crea, solo que con el marcador de posición.
+          </li>
+          <li>
+            <span className="font-medium text-foreground">stock</span> es opcional — si le pones un número, ese
+            producto pasa a llevar inventario real (su disponibilidad se calcula sola y baja con cada pedido) en vez
+            de usar la columna <span className="font-medium text-foreground">disponibilidad</span>.
           </li>
           <li>
             La importación <span className="font-medium text-foreground">no incluye colores</span> — se agregan

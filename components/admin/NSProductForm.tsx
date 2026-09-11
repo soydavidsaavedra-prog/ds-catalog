@@ -10,6 +10,8 @@ import { NSImageUploader } from "@/components/admin/NSImageUploader";
 import { NSVariantListEditor } from "@/components/admin/NSVariantListEditor";
 import { NSProductCardPreview } from "@/components/admin/NSProductCardPreview";
 import { buildAccentOverrideVars } from "@/lib/utils/brand";
+import { availabilityLabel } from "@/lib/utils/format";
+import { deriveAvailabilityFromStock } from "@/lib/products/stock";
 
 const initialState: ActionState = {};
 
@@ -54,6 +56,8 @@ export function NSProductForm({
   const [onSale, setOnSale] = useState(product?.onSale ?? false);
   const [hidePaymentBadge, setHidePaymentBadge] = useState(product?.hidePaymentBadge ?? false);
   const [availability, setAvailability] = useState<Availability>(product?.availability ?? "in_stock");
+  const [stock, setStock] = useState<number | null>(product?.stock ?? null);
+  const effectiveAvailability = stock !== null ? deriveAvailabilityFromStock(stock) : availability;
   const [cardAspectRatio, setCardAspectRatio] = useState<CardAspectRatio>(product?.cardAspectRatio ?? "portrait");
   const [imageFit, setImageFit] = useState<ImageFit>(product?.imageFit ?? "cover");
   const [images, setImages] = useState<string[]>(product?.images ?? []);
@@ -121,7 +125,7 @@ export function NSProductForm({
         </DSCard>
 
         <DSCard title="Precio y disponibilidad">
-          <div className="grid gap-5 sm:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2">
             <div>
               <NSLabel htmlFor="price">Precio detal (USD)</NSLabel>
               <NSInput
@@ -151,17 +155,44 @@ export function NSProductForm({
               </p>
             </div>
             <div>
+              <NSLabel htmlFor="stock">Stock (opcional)</NSLabel>
+              <NSInput
+                id="stock"
+                name="stock"
+                type="number"
+                min="0"
+                step="1"
+                value={stock ?? ""}
+                onChange={(e) => setStock(e.target.value === "" ? null : Math.max(0, Math.floor(Number(e.target.value))))}
+                placeholder="Sin control de inventario"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Ponle una cantidad para llevar inventario real: la disponibilidad se calcula sola a partir de ella y
+                baja con cada pedido enviado por WhatsApp. Déjalo vacío para seguir eligiendo la disponibilidad a mano.
+              </p>
+            </div>
+            <div>
               <NSLabel htmlFor="availability">Disponibilidad</NSLabel>
-              <NSSelect
-                id="availability"
-                name="availability"
-                value={availability}
-                onChange={(e) => setAvailability(e.target.value as Availability)}
-              >
-                <option value="in_stock">Disponible</option>
-                <option value="low_stock">Pocas unidades</option>
-                <option value="out_of_stock">Agotado</option>
-              </NSSelect>
+              {stock !== null ? (
+                <>
+                  <input type="hidden" name="availability" value={effectiveAvailability} />
+                  <div className="flex h-11 items-center rounded-control border border-border bg-surface px-3.5 text-sm text-muted-foreground">
+                    {availabilityLabel[effectiveAvailability]}
+                    <span className="ml-1.5 text-xs">(según el stock)</span>
+                  </div>
+                </>
+              ) : (
+                <NSSelect
+                  id="availability"
+                  name="availability"
+                  value={availability}
+                  onChange={(e) => setAvailability(e.target.value as Availability)}
+                >
+                  <option value="in_stock">Disponible</option>
+                  <option value="low_stock">Pocas unidades</option>
+                  <option value="out_of_stock">Agotado</option>
+                </NSSelect>
+              )}
             </div>
           </div>
         </DSCard>
@@ -320,7 +351,7 @@ export function NSProductForm({
             previousPrice={previousPrice}
             isNew={isNew}
             onSale={onSale}
-            outOfStock={availability === "out_of_stock"}
+            outOfStock={effectiveAvailability === "out_of_stock"}
             hidePaymentBadge={hidePaymentBadge}
             paymentBadge={{ icon: settings.paymentBadgeIcon, label: settings.paymentBadgeLabel }}
             cardAspectRatio={cardAspectRatio}

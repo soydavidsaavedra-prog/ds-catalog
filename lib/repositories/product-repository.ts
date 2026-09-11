@@ -31,6 +31,7 @@ function fromRow(row: ProductRow): Product {
     onSale: row.on_sale,
     active: row.active,
     hidePaymentBadge: row.hide_payment_badge,
+    stock: row.stock === undefined ? null : row.stock,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -57,6 +58,7 @@ function toRow(input: Partial<ProductInput>): Partial<ProductRow> {
   if (input.onSale !== undefined) row.on_sale = input.onSale;
   if (input.active !== undefined) row.active = input.active;
   if (input.hidePaymentBadge !== undefined) row.hide_payment_badge = input.hidePaymentBadge;
+  if (input.stock !== undefined) row.stock = input.stock;
   return row;
 }
 

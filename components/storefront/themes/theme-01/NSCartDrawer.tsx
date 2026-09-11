@@ -8,12 +8,15 @@ import { NSCartItemRow } from "./NSCartItemRow";
 import { NSButton } from "@/components/ui/NSButton";
 import { formatPrice } from "@/lib/utils/format";
 import { buildWhatsAppOrderUrl } from "@/lib/whatsapp/order-message";
+import { placeOrderAction } from "@/app/[tenant]/(storefront)/checkout-actions";
 
 export function NSCartDrawer({
+  tenantId,
   tenantSlug,
   whatsappNumber,
   brandName,
 }: {
+  tenantId: string;
   tenantSlug: string;
   whatsappNumber: string;
   brandName?: string;
@@ -22,6 +25,21 @@ export function NSCartDrawer({
   const items = useCartStore((s) => s.items);
   const closeCart = useCartStore((s) => s.closeCart);
   const total = useCartTotal();
+
+  // Fire-and-forget on purpose, never awaited: the <a target="_blank"> below
+  // still opens WhatsApp exactly as before, and popup blockers only allow
+  // window.open()/navigation triggered synchronously from a user gesture —
+  // awaiting a server round trip first would delay it past that window.
+  // placeOrderAction is itself best-effort (see its own doc comment), so
+  // the sale never depends on this succeeding. Deliberately doesn't clear
+  // the cart here either — mutating `items` synchronously in this same
+  // click would recompute this very link's href (it reads `items` too)
+  // before the browser navigates with it, sending an emptied order.
+  function recordOrder() {
+    placeOrderAction(tenantId, tenantSlug, { items, total }).catch((err) => {
+      console.error("[carrito] failed to place order:", err);
+    });
+  }
 
   useEffect(() => {
     if (!isOpen) return;
@@ -98,6 +116,7 @@ export function NSCartDrawer({
                   href={buildWhatsAppOrderUrl(items, whatsappNumber, tenantSlug)}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={recordOrder}
                   className="flex h-12 w-full items-center justify-center gap-2 rounded-control bg-accent text-sm font-semibold uppercase tracking-wide text-accent-foreground transition-colors hover:bg-accent-strong"
                 >
                   Enviar pedido por WhatsApp

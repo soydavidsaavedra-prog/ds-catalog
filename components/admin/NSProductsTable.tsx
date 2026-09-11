@@ -19,6 +19,7 @@ import {
   setProductsActiveAction,
   toggleProductFlagAction,
   updateProductQuickFieldsAction,
+  updateProductStockAction,
 } from "@/app/[tenant]/admin/actions";
 
 const currencySymbol = siteConfig.commerce.currencySymbol;
@@ -103,6 +104,32 @@ export function NSProductsTable({
 
     if (result.error) {
       input.value = currentValue;
+      setFieldErrors((prev) => ({ ...prev, [product.id]: result.error! }));
+    } else {
+      setFieldErrors((prev) => {
+        if (!(product.id in prev)) return prev;
+        const next = { ...prev };
+        delete next[product.id];
+        return next;
+      });
+    }
+  }
+
+  // Only offered for a product that already tracks stock (stock !== null) —
+  // turning tracking on is a deliberate choice made on the full edit form.
+  async function saveStock(product: Product, input: HTMLInputElement) {
+    const raw = input.value.trim();
+    const parsed = Number(raw);
+    if (raw === "" || !Number.isFinite(parsed) || parsed < 0) {
+      input.value = String(product.stock);
+      return;
+    }
+    const nextStock = Math.floor(parsed);
+    if (nextStock === product.stock) return;
+
+    const result = await updateProductStockAction(tenantId, tenantSlug, product.id, nextStock);
+    if (result.error) {
+      input.value = String(product.stock);
       setFieldErrors((prev) => ({ ...prev, [product.id]: result.error! }));
     } else {
       setFieldErrors((prev) => {
@@ -270,6 +297,7 @@ export function NSProductsTable({
           { label: "Producto", sortKey: "name" },
           { label: "Categoría" },
           { label: "Precio", sortKey: "price" },
+          { label: "Stock" },
           { label: "Estado" },
           { label: "Activo" },
           { label: "" },
@@ -329,6 +357,24 @@ export function NSProductsTable({
                   className="w-20 min-w-0 bg-transparent tabular-nums focus:outline-none"
                 />
               </div>
+            </td>
+            <td className="px-4 py-3">
+              {product.stock !== null ? (
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  defaultValue={product.stock}
+                  aria-label={`Stock de ${product.name}`}
+                  onBlur={(e) => saveStock(product, e.currentTarget)}
+                  onKeyDown={(e) => handleQuickFieldKeyDown(e, String(product.stock))}
+                  className="w-16 min-w-0 rounded border border-transparent bg-transparent px-1 py-0.5 -mx-1 tabular-nums hover:border-border focus:border-accent-strong focus:bg-surface focus:outline-none focus:ring-1 focus:ring-accent/40"
+                />
+              ) : (
+                <span className="text-xs text-muted-foreground" title="Sin control de inventario — edítalo desde la página del producto para activarlo">
+                  —
+                </span>
+              )}
             </td>
             <td className="px-4 py-3">
               <DSStatusBadge label={availabilityLabel[product.availability]} tone={AVAILABILITY_TONE[product.availability]} />

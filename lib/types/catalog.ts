@@ -66,6 +66,8 @@ export interface Product {
   active: boolean;
   /** Opt this product out of the site-wide payment-method badge (e.g. Cashea) shown on cards/detail. */
   hidePaymentBadge: boolean;
+  /** Null = no inventory tracking, `availability` is set by hand as always. A number = real stock: an order decrements it, and it drives `availability` automatically (see lib/products/stock.ts). */
+  stock: number | null;
   createdAt: string;
   updatedAt: string;
 }

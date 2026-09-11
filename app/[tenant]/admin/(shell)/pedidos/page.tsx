@@ -18,7 +18,7 @@ export default async function AdminOrdersPage({
     <div className="flex flex-col gap-6">
       <DSPageHeader
         title="Pedidos"
-        description="El cierre de venta ocurre por WhatsApp. Este listado es para seguimiento interno de pedidos que decidas registrar manualmente a futuro — hoy está vacío porque el flujo de checkout envía el pedido directo al chat sin pasar por el servidor."
+        description="El cierre de venta sigue ocurriendo por WhatsApp — este listado es solo para seguimiento interno. Cada vez que un cliente envía un pedido desde el catálogo queda registrado aquí, y si algún producto lleva control de stock, se descuenta automáticamente."
       />
 
       {orders.length === 0 ? (

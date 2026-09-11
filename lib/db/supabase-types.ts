@@ -150,6 +150,7 @@ export interface ProductRow {
   on_sale: boolean;
   active: boolean;
   hide_payment_badge: boolean;
+  stock: number | null;
   created_at: string;
   updated_at: string;
 }
