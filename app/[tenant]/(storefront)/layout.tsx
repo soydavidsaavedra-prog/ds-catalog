@@ -8,7 +8,7 @@ import { NSWhatsAppButton } from "@/components/whatsapp/NSWhatsAppButton";
 import { buildAccentOverrideVars } from "@/lib/utils/brand";
 import { parsePlaceholder } from "@/lib/media/placeholder";
 
-const FALLBACK_ICON = "/ds-catalog-mark.png";
+const FALLBACK_ICON = "/ds-catalog-icon.png";
 
 /** So "Agregar a inicio" installs each tenant's OWN catalog — their name, their logo, their accent — see app/[tenant]/manifest.webmanifest/route.ts for the manifest itself. */
 export async function generateMetadata({

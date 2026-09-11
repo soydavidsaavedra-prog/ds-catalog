@@ -18,8 +18,8 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#0a0a09",
     theme_color: "#0a0a09",
     icons: [
-      { src: "/ds-catalog-mark.png", sizes: "192x192", type: "image/png" },
-      { src: "/ds-catalog-mark.png", sizes: "512x512", type: "image/png" },
+      { src: "/ds-catalog-icon.png", sizes: "192x192", type: "image/png" },
+      { src: "/ds-catalog-icon.png", sizes: "512x512", type: "image/png" },
     ],
   };
 }

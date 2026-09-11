@@ -56,7 +56,7 @@ export const metadata: Metadata = {
   // page (and any other route with no more specific override, e.g. /admin)
   // when "added to home screen": DS Catalog's own mark, never a generic
   // browser-generated initials badge.
-  icons: { apple: "/ds-catalog-mark.png" },
+  icons: { apple: "/ds-catalog-icon.png" },
 };
 
 export const viewport: Viewport = {

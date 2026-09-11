@@ -4,7 +4,7 @@ import { getSettings } from "@/lib/repositories/settings-repository";
 import { parsePlaceholder } from "@/lib/media/placeholder";
 
 /** Shown until a tenant uploads their own logo (SiteSettings.brandLogo) — same idea as NSLogo's generated fallback, but manifest icons must be a real raster file, not an SVG component. */
-const FALLBACK_ICON = "/ds-catalog-mark.png";
+const FALLBACK_ICON = "/ds-catalog-icon.png";
 
 /**
  * A per-tenant Web App Manifest, so "Agregar a inicio" on a tenant's own
