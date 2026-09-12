@@ -6,6 +6,7 @@ import { NSPrice } from "@/components/ui/NSPrice";
 import { NSAvailabilityBadge } from "@/components/ui/NSAvailabilityBadge";
 import { NSQuantityStepper } from "@/components/ui/NSQuantityStepper";
 import { NSButton } from "@/components/ui/NSButton";
+import { NSToast } from "@/components/ui/NSToast";
 import { useCartStore } from "@/lib/cart/cart-store";
 import { absoluteUrl } from "@/lib/utils/format";
 import { shareProduct } from "@/lib/utils/share";
@@ -27,6 +28,7 @@ export function NSProductPurchasePanel({
   const [color, setColor] = useState(product.colors[0]?.name ?? "");
   const [quantity, setQuantity] = useState(1);
   const [shareState, setShareState] = useState<"idle" | "copied">("idle");
+  const [toastTrigger, setToastTrigger] = useState(0);
   const addItem = useCartStore((s) => s.addItem);
 
   const outOfStock = product.availability === "out_of_stock";
@@ -46,6 +48,7 @@ export function NSProductPurchasePanel({
       price: product.price,
     });
     setQuantity(1);
+    setToastTrigger((t) => t + 1);
   };
 
   const handleShare = async () => {
@@ -153,6 +156,8 @@ export function NSProductPurchasePanel({
           {shareState === "copied" ? "Enlace copiado" : "Compartir producto"}
         </button>
       </div>
+
+      <NSToast message={`${product.name} agregado al carrito`} trigger={toastTrigger} />
     </div>
   );
 }
