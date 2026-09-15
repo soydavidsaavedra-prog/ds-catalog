@@ -18,11 +18,11 @@ export function NSCollections({
   brandName: string;
 }) {
   return (
-    <section className="bg-background py-20 sm:py-28">
+    <section className="bg-background py-12 sm:py-20 lg:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <NSSectionHeading eyebrow="Catálogo" title="Explora la colección" />
 
-        <div className="mt-10 grid gap-4 sm:grid-cols-3">
+        <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3">
           {topLevelCategories.map((category, index) => (
             <NSReveal key={category.slug} delay={index * 0.1}>
               <Link

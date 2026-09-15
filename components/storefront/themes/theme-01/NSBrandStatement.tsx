@@ -42,7 +42,7 @@ export function NSBrandStatement({
     <>
       <section className="relative overflow-hidden bg-ink-950 text-ink-0">
         <div className="grid sm:grid-cols-2">
-          <NSReveal className="flex flex-col justify-center px-6 py-20 sm:px-12 lg:px-20">
+          <NSReveal className="flex flex-col justify-center px-6 py-12 sm:px-12 sm:py-20 lg:px-20">
             <p className="font-display text-4xl uppercase leading-[0.9] tracking-wide sm:text-6xl">
               {titleLine1}
               <br />

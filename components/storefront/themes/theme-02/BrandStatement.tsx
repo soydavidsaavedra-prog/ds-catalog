@@ -18,7 +18,7 @@ export interface Theme02BrandStatementProps {
 export function BrandStatement({ titleLine1, titleLine2, description, image, brandName }: Theme02BrandStatementProps) {
   return (
     <div className="mx-auto grid max-w-7xl gap-0 overflow-hidden sm:grid-cols-2">
-      <NSReveal className="flex flex-col justify-center px-6 py-16 sm:px-10 lg:px-16">
+      <NSReveal className="flex flex-col justify-center px-6 py-10 sm:px-10 sm:py-16 lg:px-16">
         <p className="text-3xl font-extrabold leading-[1.05] tracking-tight text-foreground sm:text-5xl">
           {titleLine1}
           {titleLine2 ? (
