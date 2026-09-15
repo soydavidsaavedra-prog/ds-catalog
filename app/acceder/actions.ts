@@ -2,8 +2,8 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { createAdminSession } from "@/lib/auth/admin-auth";
-import { createSuperadminSession, verifySuperadminCredentials } from "@/lib/auth/superadmin-auth";
+import { createAdminSession, destroyAdminSession } from "@/lib/auth/admin-auth";
+import { createSuperadminSession, destroySuperadminSession, verifySuperadminCredentials } from "@/lib/auth/superadmin-auth";
 import {
   createAuthUser,
   verifyEmailPasswordWithSession,
@@ -291,6 +291,11 @@ async function signInAndRedirect(appUserId: string): Promise<AccederActionState>
   }
 
   if (appUser.role === "superadmin") {
+    // A fresh Super Admin login always starts clean too — otherwise a
+    // tenant-admin session left open in the same browser (e.g. from an
+    // earlier impersonation, or simply another account) would keep
+    // co-existing with this brand-new Super Admin one.
+    await destroyAdminSession();
     await createSuperadminSession(appUser.id);
     redirect("/superadmin");
   }
@@ -305,6 +310,13 @@ async function signInAndRedirect(appUserId: string): Promise<AccederActionState>
     return { error: GENERIC_ERROR };
   }
 
+  // Same reasoning as the Super Admin branch above, in the other
+  // direction — a fresh, ordinary tenant login should never inherit a
+  // Super Admin cookie left open in the same browser. Without this, that
+  // leftover cookie is exactly what let a stale "Volver a Super Admin"
+  // exit (see createAdminSession's own comment) actually work instead of
+  // just bouncing to /acceder.
+  await destroySuperadminSession();
   await createAdminSession(tenant.slug);
   redirect(`/${tenant.slug}/admin?bienvenida=1`);
 }

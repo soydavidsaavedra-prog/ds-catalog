@@ -6,7 +6,7 @@ import { NSCatalogView } from "./NSCatalogView";
 export function Category({ tenantId, tenantSlug, category, filters, forcedCategorySlugs, settings }: ThemeCategoryProps) {
   return (
     <div>
-      <NSCategoryHero category={category} brandName={settings.brandName} />
+      <NSCategoryHero category={category} tenantSlug={tenantSlug} brandName={settings.brandName} />
       <NSCatalogView
         tenantId={tenantId}
         tenantSlug={tenantSlug}

@@ -25,6 +25,15 @@ export async function createAdminSession(tenantSlug: string): Promise<void> {
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });
+  // A brand-new session always starts clean. Without this, a stale
+  // IMPERSONATION_MARKER_COOKIE left over from an earlier impersonation
+  // (see impersonateTenantAction) that never went through
+  // endImpersonationAction would make an unrelated, perfectly normal login
+  // look like it's still impersonating — showing NSAdminSidebar's "Volver a
+  // Super Admin" exit, which a real tenant session should never have.
+  // impersonateTenantAction calls markImpersonatedSession() immediately
+  // after this, so real impersonation is unaffected.
+  store.delete(IMPERSONATION_MARKER_COOKIE);
 }
 
 export async function destroyAdminSession(): Promise<void> {
