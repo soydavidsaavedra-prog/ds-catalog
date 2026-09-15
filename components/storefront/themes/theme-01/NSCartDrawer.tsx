@@ -24,7 +24,12 @@ export function NSCartDrawer({
   const isOpen = useCartStore((s) => s.isOpen);
   const items = useCartStore((s) => s.items);
   const closeCart = useCartStore((s) => s.closeCart);
+  const clearCart = useCartStore((s) => s.clear);
   const total = useCartTotal();
+
+  function handleClear() {
+    if (window.confirm("¿Vaciar el carrito? Se quitarán todos los productos.")) clearCart();
+  }
 
   // Fire-and-forget on purpose, never awaited: the <a target="_blank"> below
   // still opens WhatsApp exactly as before, and popup blockers only allow
@@ -79,16 +84,27 @@ export function NSCartDrawer({
           >
             <header className="flex items-center justify-between border-b border-border px-5 py-4">
               <h2 className="font-display text-xl uppercase tracking-wide">Carrito</h2>
-              <button
-                type="button"
-                onClick={closeCart}
-                aria-label="Cerrar carrito"
-                className="flex h-9 w-9 items-center justify-center rounded-control hover:bg-surface"
-              >
-                <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
-                  <path strokeLinecap="round" d="M5 5l10 10M15 5L5 15" />
-                </svg>
-              </button>
+              <div className="flex items-center gap-1">
+                {items.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={handleClear}
+                    className="mr-1 text-xs font-medium uppercase tracking-wide text-muted-foreground hover:text-danger"
+                  >
+                    Vaciar
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={closeCart}
+                  aria-label="Cerrar carrito"
+                  className="flex h-9 w-9 items-center justify-center rounded-control hover:bg-surface"
+                >
+                  <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+                    <path strokeLinecap="round" d="M5 5l10 10M15 5L5 15" />
+                  </svg>
+                </button>
+              </div>
             </header>
 
             <div className="flex-1 overflow-y-auto px-5">

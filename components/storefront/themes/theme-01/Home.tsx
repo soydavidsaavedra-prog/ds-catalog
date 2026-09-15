@@ -4,9 +4,10 @@ import { NSFactoryStory, DEFAULT_STEP_LABELS } from "./NSFactoryStory";
 import { NSCollections } from "./NSCollections";
 import { NSFeaturedProducts } from "./NSFeaturedProducts";
 import { NSBrandStatement } from "./NSBrandStatement";
+import { NSTestimonialsSection } from "@/components/storefront/NSTestimonialsSection";
 
 /** Theme 01's home page composition — moved here verbatim from app/[tenant]/(storefront)/page.tsx, which now just fetches data and renders this. */
-export function Home({ tenantSlug, settings, categories, products, heroSlides }: ThemeHomeProps) {
+export function Home({ tenantSlug, settings, categories, products, heroSlides, testimonials }: ThemeHomeProps) {
   const nuevos = products.filter((p) => p.isNew);
   // "Destacados" shows the most recently uploaded products automatically
   // (products is already sorted newest-first) instead of requiring the
@@ -75,6 +76,7 @@ export function Home({ tenantSlug, settings, categories, products, heroSlides }:
         image={settings.statementImage}
         brandName={settings.brandName}
       />
+      <NSTestimonialsSection testimonials={testimonials} />
     </>
   );
 }

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { NSLogo } from "@/components/brand/NSLogo";
 import { NSCartButton } from "@/components/cart/NSCartButton";
+import { NSWishlistButton } from "@/components/wishlist/NSWishlistButton";
 import { NSThemeToggle } from "@/components/ui/NSThemeToggle";
 import { cn } from "@/lib/utils/cn";
 
@@ -169,6 +170,9 @@ export function NSHeaderClient({
             </button>
             <div className="[&_button]:text-ink-0 [&_button:hover]:bg-ink-800">
               <NSThemeToggle />
+            </div>
+            <div className="[&_a]:text-ink-0 [&_a:hover]:bg-ink-800">
+              <NSWishlistButton />
             </div>
             <div className="[&_button]:text-ink-0 [&_button:hover]:bg-ink-800">
               <NSCartButton />

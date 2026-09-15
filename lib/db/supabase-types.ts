@@ -167,6 +167,18 @@ export interface HeroSlideRow {
   created_at: string;
 }
 
+export interface TestimonialRow {
+  id: string;
+  tenant_id: string;
+  author_name: string;
+  author_role: string;
+  quote: string;
+  rating: number;
+  order: number;
+  active: boolean;
+  created_at: string;
+}
+
 export interface BannerRow {
   id: string;
   tenant_id: string;
@@ -306,6 +318,7 @@ export interface Database {
       ns_products: TableDef<ProductRow>;
       ns_banners: TableDef<BannerRow>;
       ns_hero_slides: TableDef<HeroSlideRow>;
+      ns_testimonials: TableDef<TestimonialRow>;
       ns_orders: TableDef<OrderRow>;
       ns_settings: TableDef<SettingsRow>;
       ds_login_attempts: TableDef<LoginAttemptRow>;

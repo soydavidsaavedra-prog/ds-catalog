@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { NSLogo } from "@/components/brand/NSLogo";
 import { NSCartButton } from "@/components/cart/NSCartButton";
+import { NSWishlistButton } from "@/components/wishlist/NSWishlistButton";
 import { NSThemeToggle } from "@/components/ui/NSThemeToggle";
 import { cn } from "@/lib/utils/cn";
 
@@ -137,6 +138,7 @@ export function HeaderClient({
             </svg>
           </button>
           <NSThemeToggle />
+          <NSWishlistButton />
           <NSCartButton />
           <button
             type="button"

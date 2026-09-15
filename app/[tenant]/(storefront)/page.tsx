@@ -4,6 +4,7 @@ import { listCategories } from "@/lib/repositories/category-repository";
 import { listProducts } from "@/lib/repositories/product-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
 import { listHeroSlides } from "@/lib/repositories/hero-slide-repository";
+import { listTestimonials } from "@/lib/repositories/testimonials-repository";
 import { siteConfig } from "@/lib/config/site";
 import { resolveTheme } from "@/lib/themes/registry";
 
@@ -32,11 +33,12 @@ export default async function Home({
   const { tenant: tenantSlug } = await params;
   const tenant = await resolveTenant(tenantSlug);
 
-  const [categories, products, settings, heroSlides] = await Promise.all([
+  const [categories, products, settings, heroSlides, testimonials] = await Promise.all([
     listCategories(tenant.id, { activeOnly: true }),
     listProducts(tenant.id, { activeOnly: true }),
     getSettings(tenant.id),
     listHeroSlides(tenant.id, { activeOnly: true }),
+    listTestimonials(tenant.id, { activeOnly: true }),
   ]);
 
   const theme = resolveTheme(tenant.theme);
@@ -48,6 +50,7 @@ export default async function Home({
       categories={categories}
       products={products}
       heroSlides={heroSlides}
+      testimonials={testimonials}
     />
   );
 }
