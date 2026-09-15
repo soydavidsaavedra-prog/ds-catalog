@@ -52,10 +52,10 @@ export const useCartStore = create<CartState>()(
               ...items[existingIndex],
               quantity: items[existingIndex].quantity + item.quantity,
             };
-            return { items, isOpen: true, lastAddedName: item.name, addedTrigger };
+            return { items, lastAddedName: item.name, addedTrigger };
           }
 
-          return { items: [...state.items, item], isOpen: true, lastAddedName: item.name, addedTrigger };
+          return { items: [...state.items, item], lastAddedName: item.name, addedTrigger };
         }),
 
       removeItem: (key) =>
