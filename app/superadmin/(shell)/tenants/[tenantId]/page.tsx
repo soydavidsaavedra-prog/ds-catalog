@@ -93,7 +93,7 @@ export default async function SuperadminTenantDetailPage({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         <Stat label="Productos" value={tenant.counts.products} />
         <Stat label="Categorías" value={tenant.counts.categories} />
         <Stat label="Pedidos" value={tenant.counts.orders} />
@@ -163,8 +163,8 @@ export default async function SuperadminTenantDetailPage({
         </p>
         {tenant.customDomain ? (
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-card border border-border p-5 text-sm">
-            <div className="flex items-center gap-3">
-              <span className="font-mono">{tenant.customDomain}</span>
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="min-w-0 truncate font-mono">{tenant.customDomain}</span>
               <DSStatusBadge
                 label={tenant.customDomainVerified ? "Verificado" : "Pendiente"}
                 tone={tenant.customDomainVerified ? "success" : "warning"}
@@ -237,9 +237,9 @@ export default async function SuperadminTenantDetailPage({
         ) : null}
 
         <form action={assignPlanAction.bind(null, tenant.id)} className="mt-4 flex flex-wrap items-end gap-3">
-          <div>
+          <div className="w-full sm:w-auto">
             <NSLabel htmlFor="planId">{subscription ? "Cambiar plan" : "Asignar plan"}</NSLabel>
-            <NSSelect id="planId" name="planId" defaultValue={subscription?.planId ?? ""} required className="w-48">
+            <NSSelect id="planId" name="planId" defaultValue={subscription?.planId ?? ""} required className="w-full sm:w-48">
               <option value="" disabled>
                 Elige un plan
               </option>
@@ -250,15 +250,15 @@ export default async function SuperadminTenantDetailPage({
               ))}
             </NSSelect>
           </div>
-          <div>
+          <div className="w-full sm:w-auto">
             <NSLabel htmlFor="status">Estado</NSLabel>
-            <NSSelect id="status" name="status" defaultValue="trial" className="w-36">
+            <NSSelect id="status" name="status" defaultValue="trial" className="w-full sm:w-36">
               <option value="trial">trial</option>
               <option value="active">active</option>
               <option value="paused">paused</option>
             </NSSelect>
           </div>
-          <div>
+          <div className="w-full sm:w-auto">
             <NSLabel htmlFor="expiresAt">Vence</NSLabel>
             <NSInput id="expiresAt" name="expiresAt" type="date" />
           </div>

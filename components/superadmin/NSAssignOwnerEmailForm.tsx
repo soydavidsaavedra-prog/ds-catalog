@@ -27,9 +27,9 @@ export function NSAssignOwnerEmailForm({ tenantId, currentEmail }: { tenantId: s
           {state.error}
         </div>
       ) : null}
-      <div>
+      <div className="w-full sm:w-auto">
         <NSLabel htmlFor="email">{currentEmail ? "Nuevo correo" : "Correo del administrador"}</NSLabel>
-        <NSInput id="email" name="email" type="email" required autoFocus className="w-64" />
+        <NSInput id="email" name="email" type="email" required autoFocus className="w-full sm:w-64" />
       </div>
       <NSButton type="submit" loading={pending} size="sm">
         {currentEmail ? "Reasignar e invitar" : "Invitar por correo"}
