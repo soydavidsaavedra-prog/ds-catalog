@@ -34,6 +34,9 @@ export default async function AdminProductsPage({
             <NSButton href={`/${tenantSlug}/admin/productos/lote-fotos`} variant="outline" size="sm">
               Crear por lote de fotos
             </NSButton>
+            <NSButton href={`/${tenantSlug}/admin/productos/exportar`} variant="outline" size="sm">
+              Exportar PDF
+            </NSButton>
             <NSButton href={`/${tenantSlug}/admin/productos/nuevo`} size="sm">+ Nuevo producto</NSButton>
           </>
         }
