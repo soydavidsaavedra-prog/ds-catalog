@@ -35,12 +35,12 @@ export function DSLandingHeroScene() {
     <motion.div ref={sceneRef} style={{ y, opacity }} className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
       {/* Ambient glows — slow independent drift, pure opacity/transform. */}
       <motion.div
-        className="absolute -left-24 top-0 h-72 w-72 rounded-full bg-accent/20 blur-3xl"
+        className="absolute -left-24 top-0 h-72 w-72 rounded-full bg-accent/25 blur-3xl"
         animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
         transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
-        className="absolute -right-16 bottom-0 h-80 w-80 rounded-full bg-accent/10 blur-3xl"
+        className="absolute -right-16 bottom-0 h-80 w-80 rounded-full bg-accent/15 blur-3xl"
         animate={{ x: [0, -24, 0], y: [0, 24, 0] }}
         transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
       />
@@ -54,20 +54,28 @@ export function DSLandingHeroScene() {
         </div>
       </div>
 
-      {/* Assembling UI chips — desktop/tablet only, staggered independent loops. */}
-      <SceneChip className="left-[6%] top-[14%]" delay={0}>
+      {/*
+        Assembling UI chips — visible at every breakpoint. Mobile has no
+        room beside the centered text, so the base (mobile) position tucks
+        each chip into a corner within the hero's own top/bottom padding
+        (py-16, well clear of the text column); lg: moves them out to the
+        wider side positions the desktop layout has room for. Only the 5th
+        chip (near-center-top) stays lg-only — at that position it would
+        sit right on top of the eyebrow pill on a narrow screen.
+      */}
+      <SceneChip className="left-[3%] top-[3%] lg:left-[6%] lg:top-[14%]" delay={0}>
         <TagIcon /> Categoría
       </SceneChip>
-      <SceneChip className="right-[8%] top-[20%]" delay={0.9}>
+      <SceneChip className="right-[3%] top-[3%] lg:right-[8%] lg:top-[20%]" delay={0.9}>
         <PriceIcon /> $24.900
       </SceneChip>
-      <SceneChip className="right-[5%] bottom-[24%]" delay={1.8}>
+      <SceneChip className="right-[3%] bottom-[3%] lg:right-[5%] lg:bottom-[24%]" delay={1.8}>
         <WhatsAppIcon /> Pedido
       </SceneChip>
-      <SceneChip className="left-[10%] bottom-[18%]" delay={2.7}>
+      <SceneChip className="left-[3%] bottom-[3%] lg:left-[10%] lg:bottom-[18%]" delay={2.7}>
         <ProductIcon /> Producto
       </SceneChip>
-      <SceneChip className="left-[42%] top-[8%]" delay={3.6}>
+      <SceneChip className="hidden lg:flex lg:left-[42%] lg:top-[8%]" delay={3.6}>
         <CheckIcon /> Publicado
       </SceneChip>
     </motion.div>
@@ -77,7 +85,7 @@ export function DSLandingHeroScene() {
 function SceneChip({ children, className, delay }: { children: React.ReactNode; className: string; delay: number }) {
   return (
     <motion.div
-      className={`absolute hidden items-center gap-1.5 whitespace-nowrap rounded-control border border-accent/25 bg-ink-900/80 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-accent lg:flex ${className}`}
+      className={`absolute flex items-center gap-1 whitespace-nowrap rounded-control border border-accent/25 bg-ink-900/80 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-accent sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-[11px] ${className}`}
       animate={{ opacity: [0, 1, 1, 0], y: [10, 0, 0, -6], scale: [0.92, 1, 1, 0.96] }}
       transition={{ duration: 3.2, times: [0, 0.2, 0.8, 1], delay, repeat: Infinity, repeatDelay: 1.6, ease: "easeInOut" }}
     >
@@ -88,7 +96,7 @@ function SceneChip({ children, className, delay }: { children: React.ReactNode; 
 
 function TagIcon() {
   return (
-    <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+    <svg viewBox="0 0 20 20" className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 3H4a1 1 0 0 0-1 1v5l8 8 6-6-8-8Z" />
       <circle cx="6.5" cy="6.5" r="0.75" fill="currentColor" stroke="none" />
     </svg>
@@ -97,7 +105,7 @@ function TagIcon() {
 
 function PriceIcon() {
   return (
-    <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+    <svg viewBox="0 0 20 20" className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
       <circle cx="10" cy="10" r="7.5" />
       <path strokeLinecap="round" d="M10 6v8M12 8.2c0-1-1-1.5-2-1.5s-2 .5-2 1.5.9 1.3 2 1.5c1.1.2 2 .6 2 1.6S11 13 10 13s-2-.5-2-1.5" />
     </svg>
@@ -106,7 +114,7 @@ function PriceIcon() {
 
 function WhatsAppIcon() {
   return (
-    <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 shrink-0" fill="currentColor" aria-hidden>
+    <svg viewBox="0 0 20 20" className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" fill="currentColor" aria-hidden>
       <path d="M10 2.5a7.5 7.5 0 0 0-6.47 11.28L2.5 17.5l3.83-1.01A7.5 7.5 0 1 0 10 2.5Zm0 1.5a6 6 0 1 1-3.16 11.1l-.23-.14-2.26.6.61-2.2-.15-.24A6 6 0 0 1 10 4Zm-2.1 2.75c-.15 0-.4.06-.6.3-.21.24-.8.78-.8 1.9 0 1.12.82 2.2.93 2.35.12.16 1.6 2.45 3.9 3.34 1.9.74 2.3.6 2.7.56.4-.04 1.3-.53 1.48-1.04.18-.51.18-.95.13-1.04-.06-.1-.21-.16-.44-.27-.23-.12-1.35-.67-1.56-.74-.21-.08-.36-.12-.51.12-.15.24-.58.74-.71.89-.13.15-.26.17-.49.06-.23-.12-.96-.35-1.83-1.13-.68-.6-1.13-1.35-1.27-1.58-.13-.23-.01-.35.1-.47.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.5-1.26-.7-1.72-.18-.44-.37-.38-.5-.39Z" />
     </svg>
   );
@@ -114,7 +122,7 @@ function WhatsAppIcon() {
 
 function ProductIcon() {
   return (
-    <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+    <svg viewBox="0 0 20 20" className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
       <rect x="3" y="4" width="14" height="12" rx="1.5" />
       <path strokeLinecap="round" strokeLinejoin="round" d="m4 13 3.5-4 3 3L14 8l2 3" />
       <circle cx="7" cy="7.5" r="1" fill="currentColor" stroke="none" />
@@ -124,7 +132,7 @@ function ProductIcon() {
 
 function CheckIcon() {
   return (
-    <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+    <svg viewBox="0 0 20 20" className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
       <circle cx="10" cy="10" r="7.5" />
       <path strokeLinecap="round" strokeLinejoin="round" d="m6.5 10 2.3 2.3L13.5 7.5" />
     </svg>
