@@ -34,12 +34,22 @@ export async function createAdminSession(tenantSlug: string): Promise<void> {
   // impersonateTenantAction calls markImpersonatedSession() immediately
   // after this, so real impersonation is unaffected.
   store.delete(IMPERSONATION_MARKER_COOKIE);
+  // Routing hint only (see getActiveAdminTenantSlug below) — never checked
+  // by isAdminAuthenticated itself, so it carries no auth weight of its own.
+  store.set(LAST_TENANT_HINT_COOKIE, tenantSlug, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
+  });
 }
 
 export async function destroyAdminSession(): Promise<void> {
   const store = await cookies();
   store.delete(ADMIN_SESSION_COOKIE);
   store.delete(IMPERSONATION_MARKER_COOKIE);
+  store.delete(LAST_TENANT_HINT_COOKIE);
 }
 
 export async function isAdminAuthenticated(tenantSlug: string): Promise<boolean> {
@@ -47,6 +57,28 @@ export async function isAdminAuthenticated(tenantSlug: string): Promise<boolean>
   const cookieValue = store.get(ADMIN_SESSION_COOKIE)?.value;
   if (!cookieValue) return false;
   return cookieValue === (await computeSessionToken(tenantSlug));
+}
+
+/**
+ * ADMIN_SESSION_COOKIE's value is a one-way hash of the tenant slug (see
+ * admin-token.ts) — there is no way to recover WHICH tenant a session
+ * belongs to from the cookie alone, unlike Super Admin's own session
+ * (a plain id + signature — see superadmin-auth.ts). That's fine everywhere
+ * a route already knows its own tenant slug from the URL, but leaves
+ * /acceder unable to tell "you're already logged in" apart from "log in"
+ * on a context-free visit (a new tab to the bare domain, no ?tenant=
+ * hint). LAST_TENANT_HINT_COOKIE closes that gap: purely a routing hint
+ * set by createAdminSession, checked here against the real session so a
+ * stale/tampered value just falls back to null (show the login form),
+ * never a way to forge access to a tenant you didn't actually log into.
+ */
+export const LAST_TENANT_HINT_COOKIE = "ds_last_tenant_hint";
+
+export async function getActiveAdminTenantSlug(): Promise<string | null> {
+  const store = await cookies();
+  const slug = store.get(LAST_TENANT_HINT_COOKIE)?.value;
+  if (!slug) return null;
+  return (await isAdminAuthenticated(slug)) ? slug : null;
 }
 
 /**
