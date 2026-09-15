@@ -43,7 +43,9 @@ export default async function SuperadminAuditLogPage() {
                 <span className="text-muted-foreground">—</span>
               )}
             </td>
-            <td className="px-4 py-3 text-sm">{entry.summary}</td>
+            <td className="max-w-xs truncate px-4 py-3 text-sm" title={entry.summary}>
+              {entry.summary}
+            </td>
           </tr>
         ))}
       </DSTable>

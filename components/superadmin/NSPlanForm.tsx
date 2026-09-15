@@ -54,7 +54,7 @@ export function NSPlanForm({ avgBytesPerProduct, themeOptions, plan }: NSPlanFor
         </div>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <NSLabel htmlFor="key">Clave {plan ? "" : "(única)"}</NSLabel>
           <NSInput id="key" name="key" required={!plan} disabled={Boolean(plan)} defaultValue={plan?.key} placeholder="pro" />
@@ -84,7 +84,7 @@ export function NSPlanForm({ avgBytesPerProduct, themeOptions, plan }: NSPlanFor
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid gap-4 sm:grid-cols-3">
         <div>
           <NSLabel htmlFor="maxProducts">Máx. productos</NSLabel>
           <NSInput id="maxProducts" name="maxProducts" type="number" min="0" defaultValue={plan?.maxProducts ?? undefined} placeholder="Sin límite" />
