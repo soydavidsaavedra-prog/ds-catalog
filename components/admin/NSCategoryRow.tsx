@@ -130,17 +130,20 @@ export function NSCategoryRow({
 
             <div>
               <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Jerarquía</p>
-              <NSLabel htmlFor={`parent-${category.id}`}>Categoría padre</NSLabel>
+              <NSLabel htmlFor={`parent-${category.id}`}>Categoría</NSLabel>
               <NSSelect id={`parent-${category.id}`} name="parentId" defaultValue={category.parentId ?? ""}>
-                <option value="">Ninguna (categoría principal)</option>
+                <option value="">Ninguna — esta es una categoría</option>
                 {parents
                   .filter((p) => p.id !== category.id)
                   .map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name}
+                      Subcategoría de {p.name}
                     </option>
                   ))}
               </NSSelect>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Elige una categoría para convertir esta en su subcategoría, o déjalo en &quot;Ninguna&quot; para que sea una categoría por sí misma.
+              </p>
             </div>
 
             <div>
