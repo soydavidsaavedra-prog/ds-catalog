@@ -6,6 +6,7 @@ import type { Category } from "@/lib/types/catalog";
 import { createProductBatchAction, type ProductBatchError } from "@/app/[tenant]/admin/(shell)/productos/lote-fotos/actions";
 import { MAX_BATCH_IMAGES } from "@/lib/products/image-batch";
 import { compressImageBeforeUpload } from "@/lib/utils/image-compress";
+import { removeImageBackground, compositeOnColor, compositeOnImage } from "@/lib/media/background-removal";
 import { NSInput, NSLabel, NSSelect } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import { DSCard } from "@/components/ui/DSCard";
@@ -18,16 +19,21 @@ type Phase =
   | { status: "done"; created: number; errors: ProductBatchError[] }
   | { status: "error"; message: string };
 
+type BgMode = "transparent" | "brand" | "custom-color" | "custom-image";
+
 export function NSProductBatchForm({
   tenantId,
   tenantSlug,
   categories,
   quickCreateCategoryAction,
+  accentColor,
 }: {
   tenantId: string;
   tenantSlug: string;
   categories: Category[];
   quickCreateCategoryAction?: (formData: FormData) => Promise<Category | { error: string }>;
+  /** Tenant's brand accent color — offered as a background option when "quitar fondo" is enabled for the batch. */
+  accentColor?: string;
 }) {
   const router = useRouter();
   const [localCategories, setLocalCategories] = useState<Category[]>(categories);
@@ -38,6 +44,10 @@ export function NSProductBatchForm({
   const [truncated, setTruncated] = useState(0);
   const [price, setPrice] = useState("");
   const [createActive, setCreateActive] = useState(false);
+  const [removeBg, setRemoveBg] = useState(false);
+  const [bgMode, setBgMode] = useState<BgMode>("transparent");
+  const [bgCustomColor, setBgCustomColor] = useState("#ffffff");
+  const [bgCustomImage, setBgCustomImage] = useState<File | null>(null);
   const [phase, setPhase] = useState<Phase>({ status: "idle" });
 
   const busy = phase.status === "uploading" || phase.status === "creating";
@@ -74,8 +84,23 @@ export function NSProductBatchForm({
 
     for (const file of files) {
       try {
+        let uploadFile: File = file;
+        if (removeBg) {
+          try {
+            const cutout = await removeImageBackground(file);
+            let finalBlob: Blob = cutout;
+            if (bgMode === "brand" && accentColor) finalBlob = await compositeOnColor(cutout, accentColor);
+            else if (bgMode === "custom-color") finalBlob = await compositeOnColor(cutout, bgCustomColor);
+            else if (bgMode === "custom-image" && bgCustomImage) finalBlob = await compositeOnImage(cutout, bgCustomImage);
+            uploadFile = new File([finalBlob], file.name.replace(/\.[^.]+$/, "") + "-sin-fondo.png", { type: "image/png" });
+          } catch {
+            // Background removal is a best-effort enhancement — if it fails for
+            // one photo, upload it as-is instead of losing the whole file.
+            uploadFile = file;
+          }
+        }
         const formData = new FormData();
-        formData.append("file", await compressImageBeforeUpload(file));
+        formData.append("file", await compressImageBeforeUpload(uploadFile));
         const res = await fetch(`/${tenantSlug}/admin/api/upload`, { method: "POST", body: formData });
         const data = await res.json().catch(() => null);
 
@@ -247,6 +272,67 @@ export function NSProductBatchForm({
               </span>
             </span>
           </label>
+          <label className="flex items-start gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              checked={removeBg}
+              onChange={(e) => {
+                setRemoveBg(e.target.checked);
+                if (!e.target.checked) setBgMode("transparent");
+              }}
+              disabled={busy}
+              className="mt-0.5 h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
+            />
+            <span>
+              Quitar fondo automáticamente a todas las fotos
+              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                Cada foto se procesa antes de subirla — el lote puede tardar más en completarse.
+              </span>
+            </span>
+          </label>
+          {removeBg ? (
+            <div className="ml-6 flex flex-col gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Fondo del resultado</p>
+              <label className="flex items-center gap-2 text-sm font-normal">
+                <input type="radio" name="batchBgMode" checked={bgMode === "transparent"} onChange={() => setBgMode("transparent")} disabled={busy} />
+                Transparente
+              </label>
+              {accentColor ? (
+                <label className="flex items-center gap-2 text-sm font-normal">
+                  <input type="radio" name="batchBgMode" checked={bgMode === "brand"} onChange={() => setBgMode("brand")} disabled={busy} />
+                  Color de tu marca
+                  <span className="h-4 w-4 shrink-0 rounded-full border border-border" style={{ backgroundColor: accentColor }} aria-hidden />
+                </label>
+              ) : null}
+              <label className="flex items-center gap-2 text-sm font-normal">
+                <input type="radio" name="batchBgMode" checked={bgMode === "custom-color"} onChange={() => setBgMode("custom-color")} disabled={busy} />
+                Otro color
+                {bgMode === "custom-color" ? (
+                  <input
+                    type="color"
+                    value={bgCustomColor}
+                    onChange={(e) => setBgCustomColor(e.target.value)}
+                    disabled={busy}
+                    className="h-6 w-10 cursor-pointer rounded border border-border-strong bg-transparent p-0.5"
+                    aria-label="Elegir color de fondo"
+                  />
+                ) : null}
+              </label>
+              <label className="flex items-center gap-2 text-sm font-normal">
+                <input type="radio" name="batchBgMode" checked={bgMode === "custom-image"} onChange={() => setBgMode("custom-image")} disabled={busy} />
+                Imagen de fondo
+                {bgMode === "custom-image" ? (
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/avif"
+                    disabled={busy}
+                    onChange={(e) => setBgCustomImage(e.target.files?.[0] ?? null)}
+                    className="text-xs file:mr-2 file:rounded-control file:border-0 file:bg-accent file:px-2 file:py-1 file:text-xs file:font-semibold file:uppercase file:text-accent-foreground"
+                  />
+                ) : null}
+              </label>
+            </div>
+          ) : null}
         </div>
       </DSCard>
 

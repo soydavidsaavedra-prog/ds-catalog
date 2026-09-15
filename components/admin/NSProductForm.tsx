@@ -263,7 +263,13 @@ export function NSProductForm({
           <div className="flex flex-col gap-5">
             <div>
               <NSLabel>Imágenes</NSLabel>
-              <NSImageUploader tenantSlug={tenantSlug} name="images" initialImages={product?.images ?? []} onChange={setImages} />
+              <NSImageUploader
+                tenantSlug={tenantSlug}
+                name="images"
+                initialImages={product?.images ?? []}
+                onChange={setImages}
+                accentColor={settings.accentColor ?? "#00a19a"}
+              />
             </div>
             <div className="grid gap-5 sm:grid-cols-2">
               <div>

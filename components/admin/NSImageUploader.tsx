@@ -17,12 +17,15 @@ export function NSImageUploader({
   name,
   initialImages,
   onChange,
+  accentColor,
 }: {
   tenantSlug: string;
   name: string;
   initialImages: string[];
   /** Mirrors the current image list to a parent that wants to reflect it live (e.g. NSProductCardPreview) — not needed for the field to submit with the form, which happens via the hidden input below regardless. */
   onChange?: (images: string[]) => void;
+  /** Tenant's brand accent color, threaded down to the "quitar fondo" dialog so it can offer a "usar el color de tu marca" background option. */
+  accentColor?: string;
 }) {
   const [images, setImagesState] = useState<string[]>(initialImages);
   function setImages(update: string[] | ((prev: string[]) => string[])) {
@@ -193,9 +196,10 @@ export function NSImageUploader({
                 onClick={() => setBgRemovalIndex(index)}
                 aria-label="Quitar fondo"
                 title="Quitar fondo"
-                className="absolute bottom-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-ink-950/80 text-ink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-0.5 bg-accent-strong px-1 py-1 text-ink-0 transition-colors hover:brightness-110"
               >
                 <BackgroundRemovalIcon />
+                <span className="text-[8px] font-semibold uppercase leading-none tracking-tight">Quitar fondo</span>
               </button>
             )}
           </div>
@@ -229,6 +233,7 @@ export function NSImageUploader({
       {bgRemovalIndex !== null ? (
         <NSBackgroundRemovalDialog
           imageUrl={images[bgRemovalIndex]!}
+          accentColor={accentColor}
           onAccept={(blob) => handleBackgroundRemoved(bgRemovalIndex, blob)}
           onCancel={() => setBgRemovalIndex(null)}
         />
