@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { listCategories } from "@/lib/repositories/category-repository";
+import { getSettings } from "@/lib/repositories/settings-repository";
 import { NSProductBatchForm } from "@/components/admin/NSProductBatchForm";
 import { DSPageHeader } from "@/components/ui/DSPageHeader";
 import { quickCreateCategoryAction } from "@/app/[tenant]/admin/actions";
@@ -16,7 +17,7 @@ export default async function AdminProductBatchPage({
 }) {
   const { tenant: tenantSlug } = await params;
   const tenant = await resolveTenant(tenantSlug);
-  const categories = await listCategories(tenant.id);
+  const [categories, settings] = await Promise.all([listCategories(tenant.id), getSettings(tenant.id)]);
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
@@ -29,6 +30,7 @@ export default async function AdminProductBatchPage({
         tenantSlug={tenantSlug}
         categories={categories}
         quickCreateCategoryAction={quickCreateCategoryAction.bind(null, tenant.id, tenantSlug)}
+        accentColor={settings.accentColor ?? "#00a19a"}
       />
     </div>
   );

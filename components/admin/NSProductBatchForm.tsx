@@ -6,6 +6,7 @@ import type { Category } from "@/lib/types/catalog";
 import { createProductBatchAction, type ProductBatchError } from "@/app/[tenant]/admin/(shell)/productos/lote-fotos/actions";
 import { MAX_BATCH_IMAGES } from "@/lib/products/image-batch";
 import { compressImageBeforeUpload } from "@/lib/utils/image-compress";
+import { removeImageBackground, cropToContent, compositeOnColor } from "@/lib/media/background-removal";
 import { NSInput, NSLabel, NSSelect } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import { DSCard } from "@/components/ui/DSCard";
@@ -23,11 +24,14 @@ export function NSProductBatchForm({
   tenantSlug,
   categories,
   quickCreateCategoryAction,
+  accentColor,
 }: {
   tenantId: string;
   tenantSlug: string;
   categories: Category[];
   quickCreateCategoryAction?: (formData: FormData) => Promise<Category | { error: string }>;
+  /** Tenant's brand accent color — offered as a background option when "quitar fondo" is enabled for the batch. */
+  accentColor?: string;
 }) {
   const router = useRouter();
   const [localCategories, setLocalCategories] = useState<Category[]>(categories);
@@ -38,6 +42,8 @@ export function NSProductBatchForm({
   const [truncated, setTruncated] = useState(0);
   const [price, setPrice] = useState("");
   const [createActive, setCreateActive] = useState(false);
+  const [removeBg, setRemoveBg] = useState(false);
+  const [useBrandColorForBg, setUseBrandColorForBg] = useState(false);
   const [phase, setPhase] = useState<Phase>({ status: "idle" });
 
   const busy = phase.status === "uploading" || phase.status === "creating";
@@ -74,8 +80,20 @@ export function NSProductBatchForm({
 
     for (const file of files) {
       try {
+        let uploadFile: File = file;
+        if (removeBg) {
+          try {
+            const cutout = await cropToContent(await removeImageBackground(file));
+            const finalBlob = useBrandColorForBg && accentColor ? await compositeOnColor(cutout, accentColor) : cutout;
+            uploadFile = new File([finalBlob], file.name.replace(/\.[^.]+$/, "") + "-sin-fondo.png", { type: "image/png" });
+          } catch {
+            // Background removal is a best-effort enhancement — if it fails for
+            // one photo, upload it as-is instead of losing the whole file.
+            uploadFile = file;
+          }
+        }
         const formData = new FormData();
-        formData.append("file", await compressImageBeforeUpload(file));
+        formData.append("file", await compressImageBeforeUpload(uploadFile));
         const res = await fetch(`/${tenantSlug}/admin/api/upload`, { method: "POST", body: formData });
         const data = await res.json().catch(() => null);
 
@@ -247,6 +265,41 @@ export function NSProductBatchForm({
               </span>
             </span>
           </label>
+          <label className="flex items-start gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              checked={removeBg}
+              onChange={(e) => {
+                setRemoveBg(e.target.checked);
+                if (!e.target.checked) setUseBrandColorForBg(false);
+              }}
+              disabled={busy}
+              className="mt-0.5 h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
+            />
+            <span>
+              Quitar fondo automáticamente a todas las fotos
+              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                Cada foto se procesa antes de subirla — el lote puede tardar más en completarse.
+              </span>
+            </span>
+          </label>
+          {removeBg && accentColor ? (
+            <label className="ml-6 flex items-center gap-2 text-sm font-medium">
+              <input
+                type="checkbox"
+                checked={useBrandColorForBg}
+                onChange={(e) => setUseBrandColorForBg(e.target.checked)}
+                disabled={busy}
+                className="h-4 w-4 rounded border-border-strong accent-[var(--accent)]"
+              />
+              <span>Usar el color de tu marca como fondo</span>
+              <span
+                className="h-4 w-4 shrink-0 rounded-full border border-border"
+                style={{ backgroundColor: accentColor }}
+                aria-hidden
+              />
+            </label>
+          ) : null}
         </div>
       </DSCard>
 

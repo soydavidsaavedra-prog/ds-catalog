@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { NSButton } from "@/components/ui/NSButton";
-import { removeImageBackground } from "@/lib/media/background-removal";
+import { removeImageBackground, cropToContent, compositeOnColor } from "@/lib/media/background-removal";
 
 type Phase = "processing" | "success" | "error";
 
@@ -16,31 +16,48 @@ const TRANSPARENCY_BACKGROUND: React.CSSProperties = {
 /**
  * Opens already processing (per the requested UX: click "Quitar fondo" ->
  * immediately "Procesando imagen..." -> compare -> accept/cancel), not a
- * separate "start" step. Runs lib/media/background-removal.ts once on
- * mount; the original image is never modified regardless of outcome —
- * onAccept only fires if the admin explicitly picks the result.
+ * separate "start" step.
+ *
+ * The expensive step (removeImageBackground, the WASM segmentation model)
+ * and the cheap crop-to-content step run exactly once per imageUrl and are
+ * cached in croppedBlob. Toggling "usar el color de tu marca" only ever
+ * re-runs compositeOnColor against that cached cropped blob — plain canvas
+ * work, no re-segmentation — so the checkbox feels instant. The original
+ * image is never modified regardless of outcome; onAccept only fires if the
+ * admin explicitly picks the result.
  */
 export function NSBackgroundRemovalDialog({
   imageUrl,
+  accentColor,
   onAccept,
   onCancel,
 }: {
   imageUrl: string;
+  /** Tenant's brand accent color — when provided, offers a "usar el color de tu marca" option instead of leaving the cutout transparent. */
+  accentColor?: string;
   onAccept: (blob: Blob) => void;
   onCancel: () => void;
 }) {
   const [phase, setPhase] = useState<Phase>("processing");
+  const [croppedBlob, setCroppedBlob] = useState<Blob | null>(null);
+  const [displayBlob, setDisplayBlob] = useState<Blob | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
-  const resultBlobRef = useRef<Blob | null>(null);
+  const [useBrandColor, setUseBrandColor] = useState(false);
+  const displayBlobRef = useRef<Blob | null>(null);
+  displayBlobRef.current = displayBlob;
 
+  // Step 1 — the expensive part: WASM segmentation, then crop to content.
+  // Runs once per imageUrl; cropped result is cached in croppedBlob.
   useEffect(() => {
     let cancelled = false;
     setPhase("processing");
+    setCroppedBlob(null);
+    setUseBrandColor(false);
     removeImageBackground(imageUrl)
-      .then((blob) => {
+      .then((blob) => cropToContent(blob))
+      .then((cropped) => {
         if (cancelled) return;
-        resultBlobRef.current = blob;
-        setResultUrl(URL.createObjectURL(blob));
+        setCroppedBlob(cropped);
         setPhase("success");
       })
       .catch(() => {
@@ -51,14 +68,30 @@ export function NSBackgroundRemovalDialog({
     };
   }, [imageUrl]);
 
+  // Step 2 — cheap: recompute what's displayed whenever the cached crop or
+  // the brand-color toggle changes, without touching the WASM model again.
   useEffect(() => {
+    if (!croppedBlob) return;
+    let cancelled = false;
+    (async () => {
+      const blob = useBrandColor && accentColor ? await compositeOnColor(croppedBlob, accentColor) : croppedBlob;
+      if (!cancelled) setDisplayBlob(blob);
+    })();
     return () => {
-      if (resultUrl) URL.revokeObjectURL(resultUrl);
+      cancelled = true;
     };
-  }, [resultUrl]);
+  }, [croppedBlob, useBrandColor, accentColor]);
+
+  // Step 3 — object URL lifecycle for whichever blob is currently displayed.
+  useEffect(() => {
+    if (!displayBlob) return;
+    const url = URL.createObjectURL(displayBlob);
+    setResultUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [displayBlob]);
 
   function handleAccept() {
-    if (resultBlobRef.current) onAccept(resultBlobRef.current);
+    if (displayBlobRef.current) onAccept(displayBlobRef.current);
   }
 
   return (
@@ -102,12 +135,33 @@ export function NSBackgroundRemovalDialog({
                 </div>
                 <div>
                   <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sin fondo</p>
-                  <div className="aspect-square w-full overflow-hidden rounded-control border border-border" style={TRANSPARENCY_BACKGROUND}>
+                  <div
+                    className="aspect-square w-full overflow-hidden rounded-control border border-border"
+                    style={useBrandColor ? undefined : TRANSPARENCY_BACKGROUND}
+                  >
                     {/* eslint-disable-next-line @next/next/no-img-element -- see note above */}
                     <img src={resultUrl ?? undefined} alt="Sin fondo" className="h-full w-full object-contain" />
                   </div>
                 </div>
               </div>
+
+              {accentColor ? (
+                <label className="mt-4 flex items-center gap-2 text-sm text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={useBrandColor}
+                    onChange={(e) => setUseBrandColor(e.target.checked)}
+                    className="h-4 w-4 rounded border-border-strong accent-accent-strong"
+                  />
+                  <span>Usar el color de tu marca como fondo</span>
+                  <span
+                    className="h-4 w-4 shrink-0 rounded-full border border-border"
+                    style={{ backgroundColor: accentColor }}
+                    aria-hidden
+                  />
+                </label>
+              ) : null}
+
               <div className="mt-5 flex items-center gap-3">
                 <NSButton onClick={handleAccept}>Usar resultado</NSButton>
                 <NSButton variant="outline" onClick={onCancel}>
