@@ -2,9 +2,29 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
 import { NSLogo } from "@/components/brand/NSLogo";
 import { NSButton } from "@/components/ui/NSButton";
+import { RESERVED_SLUGS } from "@/lib/utils/reserved-slugs";
+
+/**
+ * Where "Volver al inicio" below should land, derived from the URL the
+ * error happened on — never the platform's own root "/". Without this, a
+ * tenant admin who hits an error deep in /{tenant}/admin/... got dumped on
+ * the generic DS Catalog marketing page with no obvious way back into
+ * their own catalog, which reads as "my session got logged out" (they
+ * have to go through /acceder again to get back in) even though the
+ * session cookie was never touched.
+ */
+function homeHrefFor(pathname: string): string {
+  const segments = pathname.split("/").filter(Boolean);
+  const first = segments[0];
+  if (!first) return "/";
+  if (first === "superadmin") return "/superadmin";
+  if (RESERVED_SLUGS.has(first)) return "/";
+  return segments[1] === "admin" ? `/${first}/admin` : `/${first}`;
+}
 
 /**
  * Catches any otherwise-uncaught error thrown while rendering a route
@@ -20,6 +40,9 @@ import { NSButton } from "@/components/ui/NSButton";
  * real way out instead of a dead end.
  */
 export default function RouteError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  const pathname = usePathname();
+  const homeHref = homeHrefFor(pathname);
+
   useEffect(() => {
     Sentry.captureException(error);
   }, [error]);
@@ -27,7 +50,7 @@ export default function RouteError({ error, reset }: { error: Error & { digest?:
   return (
     <div className="flex min-h-dvh flex-col">
       <div className="flex h-16 items-center px-4 sm:px-6 lg:px-8">
-        <Link href="/" aria-label="Inicio">
+        <Link href={homeHref} aria-label="Inicio">
           <NSLogo id="ds-error" variant="mark" className="h-10 w-10" />
         </Link>
       </div>
@@ -41,7 +64,7 @@ export default function RouteError({ error, reset }: { error: Error & { digest?:
           <NSButton onClick={reset} variant="primary" size="md">
             Reintentar
           </NSButton>
-          <NSButton href="/" variant="outline" size="md">
+          <NSButton href={homeHref} variant="outline" size="md">
             Volver al inicio
           </NSButton>
         </div>
