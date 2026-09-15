@@ -92,3 +92,26 @@ export interface ThemeMeta {
   label: string;
   description: string;
 }
+
+/**
+ * Lives here (not lib/themes/registry.ts) on purpose: registry.ts imports
+ * each Theme's full module (Header/Footer/Catalog/...), which pulls in
+ * server-only repository code — fine from a Server Component, but a
+ * Client Component that only needs this metadata (e.g. the Design
+ * Studio's theme switcher) would drag that whole server-only chain into
+ * the client bundle just by importing anything from registry.ts. This
+ * file has no such imports, so THEME_META is safe from either side;
+ * registry.ts re-exports it for existing server-side callers.
+ */
+export const THEME_META: Record<ThemeKey, ThemeMeta> = {
+  "theme-01": {
+    key: "theme-01",
+    label: "Theme 01 — Original",
+    description: "El diseño original de DS Catalog: editorial, cálido, orientado a moda y catálogos generales.",
+  },
+  "theme-02": {
+    key: "theme-02",
+    label: "Theme 02 — Ferretería y construcción",
+    description: "Boutique de herramientas premium: carbón/negro con acentos naranja, orientado a ferreterías, materiales y construcción.",
+  },
+};
