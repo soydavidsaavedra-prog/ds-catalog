@@ -36,7 +36,7 @@ export function Hero({
   brandName,
 }: Theme02HeroProps) {
   return (
-    <div className="relative flex min-h-[440px] items-end overflow-hidden rounded-3xl border border-border bg-surface sm:min-h-[560px] sm:items-center">
+    <div className="relative flex min-h-[320px] items-end overflow-hidden rounded-3xl border border-border bg-surface sm:min-h-[560px] sm:items-center">
       <div className="absolute inset-0">
         <NSMedia
           src={image}

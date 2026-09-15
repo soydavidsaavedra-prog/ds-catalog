@@ -50,7 +50,7 @@ export function NSFactoryStory({
   brandName,
 }: NSFactoryStoryProps) {
   return (
-    <section className="bg-ink-950 py-20 text-ink-0 sm:py-28">
+    <section className="bg-ink-950 py-12 text-ink-0 sm:py-20 lg:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <NSSectionHeading
           align="center"

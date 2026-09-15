@@ -172,7 +172,7 @@ export function NSHero({
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.15, ease: [0.2, 0, 0, 1] }}
-              className="block text-7xl lg:text-8xl"
+              className="block text-6xl lg:text-8xl"
             >
               {titleLine1}
             </motion.span>
@@ -180,7 +180,7 @@ export function NSHero({
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.28, ease: [0.2, 0, 0, 1] }}
-              className="block text-7xl text-accent lg:text-8xl"
+              className="block text-6xl text-accent lg:text-8xl"
             >
               {titleLine2}
             </motion.span>

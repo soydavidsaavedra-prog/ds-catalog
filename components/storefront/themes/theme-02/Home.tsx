@@ -93,9 +93,9 @@ export function Home({ tenantSlug, settings, categories, products, heroSlides, t
       {/* Categorías principales */}
       {topLevelCategories.length > 0 ? (
         <NSStudioSelectable id="collections" label="Categorías principales">
-          <section id="categorias" className="bg-background py-16 sm:py-20">
+          <section id="categorias" className="bg-background py-10 sm:py-16 lg:py-20">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-              <div className="flex items-end justify-between">
+              <div className="flex flex-wrap items-end justify-between gap-2">
                 <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                   Categorías <span className="text-accent">principales</span>
                 </h2>
@@ -122,9 +122,9 @@ export function Home({ tenantSlug, settings, categories, products, heroSlides, t
 
       {/* Productos destacados */}
       <NSStudioSelectable id="featured-products" label="Productos destacados">
-        <section className="border-t border-border bg-surface py-16 sm:py-20">
+        <section className="border-t border-border bg-surface py-10 sm:py-16 lg:py-20">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex items-end justify-between">
+            <div className="flex flex-wrap items-end justify-between gap-2">
               <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                 Productos <span className="text-accent">destacados</span>
               </h2>
@@ -149,9 +149,9 @@ export function Home({ tenantSlug, settings, categories, products, heroSlides, t
       {/* Nuevos ingresos — only shown when there's a real product marked "Nuevo" */}
       {nuevos.length > 0 ? (
         <NSStudioSelectable id="new-arrivals" label="Nuevos ingresos">
-          <section className="bg-background py-16 sm:py-20">
+          <section className="bg-background py-10 sm:py-16 lg:py-20">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-              <div className="flex items-end justify-between">
+              <div className="flex flex-wrap items-end justify-between gap-2">
                 <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                   Nuevos <span className="text-accent">ingresos</span>
                 </h2>
