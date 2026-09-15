@@ -1,7 +1,10 @@
-import type { ThemeMeta, ThemeModule } from "@/lib/themes/types";
+import type { ThemeModule } from "@/lib/themes/types";
 import type { ThemeKey } from "@/lib/types/tenant";
 import * as Theme01 from "@/components/storefront/themes/theme-01";
 import * as Theme02 from "@/components/storefront/themes/theme-02";
+
+/** Re-exported for existing server-side callers — see the doc comment on THEME_META in ./types for why it's defined there, not here. */
+export { THEME_META } from "@/lib/themes/types";
 
 /**
  * Every registered Theme, keyed by the string stored in ds_tenants.theme
@@ -18,19 +21,6 @@ export const THEME_REGISTRY: Record<ThemeKey, ThemeModule> = {
 };
 
 export const DEFAULT_THEME_KEY: ThemeKey = "theme-01";
-
-export const THEME_META: Record<ThemeKey, ThemeMeta> = {
-  "theme-01": {
-    key: "theme-01",
-    label: "Theme 01 — Original",
-    description: "El diseño original de DS Catalog: editorial, cálido, orientado a moda y catálogos generales.",
-  },
-  "theme-02": {
-    key: "theme-02",
-    label: "Theme 02 — Ferretería y construcción",
-    description: "Boutique de herramientas premium: carbón/negro con acentos naranja, orientado a ferreterías, materiales y construcción.",
-  },
-};
 
 /** Never throws — an unknown/legacy theme value (or a column not yet migrated) falls back to Theme 01, exactly like getBusinessTypeProfile does for business_type. */
 export function resolveTheme(themeKey: string | null | undefined): ThemeModule {

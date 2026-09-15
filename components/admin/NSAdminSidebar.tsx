@@ -59,6 +59,7 @@ export function NSAdminSidebar({
     {
       label: "Personalización",
       links: [
+        { href: `${base}/estudio`, label: "Estudio de diseño", icon: StudioIcon },
         { href: `${base}/tema`, label: "Tema", icon: ThemeIcon },
         { href: `${base}/inicio`, label: "Inicio", icon: HomeIcon },
         { href: `${base}/categorias`, label: "Categorías", icon: CategoryIcon },
@@ -414,6 +415,9 @@ function DashboardIcon({ className }: { className?: string }) {
 }
 function HomeIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><path d="M3 9.5 10 3l7 6.5" /><path d="M5 8.5V17h10V8.5" /></svg>;
+}
+function StudioIcon({ className }: { className?: string }) {
+  return <svg className={className} {...iconProps()} aria-hidden><rect x="2" y="3" width="16" height="11" rx="1.5" /><path d="M7 17h6M10 14v3" /><circle cx="7" cy="8" r="1" fill="currentColor" stroke="none" /></svg>;
 }
 function ThemeIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><circle cx="10" cy="10" r="7" /><path d="M10 3a7 7 0 0 1 0 14 3.5 3.5 0 0 1-1-6.9 1.7 1.7 0 0 0-.6-3.3A3.5 3.5 0 0 1 10 3Z" fill="currentColor" stroke="none" /></svg>;
