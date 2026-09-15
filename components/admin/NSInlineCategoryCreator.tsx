@@ -84,12 +84,12 @@ export function NSInlineCategoryCreator({
           </datalist>
         </div>
         <div>
-          <NSLabel htmlFor="quick-category-parent">Categoría padre (opcional)</NSLabel>
+          <NSLabel htmlFor="quick-category-parent">Categoría (opcional)</NSLabel>
           <NSSelect id="quick-category-parent" value={parentId} onChange={(e) => setParentId(e.target.value)}>
-            <option value="">Ninguna (categoría principal)</option>
+            <option value="">Ninguna — esta es una categoría</option>
             {parents.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.name}
+                Subcategoría de {p.name}
               </option>
             ))}
           </NSSelect>

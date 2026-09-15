@@ -104,16 +104,16 @@ export function NSCategoryManager({
               </div>
             </div>
             <p className="-mt-2 text-xs text-muted-foreground">
-              Si eliges una categoría padre abajo, se le antepone automáticamente (ej. &quot;{exampleParentCategory.slug}-{exampleChildCategory.slug}&quot;)
-              para poder repetir el mismo nombre bajo distintas categorías principales.
+              Si la marcas como subcategoría de otra abajo, se le antepone automáticamente (ej. &quot;{exampleParentCategory.slug}-{exampleChildCategory.slug}&quot;)
+              para poder repetir el mismo nombre bajo distintas categorías.
             </p>
             <div>
-              <NSLabel htmlFor="new-parent">Categoría padre</NSLabel>
+              <NSLabel htmlFor="new-parent">Categoría</NSLabel>
               <NSSelect id="new-parent" name="parentId" defaultValue="">
-                <option value="">Ninguna (categoría principal, ej. {exampleParentCategory.name})</option>
+                <option value="">Ninguna — esta es una categoría (ej. {exampleParentCategory.name})</option>
                 {parents.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name}
+                    Subcategoría de {p.name}
                   </option>
                 ))}
               </NSSelect>
