@@ -23,13 +23,13 @@ export function NSWelcomeBanner({ brandName }: { brandName: string }) {
   if (!visible) return null;
 
   return (
-    <div className="mb-6 flex items-center justify-between gap-3 rounded-control border border-accent/40 bg-accent/10 px-4 py-3 text-sm text-accent-strong">
-      <span>¡Bienvenido de nuevo, {brandName}!</span>
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-control border border-accent/40 bg-accent/10 px-4 py-3 text-sm text-accent-strong">
+      <span className="min-w-0 truncate">¡Bienvenido de nuevo, {brandName}!</span>
       <button
         type="button"
         onClick={() => setVisible(false)}
         aria-label="Cerrar"
-        className="text-accent-strong/70 hover:text-accent-strong"
+        className="shrink-0 text-accent-strong/70 hover:text-accent-strong"
       >
         ✕
       </button>

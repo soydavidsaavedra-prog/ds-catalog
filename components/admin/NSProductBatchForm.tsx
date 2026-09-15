@@ -213,7 +213,7 @@ export function NSProductBatchForm({
             </p>
           ) : null}
           {previews.length > 0 ? (
-            <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-6">
               {previews.map((src, i) => (
                 <div key={src} className="group relative aspect-square overflow-hidden rounded-control border border-border bg-surface">
                   {/* eslint-disable-next-line @next/next/no-img-element -- local blob: preview, next/image can't optimize these */}

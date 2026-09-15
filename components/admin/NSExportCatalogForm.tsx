@@ -112,7 +112,7 @@ export function NSExportCatalogForm({
           {products.length === 0 ? (
             <p className="text-sm text-muted-foreground">Todavía no tienes productos.</p>
           ) : (
-            <div className="flex max-h-96 flex-col divide-y divide-border overflow-y-auto rounded-control border border-border">
+            <div className="flex max-h-64 flex-col divide-y divide-border overflow-y-auto rounded-control border border-border sm:max-h-96">
               {products.map((product) => (
                 <label key={product.id} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-surface">
                   <input

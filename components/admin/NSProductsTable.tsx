@@ -289,7 +289,7 @@ export function NSProductsTable({
       ) : null}
 
       <DSTable
-        minWidth={760}
+        minWidth={920}
         isEmpty={filtered.length === 0}
         emptyMessage="Sin resultados."
         sortKey={sortKey}
@@ -322,7 +322,7 @@ export function NSProductsTable({
                 <div className="h-12 w-10 shrink-0 overflow-hidden rounded-control">
                   <NSMedia src={product.images[0]} alt={product.name} reference={product.reference} sizes="40px" />
                 </div>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-[160px] flex-1">
                   <input
                     defaultValue={product.name}
                     aria-label={`Nombre de ${product.name}`}

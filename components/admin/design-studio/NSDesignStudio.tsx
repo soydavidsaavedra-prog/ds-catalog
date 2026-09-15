@@ -137,7 +137,13 @@ export function NSDesignStudio({
   const ResolvedHome = activeTheme === "theme-02" ? Theme02Home : Theme01Home;
 
   return (
-    <div className="flex h-[calc(100dvh-8rem)] flex-col gap-4">
+    // Offset accounts for chrome around this container that isn't part of
+    // it: on mobile/tablet (<lg) the admin shell's own h-14 top bar plus
+    // this page's DSPageHeader (title + description) add real height on
+    // top of <main>'s own py-8 padding — desktop drops the top bar and
+    // has more headroom, so it needs a smaller offset (see
+    // NSAdminShellChrome.tsx + DSPageHeader.tsx for the pieces this adds up).
+    <div className="flex h-[calc(100dvh-14rem)] flex-col gap-4 lg:h-[calc(100dvh-8rem)]">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface-elevated px-4 py-3">
         <div className="flex items-center gap-1 rounded-control border border-border bg-surface p-1">
           {DEVICE_OPTIONS.map((option) => (

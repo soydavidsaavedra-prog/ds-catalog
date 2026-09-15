@@ -78,7 +78,7 @@ export function NSHeroFieldsEditor({
           onChange={(e) => set("eyebrow", e.target.value)}
         />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <NSLabel htmlFor="heroTitleLine1">Título — línea 1</NSLabel>
           <NSInput
@@ -116,7 +116,7 @@ export function NSHeroFieldsEditor({
           onChange={(e) => set("tagline", e.target.value)}
         />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <NSLabel htmlFor="heroCtaLabel">Texto del botón</NSLabel>
           <NSInput
