@@ -2,7 +2,7 @@ import type { ThemeCatalogProps } from "@/lib/themes/types";
 import { listCategories } from "@/lib/repositories/category-repository";
 import { listProducts } from "@/lib/repositories/product-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
-import { applyCatalogFilters, collectColors, collectSizes } from "@/lib/search/catalog-engine";
+import { applyCatalogFilters, collectColors, collectSizes, getCatalogEmptyState } from "@/lib/search/catalog-engine";
 import { NSFilterBar } from "@/components/catalog/NSFilterBar";
 import { NSCatalogSearchInput } from "@/components/catalog/NSCatalogSearchInput";
 import { ProductGrid } from "./ProductGrid";
@@ -29,6 +29,7 @@ export async function CatalogView({
 
   const scopeProducts = forcedCategorySlugs ? allProducts.filter((p) => forcedCategorySlugs.includes(p.categorySlug)) : allProducts;
   const results = applyCatalogFilters(scopeProducts, filters);
+  const emptyState = getCatalogEmptyState(scopeProducts.length, filters, forcedCategorySlugs ? "category" : "catalog");
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
@@ -57,6 +58,8 @@ export async function CatalogView({
         <ProductGrid
           tenantSlug={tenantSlug}
           products={results}
+          emptyTitle={emptyState.title}
+          emptyDescription={emptyState.description}
           paymentBadge={{ icon: settings.paymentBadgeIcon, label: settings.paymentBadgeLabel }}
           brandName={settings.brandName}
         />

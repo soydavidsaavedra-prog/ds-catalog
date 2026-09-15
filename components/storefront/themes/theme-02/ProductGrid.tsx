@@ -1,5 +1,6 @@
 import type { PaymentBadgeInfo, Product } from "@/lib/types/catalog";
 import { NSButton } from "@/components/ui/NSButton";
+import { NSEmptyState } from "@/components/ui/NSEmptyState";
 import { ProductCard } from "./ProductCard";
 
 export function ProductGrid({
@@ -19,13 +20,16 @@ export function ProductGrid({
 }) {
   if (products.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-4 rounded-card border border-dashed border-border py-24 text-center">
-        <p className="text-xl font-semibold text-foreground">{emptyTitle}</p>
-        <p className="max-w-sm text-sm text-muted-foreground">{emptyDescription}</p>
-        <NSButton href={`/${tenantSlug}/catalogo`} variant="outline" size="sm">
-          Ver todo el catálogo
-        </NSButton>
-      </div>
+      <NSEmptyState
+        className="py-24"
+        title={emptyTitle}
+        description={emptyDescription}
+        action={
+          <NSButton href={`/${tenantSlug}/catalogo`} variant="outline" size="sm">
+            Ver todo el catálogo
+          </NSButton>
+        }
+      />
     );
   }
 

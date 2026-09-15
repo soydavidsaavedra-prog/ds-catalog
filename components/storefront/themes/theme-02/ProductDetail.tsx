@@ -60,7 +60,7 @@ export function ProductDetail({ tenantSlug, product, category, related, settings
             </div>
           </div>
 
-          <NSProductPurchasePanel tenantSlug={tenantSlug} product={product} paymentBadge={paymentBadge} />
+          <NSProductPurchasePanel tenantSlug={tenantSlug} product={product} paymentBadge={paymentBadge} brandName={settings.brandName} />
         </div>
 
         <div className="mt-14 grid grid-cols-2 gap-6 border-t border-border pt-8 sm:grid-cols-4">

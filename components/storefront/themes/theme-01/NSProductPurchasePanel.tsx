@@ -8,25 +8,26 @@ import { NSQuantityStepper } from "@/components/ui/NSQuantityStepper";
 import { NSButton } from "@/components/ui/NSButton";
 import { useCartStore } from "@/lib/cart/cart-store";
 import { absoluteUrl } from "@/lib/utils/format";
-import { shareProduct } from "@/lib/utils/share";
 import { cn } from "@/lib/utils/cn";
 import { NSPaymentBadge } from "@/components/catalog/NSPaymentBadge";
+import { NSShareButton } from "@/components/ui/NSShareButton";
 import type { PaymentBadgeInfo } from "./NSProductCard";
 
 export function NSProductPurchasePanel({
   tenantSlug,
   product,
   paymentBadge,
+  brandName,
 }: {
   tenantSlug: string;
   product: Product;
   paymentBadge?: PaymentBadgeInfo;
+  brandName?: string;
 }) {
   const showPaymentBadge = !product.hidePaymentBadge && paymentBadge?.icon;
   const [size, setSize] = useState(product.sizes[0] ?? "");
   const [color, setColor] = useState(product.colors[0]?.name ?? "");
   const [quantity, setQuantity] = useState(1);
-  const [shareState, setShareState] = useState<"idle" | "copied">("idle");
   const addItem = useCartStore((s) => s.addItem);
 
   const outOfStock = product.availability === "out_of_stock";
@@ -48,17 +49,10 @@ export function NSProductPurchasePanel({
     setQuantity(1);
   };
 
-  const handleShare = async () => {
-    const result = await shareProduct({
-      title: product.name,
-      text: `${product.name} — ${product.reference}`,
-      url: absoluteUrl(`/${tenantSlug}/producto/${product.slug}`),
-    });
-    if (result === "copied") {
-      setShareState("copied");
-      setTimeout(() => setShareState("idle"), 2000);
-    }
-  };
+  const shareUrl = absoluteUrl(`/${tenantSlug}/producto/${product.slug}`);
+  const shareMessage = brandName
+    ? `Mira este producto de ${brandName}:\n\n${product.name}`
+    : product.name;
 
   return (
     <div className="flex flex-col gap-6">
@@ -144,14 +138,7 @@ export function NSProductPurchasePanel({
         >
           {outOfStock ? "Agotado" : "Agregar al carrito"}
         </NSButton>
-        <button
-          type="button"
-          onClick={handleShare}
-          className="flex h-14 items-center justify-center gap-2 rounded-control border border-border-strong px-6 text-xs font-semibold uppercase tracking-wide text-foreground transition-colors hover:border-foreground"
-        >
-          <ShareIcon />
-          {shareState === "copied" ? "Enlace copiado" : "Compartir producto"}
-        </button>
+        <NSShareButton title={product.name} message={shareMessage} url={shareUrl} />
       </div>
     </div>
   );
@@ -161,17 +148,6 @@ function CartIcon() {
   return (
     <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
       <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h1.2l.4 2M6 12h8l2.4-6H5M6 12l-1.2-6M6 12l-1 3.5h10M8 18a.9.9 0 1 0 0-1.8.9.9 0 0 0 0 1.8Zm6.5 0a.9.9 0 1 0 0-1.8.9.9 0 0 0 0 1.8Z" />
-    </svg>
-  );
-}
-
-function ShareIcon() {
-  return (
-    <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
-      <circle cx="15" cy="5" r="2" />
-      <circle cx="5" cy="10" r="2" />
-      <circle cx="15" cy="15" r="2" />
-      <path strokeLinecap="round" d="m7 9 6-3M7 11l6 3" />
     </svg>
   );
 }
