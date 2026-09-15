@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { DSPlatformMark } from "@/components/brand/DSPlatformMark";
 import { NSLogo } from "@/components/brand/NSLogo";
 import { NSAccederForm } from "@/components/registro/NSAccederForm";
 import { NSReveal } from "@/components/ui/NSReveal";
 import { getTenantBySlug } from "@/lib/repositories/tenant-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
+import { getActiveAdminTenantSlug, isAdminAuthenticated } from "@/lib/auth/admin-auth";
+import { getAuthenticatedSuperadmin } from "@/lib/auth/superadmin-auth";
 import { buildAccentOverrideVars } from "@/lib/utils/brand";
 import type { SiteSettings } from "@/lib/types/catalog";
 
@@ -45,6 +48,25 @@ export default async function AccederPage({
   searchParams: Promise<{ tenant?: string }>;
 }) {
   const { tenant: tenantSlug } = await searchParams;
+
+  // A context-free visit (a new tab to the bare domain, no ?tenant= hint)
+  // still carries whatever session cookie the browser already has — so if
+  // there's a real, still-valid session, skip the login form entirely
+  // instead of asking to log in again. When ?tenant= names a DIFFERENT
+  // tenant than the active session, that's a deliberate attempt to reach
+  // that other tenant's login, not a session to resume — fall through to
+  // the form as normal (signInAndRedirect itself clears the old session
+  // once they do log in there, same as any tenant-to-tenant switch).
+  const superadmin = await getAuthenticatedSuperadmin();
+  if (superadmin) redirect("/superadmin");
+
+  const activeTenantSlug = tenantSlug
+    ? ((await isAdminAuthenticated(tenantSlug)) ? tenantSlug : null)
+    : await getActiveAdminTenantSlug();
+  if (activeTenantSlug && (await getTenantBySlug(activeTenantSlug).catch(() => null))) {
+    redirect(`/${activeTenantSlug}/admin`);
+  }
+
   const tenantHint = await resolveTenantHint(tenantSlug);
 
   return (
