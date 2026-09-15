@@ -8,6 +8,7 @@ import { Hero } from "./Hero";
 import { BrandStatement } from "./BrandStatement";
 import { ProductGrid } from "./ProductGrid";
 import { ProductCarousel } from "./ProductCarousel";
+import { NSTestimonialsSection } from "@/components/storefront/NSTestimonialsSection";
 
 const TRUST_BAR: { title: string; description: string; icon: ReactNode }[] = [
   { title: "Calidad garantizada", description: "Productos seleccionados de las mejores marcas", icon: <ShieldIcon /> },
@@ -34,7 +35,7 @@ const TRUST_STRIP = [
  * "Oferta", or the tenant having filled in /admin/inicio's statement
  * fields) — never shown empty just to fill space.
  */
-export function Home({ tenantSlug, settings, categories, products, heroSlides }: ThemeHomeProps) {
+export function Home({ tenantSlug, settings, categories, products, heroSlides, testimonials }: ThemeHomeProps) {
   const base = `/${tenantSlug}`;
   const heroMedia = heroSlides[0]?.mediaUrl ?? settings.heroImage;
   const heroPositionX = heroSlides[0]?.positionX ?? settings.heroImagePositionX;
@@ -191,6 +192,8 @@ export function Home({ tenantSlug, settings, categories, products, heroSlides }:
           </div>
         </section>
       ) : null}
+
+      <NSTestimonialsSection testimonials={testimonials} />
 
       {/* Trust strip de cierre */}
       <section className="border-t border-border bg-surface py-10">

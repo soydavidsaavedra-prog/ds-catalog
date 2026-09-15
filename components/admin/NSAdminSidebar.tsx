@@ -64,6 +64,7 @@ export function NSAdminSidebar({
       links: [
         { href: `${base}/tema`, label: "Tema", icon: ThemeIcon },
         { href: `${base}/inicio`, label: "Inicio", icon: HomeIcon },
+        { href: `${base}/testimonios`, label: "Testimonios", icon: TestimonialIcon },
       ],
     },
     {
@@ -424,6 +425,9 @@ function ProductIcon({ className }: { className?: string }) {
 }
 function CategoryIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><path d="M2 10 10 2l8 8-8 8-8-8Z" /><circle cx="12.5" cy="7.5" r="1" fill="currentColor" stroke="none" /></svg>;
+}
+function TestimonialIcon({ className }: { className?: string }) {
+  return <svg className={className} {...iconProps()} aria-hidden><path d="M4 4h9a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H9l-3.5 3v-3H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" /><path d="M14.5 8h-9M13 10.5H7.5" /></svg>;
 }
 function OrderIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><path d="M4 3h12l-1 12H5L4 3Z" /><path d="M7 3a3 3 0 0 1 6 0M4 7h12" /></svg>;

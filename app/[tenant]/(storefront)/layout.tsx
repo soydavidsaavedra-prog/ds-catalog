@@ -5,6 +5,8 @@ import { getSettings } from "@/lib/repositories/settings-repository";
 import { isSubscriptionFrozen } from "@/lib/tenant/plan-limits";
 import { resolveTheme } from "@/lib/themes/registry";
 import { NSWhatsAppButton } from "@/components/whatsapp/NSWhatsAppButton";
+import { NSCartAddedToast } from "@/components/cart/NSCartAddedToast";
+import { NSQuickViewModal } from "@/components/catalog/NSQuickViewModal";
 import { buildAccentOverrideVars } from "@/lib/utils/brand";
 import { parsePlaceholder } from "@/lib/media/placeholder";
 
@@ -88,6 +90,8 @@ export default async function StorefrontLayout({
         brandName={settings.brandName}
       />
       <NSWhatsAppButton whatsappNumber={settings.whatsappNumber} variant="floating" />
+      <NSCartAddedToast />
+      <NSQuickViewModal />
     </div>
   );
 }

@@ -1331,3 +1331,34 @@ alter table platform_settings add column if not exists terms_content text;
 alter table platform_settings add column if not exists privacy_content text;
 
 commit;
+
+-- =====================================================================
+-- DS Catalog — testimonios (prueba social en el Home)
+-- =====================================================================
+-- Short customer quotes a tenant curates by hand from /admin/testimonios
+-- and shows on their Home (both Themes) — see
+-- lib/repositories/testimonials-repository.ts. No photo upload: an
+-- initials avatar (derived from author_name) is enough for a quote card,
+-- so this stays a plain text CRUD with the same order/active shape as
+-- ns_banners/ns_hero_slides above. A tenant with zero rows here simply
+-- shows no testimonials section — nothing is ever seeded or fabricated.
+--
+-- Safe to re-run: create-if-not-exists only.
+
+begin;
+
+create table if not exists ns_testimonials (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references ds_tenants(id),
+  author_name text not null,
+  author_role text not null default '',
+  quote text not null,
+  rating smallint not null default 5 check (rating between 1 and 5),
+  "order" integer not null default 0,
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists ns_testimonials_tenant_id_idx on ns_testimonials(tenant_id);
+
+commit;

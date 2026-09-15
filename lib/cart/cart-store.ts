@@ -20,6 +20,9 @@ function currentTenantSlug(): string {
 interface CartState {
   items: CartItem[];
   isOpen: boolean;
+  /** Name of the last item added, paired with a counter that increments on every add — see NSCartAddedToast, which uses the counter (not the name) to re-trigger its animation even when the same product is added twice in a row. */
+  lastAddedName: string | null;
+  addedTrigger: number;
   addItem: (item: CartItem) => void;
   removeItem: (key: string) => void;
   updateQuantity: (key: string, quantity: number) => void;
@@ -34,11 +37,14 @@ export const useCartStore = create<CartState>()(
     (set) => ({
       items: [],
       isOpen: false,
+      lastAddedName: null,
+      addedTrigger: 0,
 
       addItem: (item) =>
         set((state) => {
           const key = cartItemKey(item);
           const existingIndex = state.items.findIndex((i) => cartItemKey(i) === key);
+          const addedTrigger = state.addedTrigger + 1;
 
           if (existingIndex !== -1) {
             const items = [...state.items];
@@ -46,10 +52,10 @@ export const useCartStore = create<CartState>()(
               ...items[existingIndex],
               quantity: items[existingIndex].quantity + item.quantity,
             };
-            return { items, isOpen: true };
+            return { items, isOpen: true, lastAddedName: item.name, addedTrigger };
           }
 
-          return { items: [...state.items, item], isOpen: true };
+          return { items: [...state.items, item], isOpen: true, lastAddedName: item.name, addedTrigger };
         }),
 
       removeItem: (key) =>

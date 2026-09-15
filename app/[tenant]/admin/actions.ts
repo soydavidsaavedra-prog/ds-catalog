@@ -35,6 +35,12 @@ import {
   listHeroSlides,
   updateHeroSlide,
 } from "@/lib/repositories/hero-slide-repository";
+import {
+  createTestimonial,
+  deleteTestimonial,
+  listTestimonials,
+  updateTestimonial,
+} from "@/lib/repositories/testimonials-repository";
 import { updateOrderStatus } from "@/lib/repositories/order-repository";
 import { getSettings, updateSettings } from "@/lib/repositories/settings-repository";
 import { completeOnboarding, getTenantById, updateTenantTheme } from "@/lib/repositories/tenant-repository";
@@ -622,6 +628,53 @@ export async function deleteHeroSlideAction(tenantId: string, tenantSlug: string
   if (existing) await cleanupReplacedImages([existing.mediaUrl], []);
   revalidatePath(`/${tenantSlug}`);
   revalidatePath(`/${tenantSlug}/admin/inicio`);
+}
+
+// ---------- Testimonials ----------
+
+export async function createTestimonialAction(tenantId: string, tenantSlug: string, formData: FormData): Promise<void> {
+  const authorName = String(formData.get("authorName") ?? "").trim();
+  const quote = String(formData.get("quote") ?? "").trim();
+  if (!authorName || !quote) return;
+  const current = await listTestimonials(tenantId);
+
+  await createTestimonial(tenantId, {
+    authorName,
+    authorRole: String(formData.get("authorRole") ?? "").trim(),
+    quote,
+    rating: Math.min(5, Math.max(1, Number(formData.get("rating") ?? 5))),
+    active: true,
+    order: current.length + 1,
+  });
+  revalidatePath(`/${tenantSlug}`);
+  revalidatePath(`/${tenantSlug}/admin/testimonios`);
+}
+
+export async function updateTestimonialAction(
+  tenantId: string,
+  tenantSlug: string,
+  id: string,
+  formData: FormData,
+): Promise<void> {
+  const authorName = String(formData.get("authorName") ?? "").trim();
+  const quote = String(formData.get("quote") ?? "").trim();
+  if (!authorName || !quote) return;
+
+  await updateTestimonial(tenantId, id, {
+    authorName,
+    authorRole: String(formData.get("authorRole") ?? "").trim(),
+    quote,
+    rating: Math.min(5, Math.max(1, Number(formData.get("rating") ?? 5))),
+    active: formData.get("active") === "on",
+  });
+  revalidatePath(`/${tenantSlug}`);
+  revalidatePath(`/${tenantSlug}/admin/testimonios`);
+}
+
+export async function deleteTestimonialAction(tenantId: string, tenantSlug: string, id: string): Promise<void> {
+  await deleteTestimonial(tenantId, id);
+  revalidatePath(`/${tenantSlug}`);
+  revalidatePath(`/${tenantSlug}/admin/testimonios`);
 }
 
 // ---------- Orders ----------

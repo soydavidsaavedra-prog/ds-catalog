@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { Category, CatalogFilters, HeroSlide, Product, SiteSettings } from "@/lib/types/catalog";
+import type { Category, CatalogFilters, HeroSlide, Product, SiteSettings, Testimonial } from "@/lib/types/catalog";
 import type { ThemeKey } from "@/lib/types/tenant";
 
 /**
@@ -37,6 +37,7 @@ export interface ThemeHomeProps {
   categories: Category[];
   products: Product[];
   heroSlides: HeroSlide[];
+  testimonials: Testimonial[];
 }
 
 /** app/[tenant]/(storefront)/catalogo/page.tsx — the full catalog. */

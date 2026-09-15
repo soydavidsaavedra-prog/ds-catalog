@@ -72,6 +72,19 @@ export interface Product {
   updatedAt: string;
 }
 
+/** A short customer quote curated by hand from /admin/testimonios — see supabase/schema.sql's ns_testimonials. No photo: the storefront renders an initials avatar from authorName. */
+export interface Testimonial {
+  id: string;
+  authorName: string;
+  /** Optional context under the name (e.g. "Cliente frecuente", "Ferretería El Progreso") — empty string when unset. */
+  authorRole: string;
+  quote: string;
+  /** 1-5. */
+  rating: number;
+  active: boolean;
+  order: number;
+}
+
 export interface Banner {
   id: string;
   title: string;

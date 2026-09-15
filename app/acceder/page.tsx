@@ -56,10 +56,10 @@ export default async function AccederPage({
           style={{ background: "radial-gradient(circle at 18% 20%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%)" }}
           aria-hidden
         />
-        <div className="relative flex items-center gap-3">
+        <Link href="/" className="relative flex items-center gap-3">
           <DSPlatformMark className="h-9 w-9" />
           <span className="text-sm font-semibold uppercase tracking-[0.25em] text-muted-foreground">DS Catalog</span>
-        </div>
+        </Link>
         <div className="relative max-w-md">
           <p className="font-display text-4xl uppercase leading-[0.95] tracking-wide text-foreground">
             La plataforma para catálogos digitales que venden
@@ -74,9 +74,9 @@ export default async function AccederPage({
       {/* Form panel */}
       <div className="flex w-full flex-col items-center justify-center px-4 py-12 lg:w-1/2">
         <NSReveal className="w-full max-w-sm" y={12}>
-          <div className="mb-8 flex justify-center lg:hidden">
+          <Link href="/" className="mb-8 flex justify-center lg:hidden">
             <DSPlatformMark className="h-12 w-12" />
-          </div>
+          </Link>
 
           {tenantHint ? (
             <div
