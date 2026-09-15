@@ -88,3 +88,51 @@ export function priceBounds(products: Product[]): { min: number; max: number } {
   const prices = products.map((p) => p.price);
   return { min: Math.min(...prices), max: Math.max(...prices) };
 }
+
+export interface CatalogEmptyState {
+  title: string;
+  description: string;
+}
+
+function hasAnyFilter(filters: CatalogFilters): boolean {
+  return Boolean(
+    filters.query ||
+      filters.category ||
+      filters.audience ||
+      (filters.sizes && filters.sizes.length > 0) ||
+      (filters.colors && filters.colors.length > 0) ||
+      (filters.availability && filters.availability.length > 0) ||
+      typeof filters.minPrice === "number" ||
+      typeof filters.maxPrice === "number",
+  );
+}
+
+/**
+ * Distinguishes "there's genuinely nothing here yet" from "your filters/
+ * search matched nothing" — same zero-results grid either way, but a very
+ * different message depending on why. `scopeCount` is the product count
+ * BEFORE filters are applied (the category/catalog's real size), so an
+ * active filter that happens to match zero products in a non-empty catalog
+ * still reads as "adjust your search," never "empty catalog."
+ */
+export function getCatalogEmptyState(
+  scopeCount: number,
+  filters: CatalogFilters,
+  scope: "catalog" | "category" = "catalog",
+): CatalogEmptyState {
+  if (hasAnyFilter(filters)) {
+    return {
+      title: "No encontramos lo que buscas",
+      description: "Prueba con otro término o explora otra categoría.",
+    };
+  }
+  if (scopeCount === 0) {
+    return scope === "category"
+      ? { title: "Esta categoría está tomando forma", description: "Muy pronto vas a encontrar productos aquí." }
+      : { title: "Tu catálogo está tomando forma", description: "Cuando agregues tus primeros productos aparecerán aquí." };
+  }
+  return {
+    title: "No encontramos productos",
+    description: "Prueba ajustando los filtros o la búsqueda.",
+  };
+}

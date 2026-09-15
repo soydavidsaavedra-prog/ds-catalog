@@ -6,6 +6,7 @@ import { NSBadge } from "@/components/ui/NSBadge";
 import { NSPrice } from "@/components/ui/NSPrice";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSSectionHeading } from "@/components/ui/NSSectionHeading";
+import { NSEmptyState } from "@/components/ui/NSEmptyState";
 import { useWishlistStore } from "@/lib/wishlist/wishlist-store";
 import { CARD_ASPECT_RATIO_CLASSES } from "@/components/storefront/themes/theme-01/NSProductCard";
 
@@ -35,12 +36,16 @@ export function NSFavoritesView({ tenantSlug }: { tenantSlug: string }) {
       />
 
       {items.length === 0 ? (
-        <div className="mt-10 flex flex-col items-center gap-4 text-center">
-          <p className="text-sm text-muted-foreground">Todavía no guardaste ningún producto.</p>
-          <NSButton href={`/${tenantSlug}/catalogo`} variant="outline">
-            Ver catálogo
-          </NSButton>
-        </div>
+        <NSEmptyState
+          className="mt-10"
+          title="Favoritos vacíos"
+          description="Todavía no guardaste ningún producto — toca el corazón en la tarjeta de un producto para guardarlo aquí."
+          action={
+            <NSButton href={`/${tenantSlug}/catalogo`} variant="outline">
+              Ver catálogo
+            </NSButton>
+          }
+        />
       ) : (
         <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
           {items.map((item) => (

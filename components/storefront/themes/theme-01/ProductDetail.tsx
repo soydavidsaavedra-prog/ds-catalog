@@ -35,7 +35,7 @@ export function ProductDetail({ tenantSlug, product, category, related, settings
             cardAspectRatio={product.cardAspectRatio}
             imageFit={product.imageFit}
           />
-          <NSProductPurchasePanel tenantSlug={tenantSlug} product={product} paymentBadge={paymentBadge} />
+          <NSProductPurchasePanel tenantSlug={tenantSlug} product={product} paymentBadge={paymentBadge} brandName={settings.brandName} />
         </div>
       </div>
 

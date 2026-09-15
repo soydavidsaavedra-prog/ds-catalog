@@ -3,11 +3,12 @@ import {
   applyCatalogFilters,
   collectColors,
   collectSizes,
+  getCatalogEmptyState,
   matchesQuery,
   priceBounds,
   sortProducts,
 } from "@/lib/search/catalog-engine";
-import type { Product } from "@/lib/types/catalog";
+import type { CatalogFilters, Product } from "@/lib/types/catalog";
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
   return {
@@ -166,5 +167,33 @@ describe("priceBounds", () => {
 
   it("returns zeros for an empty list", () => {
     expect(priceBounds([])).toEqual({ min: 0, max: 0 });
+  });
+});
+
+describe("getCatalogEmptyState", () => {
+  const noFilters: CatalogFilters = {};
+
+  it("reads as 'search matched nothing' when a filter is active, regardless of scope size", () => {
+    expect(getCatalogEmptyState(50, { query: "algo" }).title).toBe("No encontramos lo que buscas");
+    expect(getCatalogEmptyState(0, { query: "algo" }).title).toBe("No encontramos lo que buscas");
+    expect(getCatalogEmptyState(50, { sizes: ["M"] }).title).toBe("No encontramos lo que buscas");
+    expect(getCatalogEmptyState(50, { availability: ["out_of_stock"] }).title).toBe("No encontramos lo que buscas");
+  });
+
+  it("reads as 'catalog is empty' when there are no filters and the scope itself has zero products", () => {
+    const state = getCatalogEmptyState(0, noFilters, "catalog");
+    expect(state.title).toBe("Tu catálogo está tomando forma");
+  });
+
+  it("reads as 'category is empty' (not 'catalog') when scoped to a category with zero products", () => {
+    const state = getCatalogEmptyState(0, noFilters, "category");
+    expect(state.title).toBe("Esta categoría está tomando forma");
+  });
+
+  it("falls back to a generic message when the scope has products but a non-filter reason zeroed the results", () => {
+    // No real production path hits this (results only differ from scope via filters),
+    // but the function must still return something sane rather than the "empty catalog" copy.
+    const state = getCatalogEmptyState(10, noFilters);
+    expect(state.title).toBe("No encontramos productos");
   });
 });

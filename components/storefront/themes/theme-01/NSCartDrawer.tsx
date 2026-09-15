@@ -6,6 +6,7 @@ import { useCartStore, useCartTotal } from "@/lib/cart/cart-store";
 import { cartItemKey } from "@/lib/types/cart";
 import { NSCartItemRow } from "./NSCartItemRow";
 import { NSButton } from "@/components/ui/NSButton";
+import { NSEmptyState } from "@/components/ui/NSEmptyState";
 import { formatPrice } from "@/lib/utils/format";
 import { buildWhatsAppOrderUrl } from "@/lib/whatsapp/order-message";
 import { placeOrderAction } from "@/app/[tenant]/(storefront)/checkout-actions";
@@ -109,11 +110,17 @@ export function NSCartDrawer({
 
             <div className="flex-1 overflow-y-auto px-5">
               {items.length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-                  <p className="text-sm text-muted-foreground">Tu carrito está vacío.</p>
-                  <NSButton href={`/${tenantSlug}/catalogo`} variant="outline" size="sm" onClick={closeCart}>
-                    Ver catálogo
-                  </NSButton>
+                <div className="flex h-full flex-col items-center justify-center">
+                  <NSEmptyState
+                    className="border-none py-0"
+                    title="Tu carrito está esperando"
+                    description="Explora el catálogo y agrega tus productos favoritos."
+                    action={
+                      <NSButton href={`/${tenantSlug}/catalogo`} variant="outline" size="sm" onClick={closeCart}>
+                        Ver catálogo
+                      </NSButton>
+                    }
+                  />
                 </div>
               ) : (
                 items.map((item) => <NSCartItemRow key={cartItemKey(item)} item={item} brandName={brandName} />)
