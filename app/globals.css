@@ -206,6 +206,7 @@
   --animate-reveal-up: reveal-up var(--duration-slower) var(--ease-out) both;
   --animate-fade-in: fade-in var(--duration-slow) var(--ease-out) both;
   --animate-marquee: marquee 28s linear infinite;
+  --animate-logo-pulse: logo-pulse 1.8s var(--ease-in-out) infinite;
 }
 
 /*
@@ -479,6 +480,18 @@
   }
   to {
     transform: translateX(-50%);
+  }
+}
+
+@keyframes logo-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.7;
   }
 }
 
