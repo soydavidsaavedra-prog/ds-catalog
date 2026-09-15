@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
-import { getProductById } from "@/lib/repositories/product-repository";
+import { getProductById, listProducts } from "@/lib/repositories/product-repository";
 import { listCategories } from "@/lib/repositories/category-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
 import { getBusinessTypeProfile } from "@/lib/tenant/business-type";
 import { NSProductForm } from "@/components/admin/NSProductForm";
 import { DSPageHeader } from "@/components/ui/DSPageHeader";
-import { updateProductAction } from "@/app/[tenant]/admin/actions";
+import { updateProductAction, quickCreateCategoryAction } from "@/app/[tenant]/admin/actions";
 
 export default async function AdminEditProductPage({
   params,
@@ -15,10 +15,11 @@ export default async function AdminEditProductPage({
 }) {
   const { tenant: tenantSlug, id } = await params;
   const tenant = await resolveTenant(tenantSlug);
-  const [product, categories, settings] = await Promise.all([
+  const [product, categories, settings, products] = await Promise.all([
     getProductById(tenant.id, id),
     listCategories(tenant.id),
     getSettings(tenant.id),
+    listProducts(tenant.id),
   ]);
   if (!product) notFound();
 
@@ -37,6 +38,8 @@ export default async function AdminEditProductPage({
         showSizes={profile.showSizes}
         showColors={profile.showColors}
         settings={settings}
+        quickCreateCategoryAction={quickCreateCategoryAction.bind(null, tenant.id, tenantSlug)}
+        existingReferences={products.map((p) => p.reference)}
       />
     </div>
   );

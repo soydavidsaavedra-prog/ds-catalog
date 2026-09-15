@@ -3,6 +3,7 @@ import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { listCategories } from "@/lib/repositories/category-repository";
 import { NSProductBatchForm } from "@/components/admin/NSProductBatchForm";
 import { DSPageHeader } from "@/components/ui/DSPageHeader";
+import { quickCreateCategoryAction } from "@/app/[tenant]/admin/actions";
 
 export const metadata: Metadata = {
   title: "Crear por lote de fotos",
@@ -23,7 +24,12 @@ export default async function AdminProductBatchPage({
         title="Crear productos por lote de fotos"
         description="Sube varias fotos de una vez — cada una crea un producto en borrador (oculto en tu catálogo) con un nombre provisional tomado del archivo. Después edítalos uno por uno para poner el nombre, precio y descripción reales."
       />
-      <NSProductBatchForm tenantId={tenant.id} tenantSlug={tenantSlug} categories={categories} />
+      <NSProductBatchForm
+        tenantId={tenant.id}
+        tenantSlug={tenantSlug}
+        categories={categories}
+        quickCreateCategoryAction={quickCreateCategoryAction.bind(null, tenant.id, tenantSlug)}
+      />
     </div>
   );
 }

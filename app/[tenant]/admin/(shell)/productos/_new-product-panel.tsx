@@ -1,12 +1,12 @@
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { listCategories } from "@/lib/repositories/category-repository";
-import { getNextReference } from "@/lib/repositories/product-repository";
+import { getNextReference, listProducts } from "@/lib/repositories/product-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
 import { getBusinessTypeProfile } from "@/lib/tenant/business-type";
 import { deriveReferencePrefix } from "@/lib/products/reference-prefix";
 import { NSProductForm } from "@/components/admin/NSProductForm";
 import { NSFloatingPanel } from "@/components/ui/NSFloatingPanel";
-import { createProductAction } from "@/app/[tenant]/admin/actions";
+import { createProductAction, quickCreateCategoryAction } from "@/app/[tenant]/admin/actions";
 
 /**
  * Shared by the standalone route (app/[tenant]/admin/(shell)/productos/nuevo/page.tsx,
@@ -17,10 +17,11 @@ import { createProductAction } from "@/app/[tenant]/admin/actions";
  */
 export async function NewProductPanel({ tenantSlug }: { tenantSlug: string }) {
   const tenant = await resolveTenant(tenantSlug);
-  const [categories, nextReference, settings] = await Promise.all([
+  const [categories, nextReference, settings, products] = await Promise.all([
     listCategories(tenant.id),
     getNextReference(tenant.id, deriveReferencePrefix(tenant.name)),
     getSettings(tenant.id),
+    listProducts(tenant.id),
   ]);
   const action = createProductAction.bind(null, tenant.id, tenantSlug);
   const profile = getBusinessTypeProfile(tenant.businessType);
@@ -37,6 +38,8 @@ export async function NewProductPanel({ tenantSlug }: { tenantSlug: string }) {
         showSizes={profile.showSizes}
         showColors={profile.showColors}
         settings={settings}
+        quickCreateCategoryAction={quickCreateCategoryAction.bind(null, tenant.id, tenantSlug)}
+        existingReferences={products.map((p) => p.reference)}
       />
     </NSFloatingPanel>
   );

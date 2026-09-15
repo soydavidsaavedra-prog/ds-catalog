@@ -9,6 +9,7 @@ import { DSCard } from "@/components/ui/DSCard";
 import { NSImageUploader } from "@/components/admin/NSImageUploader";
 import { NSVariantListEditor } from "@/components/admin/NSVariantListEditor";
 import { NSProductCardPreview } from "@/components/admin/NSProductCardPreview";
+import { NSInlineCategoryCreator } from "@/components/admin/NSInlineCategoryCreator";
 import { buildAccentOverrideVars } from "@/lib/utils/brand";
 import { availabilityLabel } from "@/lib/utils/format";
 import { deriveAvailabilityFromStock } from "@/lib/products/stock";
@@ -32,6 +33,8 @@ export function NSProductForm({
   showSizes = true,
   showColors = true,
   settings,
+  quickCreateCategoryAction,
+  existingReferences = [],
 }: {
   tenantSlug: string;
   action: (prevState: ActionState, formData: FormData) => Promise<ActionState>;
@@ -44,6 +47,10 @@ export function NSProductForm({
   showColors?: boolean;
   /** For the live preview only — same brand/payment-badge data NSProductCard reads on the real storefront. */
   settings: SiteSettings;
+  /** Bound server action (tenantId/tenantSlug already applied) behind "+ Nueva categoría" below the category select — see app/[tenant]/admin/actions.ts quickCreateCategoryAction. */
+  quickCreateCategoryAction?: (formData: FormData) => Promise<Category | { error: string }>;
+  /** Every other product's reference for this tenant (this product's own excluded below) — powers the "ya existen estas" suggestion list on the Referencia field. */
+  existingReferences?: string[];
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
   // Set only when this form is rendered inside NSFloatingPanel (currently
@@ -67,6 +74,9 @@ export function NSProductForm({
   const [cardAspectRatio, setCardAspectRatio] = useState<CardAspectRatio>(product?.cardAspectRatio ?? "portrait");
   const [imageFit, setImageFit] = useState<ImageFit>(product?.imageFit ?? "cover");
   const [images, setImages] = useState<string[]>(product?.images ?? []);
+  const [localCategories, setLocalCategories] = useState<Category[]>(categories);
+  const [categorySlug, setCategorySlug] = useState(product?.categorySlug ?? "");
+  const categoryParents = localCategories.filter((c) => c.parentId === null);
 
   return (
     <div className="grid max-w-6xl gap-8 xl:grid-cols-[1fr_320px] xl:items-start">
@@ -90,8 +100,16 @@ export function NSProductForm({
                 name="reference"
                 defaultValue={product?.reference ?? nextReference}
                 placeholder="REF-001"
+                list="existing-references"
                 required
               />
+              <datalist id="existing-references">
+                {existingReferences
+                  .filter((ref) => ref !== product?.reference)
+                  .map((ref) => (
+                    <option key={ref} value={ref} />
+                  ))}
+              </datalist>
               {!product ? (
                 <p className="mt-1 text-xs text-muted-foreground">Generada automáticamente — puedes cambiarla.</p>
               ) : null}
@@ -102,30 +120,45 @@ export function NSProductForm({
             </div>
             <div>
               <NSLabel htmlFor="categorySlug">Categoría</NSLabel>
-              <NSSelect id="categorySlug" name="categorySlug" defaultValue={product?.categorySlug} required>
+              <NSSelect
+                id="categorySlug"
+                name="categorySlug"
+                value={categorySlug}
+                onChange={(e) => setCategorySlug(e.target.value)}
+                required
+              >
                 <option value="" disabled>Selecciona una categoría</option>
-                {categories
-                  .filter((c) => c.parentId === null)
-                  .map((parent) => {
-                    const children = categories.filter((c) => c.parentId === parent.id);
-                    if (children.length === 0) {
-                      return (
-                        <option key={parent.slug} value={parent.slug}>
-                          {parent.name}
-                        </option>
-                      );
-                    }
+                {categoryParents.map((parent) => {
+                  const children = localCategories.filter((c) => c.parentId === parent.id);
+                  if (children.length === 0) {
                     return (
-                      <optgroup key={parent.id} label={parent.name}>
-                        {children.map((child) => (
-                          <option key={child.slug} value={child.slug}>
-                            {child.name}
-                          </option>
-                        ))}
-                      </optgroup>
+                      <option key={parent.slug} value={parent.slug}>
+                        {parent.name}
+                      </option>
                     );
-                  })}
+                  }
+                  return (
+                    <optgroup key={parent.id} label={parent.name}>
+                      {children.map((child) => (
+                        <option key={child.slug} value={child.slug}>
+                          {child.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })}
               </NSSelect>
+              {quickCreateCategoryAction ? (
+                <NSInlineCategoryCreator
+                  parents={categoryParents}
+                  existingNames={localCategories.map((c) => c.name)}
+                  quickCreateAction={quickCreateCategoryAction}
+                  onCreated={(newCategory) => {
+                    setLocalCategories((prev) => [...prev, newCategory]);
+                    setCategorySlug(newCategory.slug);
+                  }}
+                />
+              ) : null}
             </div>
           </div>
         </DSCard>
