@@ -9,6 +9,7 @@ import { compressImageBeforeUpload } from "@/lib/utils/image-compress";
 import { NSInput, NSLabel, NSSelect } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import { DSCard } from "@/components/ui/DSCard";
+import { NSInlineCategoryCreator } from "@/components/admin/NSInlineCategoryCreator";
 
 type Phase =
   | { status: "idle" }
@@ -21,12 +22,16 @@ export function NSProductBatchForm({
   tenantId,
   tenantSlug,
   categories,
+  quickCreateCategoryAction,
 }: {
   tenantId: string;
   tenantSlug: string;
   categories: Category[];
+  quickCreateCategoryAction?: (formData: FormData) => Promise<Category | { error: string }>;
 }) {
   const router = useRouter();
+  const [localCategories, setLocalCategories] = useState<Category[]>(categories);
+  const categoryParents = localCategories.filter((c) => c.parentId === null);
   const [categorySlug, setCategorySlug] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
@@ -126,28 +131,37 @@ export function NSProductBatchForm({
           <option value="" disabled>
             Selecciona una categoría
           </option>
-          {categories
-            .filter((c) => c.parentId === null)
-            .map((parent) => {
-              const children = categories.filter((c) => c.parentId === parent.id);
-              if (children.length === 0) {
-                return (
-                  <option key={parent.slug} value={parent.slug}>
-                    {parent.name}
-                  </option>
-                );
-              }
+          {categoryParents.map((parent) => {
+            const children = localCategories.filter((c) => c.parentId === parent.id);
+            if (children.length === 0) {
               return (
-                <optgroup key={parent.id} label={parent.name}>
-                  {children.map((child) => (
-                    <option key={child.slug} value={child.slug}>
-                      {child.name}
-                    </option>
-                  ))}
-                </optgroup>
+                <option key={parent.slug} value={parent.slug}>
+                  {parent.name}
+                </option>
               );
-            })}
+            }
+            return (
+              <optgroup key={parent.id} label={parent.name}>
+                {children.map((child) => (
+                  <option key={child.slug} value={child.slug}>
+                    {child.name}
+                  </option>
+                ))}
+              </optgroup>
+            );
+          })}
         </NSSelect>
+        {quickCreateCategoryAction && !busy ? (
+          <NSInlineCategoryCreator
+            parents={categoryParents}
+            existingNames={localCategories.map((c) => c.name)}
+            quickCreateAction={quickCreateCategoryAction}
+            onCreated={(newCategory) => {
+              setLocalCategories((prev) => [...prev, newCategory]);
+              setCategorySlug(newCategory.slug);
+            }}
+          />
+        ) : null}
       </DSCard>
 
       <DSCard

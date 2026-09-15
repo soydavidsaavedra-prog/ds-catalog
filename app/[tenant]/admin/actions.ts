@@ -49,7 +49,7 @@ import { deleteStorageFilesByUrls } from "@/lib/repositories/storage-repository"
 import { notifyNewTenantRegistration } from "@/lib/notifications/tenant-notifications";
 import { slugify } from "@/lib/utils/slug";
 import { HEX_COLOR, readableForegroundFor } from "@/lib/utils/brand";
-import type { Availability, Audience, CardAspectRatio, ImageFit, ProductColor } from "@/lib/types/catalog";
+import type { Availability, Audience, CardAspectRatio, Category, ImageFit, ProductColor } from "@/lib/types/catalog";
 import { MAX_HERO_SLIDES } from "@/lib/types/catalog";
 import type { OrderStatus } from "@/lib/types/order";
 import type { ThemeKey } from "@/lib/types/tenant";
@@ -501,6 +501,42 @@ export async function createCategoryAction(tenantId: string, tenantSlug: string,
   });
   revalidatePath(`/${tenantSlug}`);
   revalidatePath(`/${tenantSlug}/admin/categorias`);
+}
+
+/**
+ * Same creation logic as createCategoryAction, but called directly (not
+ * through a <form action>) from NSInlineCategoryCreator inside the product
+ * form — nesting a second <form> inside NSProductForm's own form is invalid
+ * HTML (see NSHeroSlideList's own note on this) — and returns the created
+ * Category so the product form can add it to its in-memory list and select
+ * it immediately, without a full page reload. No image/description here on
+ * purpose: those stay editable from /admin/categorias (linked from
+ * Personalización), this is only meant to unblock "I need a category that
+ * doesn't exist yet" without leaving the product form.
+ */
+export async function quickCreateCategoryAction(
+  tenantId: string,
+  tenantSlug: string,
+  formData: FormData,
+): Promise<Category | { error: string }> {
+  const name = String(formData.get("name") ?? "").trim();
+  const baseSlug = slugify(name);
+  if (!name || !baseSlug) return { error: "Escribe un nombre para la categoría." };
+  const parentId = String(formData.get("parentId") ?? "").trim() || null;
+  const slug = await namespaceSlugUnderParent(tenantId, baseSlug, parentId);
+
+  const created = await createCategory(tenantId, {
+    name,
+    slug,
+    description: "",
+    image: `placeholder:${slug}:1`,
+    active: true,
+    featured: false,
+    parentId,
+  });
+  revalidatePath(`/${tenantSlug}`);
+  revalidatePath(`/${tenantSlug}/admin/categorias`);
+  return created;
 }
 
 export async function updateCategoryAction(

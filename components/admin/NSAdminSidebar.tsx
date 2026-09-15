@@ -53,10 +53,7 @@ export function NSAdminSidebar({
     { label: "Overview", links: [{ href: base, label: "Dashboard", icon: DashboardIcon }] },
     {
       label: "Catálogo",
-      links: [
-        { href: `${base}/productos`, label: "Productos", icon: ProductIcon },
-        { href: `${base}/categorias`, label: "Categorías", icon: CategoryIcon },
-      ],
+      links: [{ href: `${base}/productos`, label: "Productos", icon: ProductIcon }],
     },
     { label: "Ventas", links: [{ href: `${base}/pedidos`, label: "Pedidos", icon: OrderIcon }] },
     {
@@ -64,6 +61,7 @@ export function NSAdminSidebar({
       links: [
         { href: `${base}/tema`, label: "Tema", icon: ThemeIcon },
         { href: `${base}/inicio`, label: "Inicio", icon: HomeIcon },
+        { href: `${base}/categorias`, label: "Categorías", icon: CategoryIcon },
         { href: `${base}/testimonios`, label: "Testimonios", icon: TestimonialIcon },
       ],
     },
