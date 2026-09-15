@@ -14,6 +14,15 @@ const nextConfig: NextConfig = {
       ? [{ protocol: "https", hostname: supabaseHostname, pathname: "/storage/v1/object/public/**" }]
       : [],
   },
+  // pdfkit (lib/catalog-pdf) loads its standard font metrics through
+  // Node's own package.json "imports" map (e.g. require("#standard-fonts/Helvetica")
+  // resolving to pdfkit/js/standard-fonts/Helvetica.cjs) — Turbopack's bundler
+  // doesn't resolve that subpath-imports pattern, so bundling it produced a
+  // build that compiled fine but threw a 500 the moment a route actually
+  // called doc.font(...). Marking it external skips bundling and lets the
+  // Vercel function require() it directly at runtime, where Node's real
+  // module resolution (and file tracing) handles "imports" correctly.
+  serverExternalPackages: ["pdfkit", "fontkit"],
 };
 
 /**
