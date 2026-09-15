@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { NSMedia } from "@/components/ui/NSMedia";
 import { compressImageBeforeUpload } from "@/lib/utils/image-compress";
+import { parsePlaceholder } from "@/lib/media/placeholder";
+import { NSBackgroundRemovalDialog } from "@/components/admin/NSBackgroundRemovalDialog";
 
 /** Carousel cap — enforced here for immediate feedback, and again server-side in parseProductInput (app/[tenant]/admin/actions.ts) since a form POST doesn't have to go through this component. */
 const MAX_IMAGES = 10;
@@ -39,6 +41,7 @@ export function NSImageUploader({
   const [error, setError] = useState<string | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const [bgRemovalIndex, setBgRemovalIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const atLimit = images.length >= MAX_IMAGES;
 
@@ -137,6 +140,26 @@ export function NSImageUploader({
     }
   };
 
+  /** Uploads a background-removed result through the exact same endpoint/compression as a normal photo, then swaps it into `index`'s slot — the original URL just stops being referenced, so it's cleaned up by the same cleanupReplacedImages() the product form already runs on save (app/[tenant]/admin/actions.ts), not by any new logic here. */
+  const handleBackgroundRemoved = async (index: number, blob: Blob) => {
+    setBgRemovalIndex(null);
+    setUploading(true);
+    setError(null);
+    try {
+      const file = new File([blob], "sin-fondo.png", { type: "image/png" });
+      const formData = new FormData();
+      formData.append("file", await compressImageBeforeUpload(file));
+      const res = await fetch(`/${tenantSlug}/admin/api/upload`, { method: "POST", body: formData });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data) throw new Error(data?.error ?? `No se pudo subir la imagen (${res.status}).`);
+      setImages((prev) => prev.map((src, i) => (i === index ? data.url : src)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo subir el resultado sin fondo");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div>
       <input type="hidden" name={name} value={JSON.stringify(images)} />
@@ -164,6 +187,17 @@ export function NSImageUploader({
             >
               ×
             </button>
+            {parsePlaceholder(src) ? null : (
+              <button
+                type="button"
+                onClick={() => setBgRemovalIndex(index)}
+                aria-label="Quitar fondo"
+                title="Quitar fondo"
+                className="absolute bottom-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-ink-950/80 text-ink-0 opacity-0 transition-opacity group-hover:opacity-100"
+              >
+                <BackgroundRemovalIcon />
+              </button>
+            )}
           </div>
         ))}
         {atLimit ? null : (
@@ -191,6 +225,23 @@ export function NSImageUploader({
         La primera imagen es la principal — arrastra las fotos para cambiar el orden. Sin imágenes, se usa un
         placeholder de marca. Máximo {MAX_IMAGES} fotos por producto ({images.length}/{MAX_IMAGES}).
       </p>
+
+      {bgRemovalIndex !== null ? (
+        <NSBackgroundRemovalDialog
+          imageUrl={images[bgRemovalIndex]!}
+          onAccept={(blob) => handleBackgroundRemoved(bgRemovalIndex, blob)}
+          onCancel={() => setBgRemovalIndex(null)}
+        />
+      ) : null}
     </div>
+  );
+}
+
+function BackgroundRemovalIcon() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 4h5l2 2h5v10H4V4Z" />
+      <path strokeLinecap="round" d="m8 12 2-2 2 2M10 10V6" />
+    </svg>
   );
 }
