@@ -390,9 +390,12 @@ la UI muestra un aviso claro en vez de fallar.
 - **Programación**: `app/api/cron/social-publish/route.ts`, disparado por
   el cron de `vercel.json` (`*/5 * * * *`), protegido por `CRON_SECRET`.
   **Ojo con el plan de Vercel**: los crons de más de una vez al día
-  requieren plan Pro — en Hobby, Vercel lo reduce a una ejecución diaria,
-  así que una publicación "programada para las 3pm" puede salir horas
-  tarde en Hobby.
+  requieren plan Pro — en Hobby, Vercel directamente **rechaza el
+  deployment completo** si `vercel.json` trae un cron más frecuente que
+  diario (no lo degrada en silencio), así que `schedule` aquí está fijo a
+  una vez al día. Eso significa que una publicación "programada para las
+  3pm" puede salir hasta 24h tarde en Hobby — sube a Pro si necesitas
+  precisión real de horario.
 - **Respuestas automáticas**: `lib/social/auto-reply.ts` — coincidencia
   simple por palabras clave (sin IA), sobre eventos que llegan por
   webhook (`app/api/social/webhooks/meta/route.ts`, verificado con
