@@ -55,8 +55,8 @@ export function NSAutoReplyRuleForm({
       </div>
       <div>
         <NSLabel htmlFor="rule-trigger">Se activa con</NSLabel>
-        <NSSelect id="rule-trigger" name="triggerType" defaultValue="comment">
-          <option value="comment">Comentarios</option>
+        <NSSelect id="rule-trigger" name="triggerType" defaultValue="comment" key={selected?.platform}>
+          {selected?.platform !== "whatsapp" ? <option value="comment">Comentarios</option> : null}
           <option value="dm">Mensajes directos</option>
         </NSSelect>
       </div>

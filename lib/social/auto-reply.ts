@@ -2,6 +2,7 @@ import "server-only";
 import { listActiveRulesForAccount, markSocialEventReplied, recordSocialEventIfNew } from "@/lib/repositories/social-auto-reply-repository";
 import { getSocialAccountById } from "@/lib/repositories/social-accounts-repository";
 import { replyToFacebookComment, replyToInstagramComment, sendFacebookDirectMessage } from "@/lib/social/meta";
+import { sendWhatsAppTextMessage } from "@/lib/social/whatsapp";
 import type { SocialAutoReplyRule, SocialPlatform, SocialTriggerType } from "@/lib/types/social";
 
 /** First active rule whose keywords all appear in the message (case/accent-insensitive) — an empty keyword list matches anything, for a catch-all rule. */
@@ -33,10 +34,11 @@ export interface IncomingSocialEvent {
 /**
  * Records an incoming comment/DM and, if an active rule matches, sends
  * the reply immediately. Called from the Meta webhook route — see
- * app/api/social/webhooks/meta/route.ts. TikTok has no public
- * comment/DM API to react to (see lib/social/tiktok.ts's doc comment),
- * so this is Meta-only for now; a tiktok account can still have rules
- * saved, they just never fire until TikTok exposes that surface.
+ * app/api/social/webhooks/meta/route.ts (Facebook/Instagram/WhatsApp all
+ * arrive there). TikTok has no public comment/DM API to react to (see
+ * lib/social/tiktok.ts's doc comment), so it's excluded here; a tiktok
+ * account can still have rules saved, they just never fire until TikTok
+ * exposes that surface.
  */
 export async function handleIncomingSocialEvent(input: IncomingSocialEvent): Promise<void> {
   const event = await recordSocialEventIfNew(input.tenantId, {
@@ -65,6 +67,8 @@ export async function handleIncomingSocialEvent(input: IncomingSocialEvent): Pro
       }
     } else if (input.eventType === "dm" && account.platform === "meta_facebook") {
       await sendFacebookDirectMessage(account.externalAccountId, account.accessToken, input.replyTargetId, matched.replyTemplate);
+    } else if (input.eventType === "dm" && account.platform === "whatsapp") {
+      await sendWhatsAppTextMessage(account.externalAccountId, account.accessToken, input.replyTargetId, matched.replyTemplate);
     }
 
     await markSocialEventReplied(event.id, { matchedRuleId: matched.id, replied: true, replyText: matched.replyTemplate });

@@ -28,7 +28,7 @@ export default async function SocialAutoReplyPage({ params }: { params: Promise<
     <div className="flex max-w-4xl flex-col gap-8">
       <DSPageHeader
         title="Respuestas automáticas"
-        description="Reglas por palabra clave que responden solas a comentarios y mensajes directos. Disponible hoy para Facebook e Instagram — TikTok no expone una API pública de comentarios/DMs."
+        description="Reglas por palabra clave que responden solas a comentarios y mensajes directos. Disponible hoy para Facebook, Instagram y WhatsApp — TikTok no expone una API pública de comentarios/DMs."
       />
 
       <DSCard title="Nueva regla">

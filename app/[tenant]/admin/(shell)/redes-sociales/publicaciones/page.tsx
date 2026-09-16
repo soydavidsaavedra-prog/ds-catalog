@@ -7,7 +7,7 @@ import { NSSocialComposer } from "@/components/admin/social/NSSocialComposer";
 import { DSPageHeader } from "@/components/ui/DSPageHeader";
 import { DSCard } from "@/components/ui/DSCard";
 import { NSButton } from "@/components/ui/NSButton";
-import { SOCIAL_PLATFORM_LABELS, type SocialPostStatus } from "@/lib/types/social";
+import { SOCIAL_PLATFORM_LABELS, SOCIAL_PLATFORMS_WITHOUT_POSTS, type SocialPostStatus } from "@/lib/types/social";
 import { cn } from "@/lib/utils/cn";
 
 export const metadata: Metadata = { title: "Publicaciones" };
@@ -31,8 +31,10 @@ const STATUS_CLASSES: Record<SocialPostStatus, string> = {
 export default async function SocialPostsPage({ params }: { params: Promise<{ tenant: string }> }) {
   const { tenant: tenantSlug } = await params;
   const tenant = await resolveTenant(tenantSlug);
-  const [accounts, posts] = await Promise.all([listSocialAccounts(tenant.id), listSocialPosts(tenant.id)]);
-  const accountsById = new Map(accounts.map((a) => [a.id, a]));
+  const [allAccounts, posts] = await Promise.all([listSocialAccounts(tenant.id), listSocialPosts(tenant.id)]);
+  const accountsById = new Map(allAccounts.map((a) => [a.id, a]));
+  // WhatsApp has no feed/posts — never offered as a target here (see SOCIAL_PLATFORMS_WITHOUT_POSTS's doc comment).
+  const postableAccounts = allAccounts.filter((a) => !SOCIAL_PLATFORMS_WITHOUT_POSTS.has(a.platform));
 
   return (
     <div className="flex max-w-4xl flex-col gap-8">
@@ -41,8 +43,15 @@ export default async function SocialPostsPage({ params }: { params: Promise<{ te
         description="Programa publicaciones para tus cuentas conectadas — un proceso automático las publica en cuanto llega la fecha (revisa cada pocos minutos)."
       />
 
-      <DSCard title="Nueva publicación">
-        <NSSocialComposer tenantId={tenant.id} tenantSlug={tenantSlug} accounts={accounts} />
+      <DSCard
+        title="Nueva publicación"
+        description={
+          allAccounts.some((a) => a.platform === "whatsapp")
+            ? "Tus números de WhatsApp no aparecen aquí — WhatsApp no tiene publicaciones/feed, solo mensajería (ver Respuestas automáticas)."
+            : undefined
+        }
+      >
+        <NSSocialComposer tenantId={tenant.id} tenantSlug={tenantSlug} accounts={postableAccounts} />
       </DSCard>
 
       <DSCard title="Historial" description={posts.length === 0 ? "Todavía no hay publicaciones." : undefined}>

@@ -1384,7 +1384,7 @@ begin;
 create table if not exists ds_social_accounts (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references ds_tenants(id),
-  platform text not null check (platform in ('meta_facebook', 'meta_instagram', 'tiktok')),
+  platform text not null check (platform in ('meta_facebook', 'meta_instagram', 'tiktok', 'whatsapp')),
   external_account_id text not null,
   display_name text not null default '',
   access_token text not null,
@@ -1424,7 +1424,7 @@ create table if not exists ds_social_auto_reply_rules (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references ds_tenants(id),
   account_id uuid not null references ds_social_accounts(id) on delete cascade,
-  platform text not null check (platform in ('meta_facebook', 'meta_instagram', 'tiktok')),
+  platform text not null check (platform in ('meta_facebook', 'meta_instagram', 'tiktok', 'whatsapp')),
   trigger_type text not null check (trigger_type in ('comment', 'dm')),
   keywords text[] not null default '{}',
   reply_template text not null,
@@ -1439,7 +1439,7 @@ create table if not exists ds_social_events (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references ds_tenants(id),
   account_id uuid not null references ds_social_accounts(id) on delete cascade,
-  platform text not null check (platform in ('meta_facebook', 'meta_instagram', 'tiktok')),
+  platform text not null check (platform in ('meta_facebook', 'meta_instagram', 'tiktok', 'whatsapp')),
   event_type text not null check (event_type in ('comment', 'dm')),
   external_event_id text not null,
   sender_name text not null default '',
@@ -1458,7 +1458,7 @@ create table if not exists ds_social_metrics_snapshots (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references ds_tenants(id),
   account_id uuid not null references ds_social_accounts(id) on delete cascade,
-  platform text not null check (platform in ('meta_facebook', 'meta_instagram', 'tiktok')),
+  platform text not null check (platform in ('meta_facebook', 'meta_instagram', 'tiktok', 'whatsapp')),
   captured_at timestamptz not null default now(),
   followers_count integer,
   engagement_count integer,
@@ -1467,5 +1467,42 @@ create table if not exists ds_social_metrics_snapshots (
 );
 
 create index if not exists ds_social_metrics_snapshots_account_id_idx on ds_social_metrics_snapshots(account_id, captured_at desc);
+
+commit;
+
+-- =====================================================================
+-- DS Catalog — WhatsApp como plataforma de redes sociales
+-- =====================================================================
+-- Agrega 'whatsapp' a los `platform` check de cuentas/reglas/eventos/
+-- métricas — ver lib/social/whatsapp.ts. Deliberadamente NO se agrega a
+-- ds_social_posts: WhatsApp no tiene "publicaciones" ni feed, solo
+-- mensajería, así que esa tabla se queda igual (una cuenta de WhatsApp
+-- nunca aparece como opción en el compositor de /admin/redes-sociales/publicaciones).
+--
+-- Los tres `alter table ... add column if not exists` de arriba no sirven
+-- para constraints existentes (`create table if not exists` ya no toca
+-- una tabla que ya existe), así que esto reemplaza cada check constraint
+-- por su nombre autogenerado de Postgres (`<tabla>_platform_check`, el
+-- default para `check (...)` en una sola columna sin nombre explícito).
+--
+-- Safe to re-run: drop-if-exists + re-add.
+
+begin;
+
+alter table ds_social_accounts drop constraint if exists ds_social_accounts_platform_check;
+alter table ds_social_accounts add constraint ds_social_accounts_platform_check
+  check (platform in ('meta_facebook', 'meta_instagram', 'tiktok', 'whatsapp'));
+
+alter table ds_social_auto_reply_rules drop constraint if exists ds_social_auto_reply_rules_platform_check;
+alter table ds_social_auto_reply_rules add constraint ds_social_auto_reply_rules_platform_check
+  check (platform in ('meta_facebook', 'meta_instagram', 'tiktok', 'whatsapp'));
+
+alter table ds_social_events drop constraint if exists ds_social_events_platform_check;
+alter table ds_social_events add constraint ds_social_events_platform_check
+  check (platform in ('meta_facebook', 'meta_instagram', 'tiktok', 'whatsapp'));
+
+alter table ds_social_metrics_snapshots drop constraint if exists ds_social_metrics_snapshots_platform_check;
+alter table ds_social_metrics_snapshots add constraint ds_social_metrics_snapshots_platform_check
+  check (platform in ('meta_facebook', 'meta_instagram', 'tiktok', 'whatsapp'));
 
 commit;

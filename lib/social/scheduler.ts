@@ -16,6 +16,9 @@ async function publishOne(post: SocialPost, account: SocialAccount): Promise<{ e
       if (!videoUrl) throw new Error("TikTok requiere un video — no se puede publicar sin uno.");
       return publishTikTokVideo(account.accessToken, post.content, videoUrl);
     }
+    case "whatsapp":
+      // Never reachable in practice — SOCIAL_PLATFORMS_WITHOUT_POSTS keeps WhatsApp accounts out of the composer, so no post ever references one.
+      throw new Error("WhatsApp no tiene publicaciones/feed — esta cuenta no debería tener posts programados.");
   }
 }
 

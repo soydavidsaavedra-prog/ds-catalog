@@ -1,4 +1,4 @@
-export type SocialPlatform = "meta_facebook" | "meta_instagram" | "tiktok";
+export type SocialPlatform = "meta_facebook" | "meta_instagram" | "tiktok" | "whatsapp";
 export type SocialAccountStatus = "active" | "expired" | "revoked";
 export type SocialPostStatus = "draft" | "scheduled" | "publishing" | "published" | "failed";
 export type SocialTriggerType = "comment" | "dm";
@@ -7,7 +7,11 @@ export const SOCIAL_PLATFORM_LABELS: Record<SocialPlatform, string> = {
   meta_facebook: "Facebook",
   meta_instagram: "Instagram",
   tiktok: "TikTok",
+  whatsapp: "WhatsApp",
 };
+
+/** WhatsApp has no feed/posts — only messaging. Platforms in this set never appear in the post composer's account picker. */
+export const SOCIAL_PLATFORMS_WITHOUT_POSTS: ReadonlySet<SocialPlatform> = new Set(["whatsapp"]);
 
 export interface SocialAccount {
   id: string;

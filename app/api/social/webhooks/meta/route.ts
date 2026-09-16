@@ -4,11 +4,11 @@ import { getSocialAccountByExternalId } from "@/lib/repositories/social-accounts
 import { handleIncomingSocialEvent } from "@/lib/social/auto-reply";
 
 /**
- * Meta's single webhook endpoint for both Page (Facebook comments/DMs)
- * and Instagram subscriptions — configure this same URL for both objects
- * in the App Dashboard → Webhooks. See lib/social/meta.ts for the
- * signature/handshake helpers and lib/social/auto-reply.ts for what
- * happens once an event is identified.
+ * Meta's single webhook endpoint for Page (Facebook comments/DMs),
+ * Instagram, and WhatsApp subscriptions — configure this same URL for
+ * all three objects in the App Dashboard → Webhooks. See lib/social/meta.ts
+ * and lib/social/whatsapp.ts for the signature/handshake helpers and
+ * lib/social/auto-reply.ts for what happens once an event is identified.
  */
 
 /** Meta's one-time subscription handshake: it GETs this URL with a challenge and expects it echoed back verbatim, but only if hub.verify_token matches what you configured. */
@@ -30,6 +30,12 @@ interface MetaWebhookEntry {
   messaging?: { sender: { id: string }; message?: { mid: string; text?: string } }[];
 }
 
+interface WhatsAppChangeValue {
+  metadata?: { phone_number_id?: string };
+  contacts?: { profile?: { name?: string }; wa_id?: string }[];
+  messages?: { from: string; id: string; type: string; text?: { body?: string } }[];
+}
+
 export async function POST(request: Request) {
   const rawBody = await request.text();
   const signature = request.headers.get("x-hub-signature-256");
@@ -38,6 +44,12 @@ export async function POST(request: Request) {
   }
 
   const payload = JSON.parse(rawBody) as { object: string; entry?: MetaWebhookEntry[] };
+
+  if (payload.object === "whatsapp_business_account") {
+    await handleWhatsAppEntries(payload.entry ?? []);
+    return NextResponse.json({ ok: true });
+  }
+
   const platform = payload.object === "instagram" ? "meta_instagram" : "meta_facebook";
 
   for (const entry of payload.entry ?? []) {
@@ -78,4 +90,41 @@ export async function POST(request: Request) {
 
   // Always 200 — a non-2xx makes Meta retry the same delivery repeatedly, and any real failure is already captured per-event in ds_social_events.reply_error.
   return NextResponse.json({ ok: true });
+}
+
+/**
+ * WhatsApp's payload shape is unlike Page/Instagram: `entry.id` is the
+ * WhatsApp Business Account id, not the individual phone number, so the
+ * account lookup below uses `value.metadata.phone_number_id` instead —
+ * that's the id stored as ds_social_accounts.external_account_id when a
+ * number is connected (see connectWhatsAppAccountAction).
+ */
+async function handleWhatsAppEntries(entries: MetaWebhookEntry[]): Promise<void> {
+  for (const entry of entries) {
+    for (const change of entry.changes ?? []) {
+      if (change.field !== "messages") continue;
+      const value = change.value as WhatsAppChangeValue;
+      const phoneNumberId = value.metadata?.phone_number_id;
+      if (!phoneNumberId) continue;
+
+      const account = await getSocialAccountByExternalId("whatsapp", phoneNumberId);
+      if (!account) continue;
+
+      for (const message of value.messages ?? []) {
+        if (message.type !== "text" || !message.text?.body) continue;
+        const senderName = value.contacts?.find((c) => c.wa_id === message.from)?.profile?.name ?? "";
+
+        await handleIncomingSocialEvent({
+          tenantId: account.tenantId,
+          accountId: account.id,
+          platform: "whatsapp",
+          eventType: "dm",
+          externalEventId: message.id,
+          senderName,
+          messageText: message.text.body,
+          replyTargetId: message.from,
+        });
+      }
+    }
+  }
 }

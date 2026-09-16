@@ -4,6 +4,7 @@ import { listSocialAccounts } from "@/lib/repositories/social-accounts-repositor
 import { isMetaConfigured } from "@/lib/social/meta";
 import { isTikTokConfigured } from "@/lib/social/tiktok";
 import { disconnectSocialAccountAction } from "@/app/[tenant]/admin/(shell)/redes-sociales/actions";
+import { NSConnectWhatsAppForm } from "@/components/admin/social/NSConnectWhatsAppForm";
 import { DSPageHeader } from "@/components/ui/DSPageHeader";
 import { DSCard } from "@/components/ui/DSCard";
 import { NSButton } from "@/components/ui/NSButton";
@@ -68,6 +69,13 @@ export default async function SocialAccountsPage({
             TikTok todavía no está configurado en esta plataforma — un operador debe definir TIKTOK_CLIENT_KEY/TIKTOK_CLIENT_SECRET.
           </p>
         ) : null}
+      </DSCard>
+
+      <DSCard
+        title="Conectar un número de WhatsApp"
+        description="A diferencia de Facebook/Instagram/TikTok, WhatsApp no usa este botón de OAuth — se conecta pegando credenciales que obtienes del panel de Meta (Casos de uso → Conectarte con los clientes a través de WhatsApp → Configuración de la API)."
+      >
+        <NSConnectWhatsAppForm tenantId={tenant.id} tenantSlug={tenantSlug} />
       </DSCard>
 
       <DSCard title="Tus cuentas conectadas" description={accounts.length === 0 ? "Todavía no conectaste ninguna cuenta." : undefined}>

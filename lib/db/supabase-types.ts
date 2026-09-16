@@ -257,7 +257,7 @@ export interface SettingsRow {
   privacy_content: string | null;
 }
 
-export type SocialPlatform = "meta_facebook" | "meta_instagram" | "tiktok";
+export type SocialPlatform = "meta_facebook" | "meta_instagram" | "tiktok" | "whatsapp";
 export type SocialAccountStatus = "active" | "expired" | "revoked";
 export type SocialPostStatus = "draft" | "scheduled" | "publishing" | "published" | "failed";
 export type SocialTriggerType = "comment" | "dm";

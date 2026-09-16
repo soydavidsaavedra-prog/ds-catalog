@@ -8,6 +8,7 @@ import {
 import {
   deleteSocialAccount,
   getSocialAccountById,
+  upsertSocialAccount,
 } from "@/lib/repositories/social-accounts-repository";
 import {
   createAutoReplyRule,
@@ -17,6 +18,7 @@ import {
 import { recordMetricsSnapshot } from "@/lib/repositories/social-metrics-repository";
 import { getFacebookPageInsights, getInstagramInsights, isMetaTokenExpiredError } from "@/lib/social/meta";
 import { getTikTokUserInfo } from "@/lib/social/tiktok";
+import { getWhatsAppPhoneNumberInfo } from "@/lib/social/whatsapp";
 import type { SocialPlatform, SocialTriggerType } from "@/lib/types/social";
 
 export async function createSocialPostAction(tenantId: string, tenantSlug: string, formData: FormData): Promise<{ error?: string }> {
@@ -48,6 +50,40 @@ export async function createSocialPostAction(tenantId: string, tenantSlug: strin
 export async function deleteSocialPostAction(tenantId: string, tenantSlug: string, postId: string): Promise<void> {
   await deleteSocialPost(tenantId, postId);
   revalidatePath(`/${tenantSlug}/admin/redes-sociales/publicaciones`);
+}
+
+/**
+ * WhatsApp numbers connect by pasting credentials instead of OAuth (see
+ * lib/social/whatsapp.ts's doc comment for why) — this validates them
+ * against Graph API before saving so a typo doesn't sit silently broken.
+ */
+export async function connectWhatsAppAccountAction(tenantId: string, tenantSlug: string, formData: FormData): Promise<{ error?: string }> {
+  const phoneNumberId = String(formData.get("phoneNumberId") ?? "").trim();
+  const accessToken = String(formData.get("accessToken") ?? "").trim();
+
+  if (!phoneNumberId || !accessToken) return { error: "Completa el ID de número de teléfono y el token de acceso." };
+
+  let info;
+  try {
+    info = await getWhatsAppPhoneNumberInfo(phoneNumberId, accessToken);
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "No se pudo validar el número con Meta." };
+  }
+
+  await upsertSocialAccount(tenantId, {
+    platform: "whatsapp",
+    externalAccountId: phoneNumberId,
+    displayName: `${info.verifiedName} (${info.displayPhoneNumber})`,
+    accessToken,
+    refreshToken: null,
+    tokenExpiresAt: null,
+    scopes: [],
+    connectedBy: "",
+    status: "active",
+  });
+
+  revalidatePath(`/${tenantSlug}/admin/redes-sociales/cuentas`);
+  return {};
 }
 
 export async function disconnectSocialAccountAction(tenantId: string, tenantSlug: string, accountId: string): Promise<void> {
@@ -119,6 +155,17 @@ export async function syncAccountMetricsAction(tenantId: string, tenantSlug: str
         followersCount: info.followerCount,
         engagementCount: info.likesCount,
         impressionsCount: info.videoCount,
+        raw: { ...info },
+      });
+    } else if (account.platform === "whatsapp") {
+      // No follower/engagement/impressions concept for a phone number — quality_rating (Meta's own health signal for the number) is the only thing worth recording.
+      const info = await getWhatsAppPhoneNumberInfo(account.externalAccountId, account.accessToken);
+      await recordMetricsSnapshot(tenantId, {
+        accountId,
+        platform: account.platform,
+        followersCount: null,
+        engagementCount: null,
+        impressionsCount: null,
         raw: { ...info },
       });
     }

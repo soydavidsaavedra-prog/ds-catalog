@@ -353,9 +353,9 @@ recibir el catálogo real de 200–300 productos.
 ## Redes sociales (`/admin/redes-sociales`)
 
 Módulo de automatización por tenant: conectar páginas de Facebook, cuentas
-de Instagram Business y perfiles de TikTok; programar publicaciones;
-responder automáticamente comentarios/DMs por palabra clave; y ver
-analíticas básicas (seguidores/engagement). Sigue el mismo patrón
+de Instagram Business, perfiles de TikTok y números de WhatsApp; programar
+publicaciones; responder automáticamente comentarios/DMs por palabra
+clave; y ver analíticas básicas (seguidores/engagement). Sigue el mismo patrón
 "opcional, `configured: false` si faltan credenciales" que
 `lib/domains/vercel-domains.ts` — sin las variables de entorno de abajo,
 la UI muestra un aviso claro en vez de fallar.
@@ -387,6 +387,21 @@ la UI muestra un aviso claro en vez de fallar.
     normales (vive detrás de niveles de acceso Business/Research,
     solicitud aparte) — por eso las reglas de respuesta automática para
     TikTok se guardan pero nunca se disparan; la UI lo advierte.
+  - **WhatsApp** (`lib/social/whatsapp.ts`): se conecta distinto a las
+    demás — sin botón de OAuth, pegando el `phoneNumberId` y un token de
+    acceso (de un System User en Meta Business Suite, o el token
+    temporal de ~24h que Meta da para pruebas) en
+    `/admin/redes-sociales/cuentas`. El flujo real de Meta (Embedded
+    Signup, un popup con el SDK de JS) queda fuera de alcance. WhatsApp
+    **no tiene feed/publicaciones** — nunca aparece como opción en el
+    compositor de `/admin/redes-sociales/publicaciones` (ver
+    `SOCIAL_PLATFORMS_WITHOUT_POSTS` en `lib/types/social.ts`). Las
+    respuestas de texto libre solo se entregan dentro de la **ventana de
+    24h** desde el último mensaje del cliente — fuera de esa ventana,
+    WhatsApp exige una plantilla de mensaje pre-aprobada (otro proceso de
+    revisión aparte, no implementado). Un número de prueba nuevo solo
+    puede escribirle a números que agregues como testers en el panel de
+    Meta, hasta que pase revisión.
 - **Programación**: `app/api/cron/social-publish/route.ts`, disparado por
   el cron de `vercel.json` (`*/5 * * * *`), protegido por `CRON_SECRET`.
   **Ojo con el plan de Vercel**: los crons de más de una vez al día
@@ -406,10 +421,14 @@ la UI muestra un aviso claro en vez de fallar.
   un `state` firmado (`lib/social/oauth-state.ts`, HMAC-SHA256, expira a
   los 10 minutos), no en la URL, porque Meta/TikTok requieren registrar
   cada Redirect URI de antemano y no es viable registrar una por tenant.
+  WhatsApp no pasa por este callback — se conecta por credenciales
+  pegadas a mano (ver arriba).
 - **No implementado a propósito**: analíticas históricas con gráfico
   (solo snapshot manual vía botón "Sincronizar ahora" — nada corre en
-  background todavía), refresh automático de tokens de Meta, y respuesta
-  con IA generativa en vez de coincidencia por palabra clave.
+  background todavía), refresh automático de tokens de Meta, respuesta
+  con IA generativa en vez de coincidencia por palabra clave, mensajes de
+  WhatsApp por plantilla (fuera de la ventana de 24h) y el Embedded
+  Signup real de WhatsApp.
 
 ## Lo que falta para producción
 
