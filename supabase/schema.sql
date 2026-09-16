@@ -1362,3 +1362,110 @@ create table if not exists ns_testimonials (
 create index if not exists ns_testimonials_tenant_id_idx on ns_testimonials(tenant_id);
 
 commit;
+
+-- =====================================================================
+-- DS Catalog — automatización de redes sociales
+-- =====================================================================
+-- Per-tenant social accounts (Meta/TikTok), scheduled posts, keyword
+-- auto-reply rules, the inbox log of comments/DMs those rules matched
+-- against, and periodic metrics snapshots — see lib/social/* for the
+-- platform connectors and lib/repositories/social-*-repository.ts for
+-- the CRUD. access_token/refresh_token are stored as plain text here
+-- (same trust boundary as everything else in this schema: RLS has no
+-- policies, only the server-only service_role client ever reads this
+-- table) — see docs/ARCHITECTURE.md's "Redes sociales" section for the
+-- real-world caveats (OAuth app review, token expiry) before relying on
+-- this in production.
+--
+-- Safe to re-run: create-if-not-exists only.
+
+begin;
+
+create table if not exists ds_social_accounts (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references ds_tenants(id),
+  platform text not null check (platform in ('meta_facebook', 'meta_instagram', 'tiktok')),
+  external_account_id text not null,
+  display_name text not null default '',
+  access_token text not null,
+  refresh_token text,
+  token_expires_at timestamptz,
+  scopes text[] not null default '{}',
+  connected_by text not null default '',
+  status text not null default 'active' check (status in ('active', 'expired', 'revoked')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (tenant_id, platform, external_account_id)
+);
+
+create index if not exists ds_social_accounts_tenant_id_idx on ds_social_accounts(tenant_id);
+
+create table if not exists ds_social_posts (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references ds_tenants(id),
+  account_id uuid not null references ds_social_accounts(id) on delete cascade,
+  platform text not null check (platform in ('meta_facebook', 'meta_instagram', 'tiktok')),
+  content text not null default '',
+  media_urls text[] not null default '{}',
+  status text not null default 'draft' check (status in ('draft', 'scheduled', 'publishing', 'published', 'failed')),
+  scheduled_at timestamptz,
+  published_at timestamptz,
+  external_post_id text,
+  error_message text,
+  created_by text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists ds_social_posts_tenant_id_idx on ds_social_posts(tenant_id);
+create index if not exists ds_social_posts_due_idx on ds_social_posts(status, scheduled_at);
+
+create table if not exists ds_social_auto_reply_rules (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references ds_tenants(id),
+  account_id uuid not null references ds_social_accounts(id) on delete cascade,
+  platform text not null check (platform in ('meta_facebook', 'meta_instagram', 'tiktok')),
+  trigger_type text not null check (trigger_type in ('comment', 'dm')),
+  keywords text[] not null default '{}',
+  reply_template text not null,
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists ds_social_auto_reply_rules_tenant_id_idx on ds_social_auto_reply_rules(tenant_id);
+create index if not exists ds_social_auto_reply_rules_account_id_idx on ds_social_auto_reply_rules(account_id);
+
+create table if not exists ds_social_events (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references ds_tenants(id),
+  account_id uuid not null references ds_social_accounts(id) on delete cascade,
+  platform text not null check (platform in ('meta_facebook', 'meta_instagram', 'tiktok')),
+  event_type text not null check (event_type in ('comment', 'dm')),
+  external_event_id text not null,
+  sender_name text not null default '',
+  message_text text not null default '',
+  matched_rule_id uuid references ds_social_auto_reply_rules(id) on delete set null,
+  replied boolean not null default false,
+  reply_text text,
+  reply_error text,
+  created_at timestamptz not null default now(),
+  unique (tenant_id, platform, external_event_id)
+);
+
+create index if not exists ds_social_events_tenant_id_idx on ds_social_events(tenant_id, created_at desc);
+
+create table if not exists ds_social_metrics_snapshots (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references ds_tenants(id),
+  account_id uuid not null references ds_social_accounts(id) on delete cascade,
+  platform text not null check (platform in ('meta_facebook', 'meta_instagram', 'tiktok')),
+  captured_at timestamptz not null default now(),
+  followers_count integer,
+  engagement_count integer,
+  impressions_count integer,
+  raw jsonb
+);
+
+create index if not exists ds_social_metrics_snapshots_account_id_idx on ds_social_metrics_snapshots(account_id, captured_at desc);
+
+commit;
