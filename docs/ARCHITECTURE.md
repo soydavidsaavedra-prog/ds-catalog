@@ -350,6 +350,64 @@ en bucle. No se implementó todavía porque no bloquea el funcionamiento
 principal, tal como indicó el brief; es la primera tarea recomendada al
 recibir el catálogo real de 200–300 productos.
 
+## Redes sociales (`/admin/redes-sociales`)
+
+Módulo de automatización por tenant: conectar páginas de Facebook, cuentas
+de Instagram Business y perfiles de TikTok; programar publicaciones;
+responder automáticamente comentarios/DMs por palabra clave; y ver
+analíticas básicas (seguidores/engagement). Sigue el mismo patrón
+"opcional, `configured: false` si faltan credenciales" que
+`lib/domains/vercel-domains.ts` — sin las variables de entorno de abajo,
+la UI muestra un aviso claro en vez de fallar.
+
+- **Esquema**: `ds_social_accounts` (tokens por cuenta conectada),
+  `ds_social_posts` (cola de publicaciones), `ds_social_auto_reply_rules`
+  + `ds_social_events` (reglas y bandeja de entrada de comentarios/DMs),
+  `ds_social_metrics_snapshots` (histórico de métricas) — ver el bloque
+  "automatización de redes sociales" en `supabase/schema.sql`.
+- **Conectores** (`lib/social/meta.ts`, `lib/social/tiktok.ts`): llamadas
+  reales a Graph API v21 y a TikTok API v2, no un mock — pero ambas
+  plataformas imponen límites reales que ninguna cantidad de código
+  elimina:
+  - **Meta** (Facebook/Instagram): los permisos usados aquí
+    (`pages_manage_posts`, `instagram_content_publish`,
+    `pages_messaging`, `pages_manage_engagement`) son *restringidos* —
+    Meta debe aprobar tu App en **App Review** antes de que funcionen
+    para cuentas que no sean administradoras de tu propia App (en modo
+    Development sí funcionan, solo para ti). Los tokens de página son de
+    larga duración pero **sí caducan** (~60 días o antes si cambias tu
+    contraseña) — sin refresh token automático, el admin debe reconectar
+    desde `/admin/redes-sociales/cuentas` cuando el estado pasa a
+    "vencido" (código de error 190 de Graph API).
+  - **TikTok**: con una App nueva ("unaudited"), `video.publish` publica
+    en el **borrador/inbox** del creador — la persona debe entrar a la
+    app de TikTok y confirmar el post a mano; no es publicación 100%
+    automática hasta que TikTok audite la App para "direct post". No
+    existe una API pública general de comentarios/DMs para apps
+    normales (vive detrás de niveles de acceso Business/Research,
+    solicitud aparte) — por eso las reglas de respuesta automática para
+    TikTok se guardan pero nunca se disparan; la UI lo advierte.
+- **Programación**: `app/api/cron/social-publish/route.ts`, disparado por
+  el cron de `vercel.json` (`*/5 * * * *`), protegido por `CRON_SECRET`.
+  **Ojo con el plan de Vercel**: los crons de más de una vez al día
+  requieren plan Pro — en Hobby, Vercel lo reduce a una ejecución diaria,
+  así que una publicación "programada para las 3pm" puede salir horas
+  tarde en Hobby.
+- **Respuestas automáticas**: `lib/social/auto-reply.ts` — coincidencia
+  simple por palabras clave (sin IA), sobre eventos que llegan por
+  webhook (`app/api/social/webhooks/meta/route.ts`, verificado con
+  `X-Hub-Signature-256`). Idempotente por `(tenant, platform,
+  external_event_id)` porque los webhooks de Meta reintentan entregas.
+- **OAuth**: un único callback fijo (`app/api/social/oauth/callback/route.ts`)
+  compartido por todos los tenants — el tenant/plataforma viaja dentro de
+  un `state` firmado (`lib/social/oauth-state.ts`, HMAC-SHA256, expira a
+  los 10 minutos), no en la URL, porque Meta/TikTok requieren registrar
+  cada Redirect URI de antemano y no es viable registrar una por tenant.
+- **No implementado a propósito**: analíticas históricas con gráfico
+  (solo snapshot manual vía botón "Sincronizar ahora" — nada corre en
+  background todavía), refresh automático de tokens de Meta, y respuesta
+  con IA generativa en vez de coincidencia por palabra clave.
+
 ## Lo que falta para producción
 
 1. Reemplazar el logo recreado por el archivo oficial.

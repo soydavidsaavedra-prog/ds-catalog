@@ -56,6 +56,7 @@ export function NSAdminSidebar({
       links: [{ href: `${base}/productos`, label: "Productos", icon: ProductIcon }],
     },
     { label: "Ventas", links: [{ href: `${base}/pedidos`, label: "Pedidos", icon: OrderIcon }] },
+    { label: "Marketing", links: [{ href: `${base}/redes-sociales`, label: "Redes sociales", icon: SocialIcon }] },
     {
       label: "Personalización",
       links: [
@@ -430,6 +431,16 @@ function CategoryIcon({ className }: { className?: string }) {
 }
 function TestimonialIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><path d="M4 4h9a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H9l-3.5 3v-3H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" /><path d="M14.5 8h-9M13 10.5H7.5" /></svg>;
+}
+function SocialIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} {...iconProps()} aria-hidden>
+      <circle cx="5" cy="10" r="2" />
+      <circle cx="15" cy="4.5" r="2" />
+      <circle cx="15" cy="15.5" r="2" />
+      <path d="M6.8 8.9 13.2 5.6M6.8 11.1l6.4 3.3" />
+    </svg>
+  );
 }
 function OrderIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><path d="M4 3h12l-1 12H5L4 3Z" /><path d="M7 3a3 3 0 0 1 6 0M4 7h12" /></svg>;

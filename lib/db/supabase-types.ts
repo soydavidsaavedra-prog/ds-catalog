@@ -257,6 +257,84 @@ export interface SettingsRow {
   privacy_content: string | null;
 }
 
+export type SocialPlatform = "meta_facebook" | "meta_instagram" | "tiktok";
+export type SocialAccountStatus = "active" | "expired" | "revoked";
+export type SocialPostStatus = "draft" | "scheduled" | "publishing" | "published" | "failed";
+export type SocialTriggerType = "comment" | "dm";
+
+export interface SocialAccountRow {
+  id: string;
+  tenant_id: string;
+  platform: SocialPlatform;
+  external_account_id: string;
+  display_name: string;
+  access_token: string;
+  refresh_token: string | null;
+  token_expires_at: string | null;
+  scopes: string[];
+  connected_by: string;
+  status: SocialAccountStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SocialPostRow {
+  id: string;
+  tenant_id: string;
+  account_id: string;
+  platform: SocialPlatform;
+  content: string;
+  media_urls: string[];
+  status: SocialPostStatus;
+  scheduled_at: string | null;
+  published_at: string | null;
+  external_post_id: string | null;
+  error_message: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SocialAutoReplyRuleRow {
+  id: string;
+  tenant_id: string;
+  account_id: string;
+  platform: SocialPlatform;
+  trigger_type: SocialTriggerType;
+  keywords: string[];
+  reply_template: string;
+  active: boolean;
+  created_at: string;
+}
+
+export interface SocialEventRow {
+  id: string;
+  tenant_id: string;
+  account_id: string;
+  platform: SocialPlatform;
+  event_type: SocialTriggerType;
+  external_event_id: string;
+  sender_name: string;
+  message_text: string;
+  matched_rule_id: string | null;
+  replied: boolean;
+  reply_text: string | null;
+  reply_error: string | null;
+  created_at: string;
+}
+
+export interface SocialMetricsSnapshotRow {
+  id: string;
+  tenant_id: string;
+  account_id: string;
+  platform: SocialPlatform;
+  captured_at: string;
+  followers_count: number | null;
+  engagement_count: number | null;
+  impressions_count: number | null;
+  raw: Record<string, unknown> | null;
+}
+
 // Each Row/Insert/Update is intersected with Record<string, unknown> so the
 // resulting table type structurally satisfies postgrest-js's GenericTable
 // (needed for correctly-typed insert/update/select instead of `never`),
@@ -324,6 +402,11 @@ export interface Database {
       ds_login_attempts: TableDef<LoginAttemptRow>;
       ds_totp_backup_codes: TableDef<TotpBackupCodeRow>;
       ds_audit_log: TableDef<AuditLogRow>;
+      ds_social_accounts: TableDef<SocialAccountRow>;
+      ds_social_posts: TableDef<SocialPostRow>;
+      ds_social_auto_reply_rules: TableDef<SocialAutoReplyRuleRow>;
+      ds_social_events: TableDef<SocialEventRow>;
+      ds_social_metrics_snapshots: TableDef<SocialMetricsSnapshotRow>;
     };
     Views: Record<string, never>;
     Functions: {
