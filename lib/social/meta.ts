@@ -28,6 +28,8 @@ const SCOPES = [
   "pages_read_engagement",
   "pages_manage_posts",
   "pages_manage_engagement",
+  // pages_manage_engagement can't read a Page's comments to reply to them without this — Meta rejects the OAuth dialog with "Invalid Scopes: pages_read_user_content" otherwise, even though it's a separate permission you also have to add explicitly in App Dashboard → Página → Permisos y funciones.
+  "pages_read_user_content",
   "pages_messaging",
   "instagram_basic",
   "instagram_content_publish",
