@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DSPlatformMark } from "@/components/brand/DSPlatformMark";
+import { DSLandingHeroContent } from "@/components/landing/DSLandingHeroContent";
 import { DSLandingHeroScene } from "@/components/landing/DSLandingHeroScene";
 import { NSButton } from "@/components/ui/NSButton";
+import { NSCustomCursor } from "@/components/ui/NSCustomCursor";
 import { NSPrice } from "@/components/ui/NSPrice";
 import { NSReveal } from "@/components/ui/NSReveal";
+import { NSScrollProgress } from "@/components/ui/NSScrollProgress";
+import { NSSpotlightCard } from "@/components/ui/NSSpotlightCard";
 import { NSWhatsAppButton } from "@/components/whatsapp/NSWhatsAppButton";
 import { listPlans } from "@/lib/repositories/plans-repository";
 import { getPlatformSettings } from "@/lib/repositories/platform-settings-repository";
@@ -56,6 +60,8 @@ export default async function RootLandingPage() {
 
   return (
     <div className="ds-landing-dark min-h-dvh bg-ink-950 text-ink-0">
+      <NSScrollProgress />
+      <NSCustomCursor />
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
         <div className="flex items-center gap-2">
           <DSPlatformMark className="h-8 w-8" />
@@ -69,33 +75,18 @@ export default async function RootLandingPage() {
       <div className="relative isolate overflow-hidden">
         <DSLandingHeroScene />
         <main className="relative z-10 mx-auto flex max-w-3xl flex-col items-center gap-6 px-6 py-16 text-center sm:py-24">
-          <p className="rounded-pill border border-accent/40 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-accent">
-            Catálogos para negocios
-          </p>
-          <h1 className="font-display text-4xl uppercase leading-[0.95] tracking-tight sm:text-6xl">
-            Tu catálogo en línea, listo en minutos
-          </h1>
-          <p className="max-w-xl text-base text-ink-300 sm:text-lg">
-            Crea tu catálogo, súbelo con tus propios productos y recibe pedidos directo por WhatsApp — sin
-            complicaciones técnicas.
-          </p>
-          <div className="mt-2 flex flex-col gap-3 sm:flex-row">
-            <NSButton href="/registro" size="lg">
-              Crear mi catálogo
-            </NSButton>
-            <NSButton href="/acceder" variant="outline" size="lg">
-              Ya tengo cuenta
-            </NSButton>
-          </div>
+          <DSLandingHeroContent />
         </main>
       </div>
 
       <section className="border-t border-ink-800 bg-ink-900/40 py-16">
         <div className="mx-auto grid max-w-5xl gap-8 px-6 sm:grid-cols-2">
           {FEATURES.map((feature, index) => (
-            <NSReveal key={feature.title} delay={index * 0.08} className="flex flex-col gap-2">
-              <p className="font-display text-lg uppercase tracking-wide text-accent">{feature.title}</p>
-              <p className="text-sm text-ink-300">{feature.description}</p>
+            <NSReveal key={feature.title} delay={index * 0.08}>
+              <NSSpotlightCard className="flex h-full flex-col gap-2 rounded-card border border-ink-800 bg-ink-900 p-6 transition-transform duration-300 hover:-translate-y-1 hover:border-accent/40">
+                <p className="font-display text-lg uppercase tracking-wide text-accent">{feature.title}</p>
+                <p className="text-sm text-ink-300">{feature.description}</p>
+              </NSSpotlightCard>
             </NSReveal>
           ))}
         </div>
@@ -112,34 +103,32 @@ export default async function RootLandingPage() {
             </div>
             <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {activePlans.map((plan, index) => (
-                <NSReveal
-                  key={plan.id}
-                  delay={index * 0.1}
-                  className="flex flex-col gap-4 rounded-card border border-ink-800 bg-ink-900 p-6"
-                >
-                  <div>
-                    <p className="font-display text-xl uppercase tracking-wide">{plan.name}</p>
-                    <NSPrice amount={plan.priceCents / 100} size="lg" className="mt-1" />
-                    <p className="mt-2 text-sm text-ink-400">{plan.description}</p>
-                  </div>
-                  {plan.features.length > 0 ? (
-                    <ul className="flex flex-1 flex-col gap-1.5 text-sm text-ink-300">
-                      {plan.features.map((feature) => (
-                        <li key={feature} className="flex items-start gap-2">
-                          <span className="mt-0.5 text-accent">✓</span>
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                  {supportNumber ? (
-                    <NSWhatsAppButton
-                      whatsappNumber={supportNumber}
-                      message={`Hola, me interesa el plan ${plan.name} de DS Catalog.`}
-                    >
-                      Quiero este plan
-                    </NSWhatsAppButton>
-                  ) : null}
+                <NSReveal key={plan.id} delay={index * 0.1}>
+                  <NSSpotlightCard className="flex h-full flex-col gap-4 rounded-card border border-ink-800 bg-ink-900 p-6 transition-transform duration-300 hover:-translate-y-1 hover:border-accent/40">
+                    <div>
+                      <p className="font-display text-xl uppercase tracking-wide">{plan.name}</p>
+                      <NSPrice amount={plan.priceCents / 100} size="lg" className="mt-1" />
+                      <p className="mt-2 text-sm text-ink-400">{plan.description}</p>
+                    </div>
+                    {plan.features.length > 0 ? (
+                      <ul className="flex flex-1 flex-col gap-1.5 text-sm text-ink-300">
+                        {plan.features.map((feature) => (
+                          <li key={feature} className="flex items-start gap-2">
+                            <span className="mt-0.5 text-accent">✓</span>
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    {supportNumber ? (
+                      <NSWhatsAppButton
+                        whatsappNumber={supportNumber}
+                        message={`Hola, me interesa el plan ${plan.name} de DS Catalog.`}
+                      >
+                        Quiero este plan
+                      </NSWhatsAppButton>
+                    ) : null}
+                  </NSSpotlightCard>
                 </NSReveal>
               ))}
             </div>
