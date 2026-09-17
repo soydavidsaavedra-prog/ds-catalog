@@ -535,12 +535,66 @@
  * default heading style.
  */
 .ds-text-shine {
-  background-image: linear-gradient(115deg, var(--foreground) 30%, var(--accent) 62%, var(--accent-strong) 90%);
-  background-size: 200% 100%;
+  background-image: linear-gradient(
+    115deg,
+    var(--foreground) 20%,
+    var(--accent) 45%,
+    var(--color-ink-0) 60%,
+    var(--accent-strong) 85%
+  );
+  background-size: 220% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: shine 7s var(--ease-in-out) infinite;
+  animation: shine 5s var(--ease-in-out) infinite;
+}
+
+/*
+ * Mouse-following spotlight for a bordered card — the wrapping component
+ * (NSSpotlightCard) writes --spotlight-x/--spotlight-y as the pointer
+ * moves; this is pure CSS so the highlight itself costs no re-render.
+ * Landing/login only, same as the other Uplink-inspired pieces here.
+ */
+.ds-spotlight {
+  position: relative;
+  isolation: isolate;
+}
+.ds-spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  opacity: 0;
+  background: radial-gradient(
+    220px circle at var(--spotlight-x, 50%) var(--spotlight-y, 50%),
+    color-mix(in srgb, var(--accent) 16%, transparent),
+    transparent 70%
+  );
+  transition: opacity var(--duration-normal) var(--ease-out);
+  pointer-events: none;
+}
+.ds-spotlight:hover::before {
+  opacity: 1;
+}
+.ds-spotlight > * {
+  position: relative;
+  z-index: 1;
+}
+
+/*
+ * Custom-cursor mode — toggled on <body> only while NSCustomCursor is
+ * mounted (landing + login, and only on desktop-with-a-mouse; see that
+ * component for the (hover: hover)/reduced-motion gating). Form fields
+ * keep their native text cursor so typing still feels normal.
+ */
+.ds-cursor-none,
+.ds-cursor-none * {
+  cursor: none !important;
+}
+.ds-cursor-none input,
+.ds-cursor-none textarea {
+  cursor: text !important;
 }
 
 * {

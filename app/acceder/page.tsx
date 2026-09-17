@@ -5,6 +5,7 @@ import { DSPlatformMark } from "@/components/brand/DSPlatformMark";
 import { NSLogo } from "@/components/brand/NSLogo";
 import { DSAmbientGlow } from "@/components/landing/DSAmbientGlow";
 import { NSAccederForm } from "@/components/registro/NSAccederForm";
+import { NSCustomCursor } from "@/components/ui/NSCustomCursor";
 import { NSReveal } from "@/components/ui/NSReveal";
 import { getTenantBySlug } from "@/lib/repositories/tenant-repository";
 import { getSettings } from "@/lib/repositories/settings-repository";
@@ -72,6 +73,7 @@ export default async function AccederPage({
 
   return (
     <div className="ds-platform relative isolate flex min-h-dvh overflow-hidden bg-background text-foreground">
+      <NSCustomCursor />
       <DSAmbientGlow />
       {/* Brand-story panel — DS Catalog's own identity, not any tenant's; hidden on mobile per the simplified-mobile brief. */}
       <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-surface p-12 lg:flex">

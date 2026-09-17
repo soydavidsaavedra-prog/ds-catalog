@@ -25,7 +25,7 @@ interface NSMagneticProps {
  * Used only on the landing and /acceder — never wraps `NSButton` itself,
  * so nothing here can leak into the admin/superadmin dashboards.
  */
-export function NSMagnetic({ children, className, strength = 14, fullWidth = false }: NSMagneticProps) {
+export function NSMagnetic({ children, className, strength = 18, fullWidth = false }: NSMagneticProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const prefersReducedMotion = useReducedMotion();
   const x = useMotionValue(0);
