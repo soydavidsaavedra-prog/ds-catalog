@@ -11,6 +11,7 @@ import {
 } from "@/app/acceder/actions";
 import { NSInput, NSLabel } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
+import { NSMagnetic } from "@/components/ui/NSMagnetic";
 
 const initialState: AccederActionState = {};
 
@@ -44,9 +45,11 @@ export function NSAccederForm() {
         <NSInput id="password" name="password" type="password" required autoComplete="current-password" />
       </div>
 
-      <NSButton type="submit" loading={pending} className="w-full">
-        Ingresar
-      </NSButton>
+      <NSMagnetic fullWidth>
+        <NSButton type="submit" loading={pending} className="w-full">
+          Ingresar
+        </NSButton>
+      </NSMagnetic>
     </form>
   );
 }
@@ -92,9 +95,11 @@ function NSTotpCodeLoginForm({ challenge, onUseBackupCode }: { challenge: TotpCh
         />
       </div>
 
-      <NSButton type="submit" loading={pending} className="w-full">
-        Verificar
-      </NSButton>
+      <NSMagnetic fullWidth>
+        <NSButton type="submit" loading={pending} className="w-full">
+          Verificar
+        </NSButton>
+      </NSMagnetic>
 
       <button
         type="button"
@@ -131,9 +136,11 @@ function NSBackupCodeLoginForm({ challenge, onBack }: { challenge: TotpChallenge
         <NSInput id="backupCode" name="backupCode" type="text" autoFocus autoComplete="off" required />
       </div>
 
-      <NSButton type="submit" loading={pending} className="w-full">
-        Verificar
-      </NSButton>
+      <NSMagnetic fullWidth>
+        <NSButton type="submit" loading={pending} className="w-full">
+          Verificar
+        </NSButton>
+      </NSMagnetic>
 
       <button type="button" onClick={onBack} className="text-center text-xs font-medium text-muted-foreground hover:underline">
         Volver al código de la app

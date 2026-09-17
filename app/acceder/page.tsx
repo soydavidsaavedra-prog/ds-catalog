@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DSPlatformMark } from "@/components/brand/DSPlatformMark";
 import { NSLogo } from "@/components/brand/NSLogo";
+import { DSAmbientGlow } from "@/components/landing/DSAmbientGlow";
 import { NSAccederForm } from "@/components/registro/NSAccederForm";
 import { NSReveal } from "@/components/ui/NSReveal";
 import { getTenantBySlug } from "@/lib/repositories/tenant-repository";
@@ -70,7 +71,8 @@ export default async function AccederPage({
   const tenantHint = await resolveTenantHint(tenantSlug);
 
   return (
-    <div className="ds-platform flex min-h-dvh bg-background text-foreground">
+    <div className="ds-platform relative isolate flex min-h-dvh overflow-hidden bg-background text-foreground">
+      <DSAmbientGlow />
       {/* Brand-story panel — DS Catalog's own identity, not any tenant's; hidden on mobile per the simplified-mobile brief. */}
       <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-surface p-12 lg:flex">
         <div
@@ -121,7 +123,7 @@ export default async function AccederPage({
           ) : null}
 
           <div className="mb-6 text-center lg:text-left">
-            <p className="font-display text-2xl uppercase tracking-wide">Acceder</p>
+            <p className="ds-text-shine font-display text-2xl uppercase tracking-wide">Acceder</p>
             <p className="mt-1 text-sm text-muted-foreground">Entra con tu correo y tu contraseña.</p>
           </div>
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DSPlatformMark } from "@/components/brand/DSPlatformMark";
+import { DSLandingHeroContent } from "@/components/landing/DSLandingHeroContent";
 import { DSLandingHeroScene } from "@/components/landing/DSLandingHeroScene";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSPrice } from "@/components/ui/NSPrice";
@@ -69,24 +70,7 @@ export default async function RootLandingPage() {
       <div className="relative isolate overflow-hidden">
         <DSLandingHeroScene />
         <main className="relative z-10 mx-auto flex max-w-3xl flex-col items-center gap-6 px-6 py-16 text-center sm:py-24">
-          <p className="rounded-pill border border-accent/40 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-accent">
-            Catálogos para negocios
-          </p>
-          <h1 className="font-display text-4xl uppercase leading-[0.95] tracking-tight sm:text-6xl">
-            Tu catálogo en línea, listo en minutos
-          </h1>
-          <p className="max-w-xl text-base text-ink-300 sm:text-lg">
-            Crea tu catálogo, súbelo con tus propios productos y recibe pedidos directo por WhatsApp — sin
-            complicaciones técnicas.
-          </p>
-          <div className="mt-2 flex flex-col gap-3 sm:flex-row">
-            <NSButton href="/registro" size="lg">
-              Crear mi catálogo
-            </NSButton>
-            <NSButton href="/acceder" variant="outline" size="lg">
-              Ya tengo cuenta
-            </NSButton>
-          </div>
+          <DSLandingHeroContent />
         </main>
       </div>
 
