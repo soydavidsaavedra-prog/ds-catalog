@@ -40,6 +40,7 @@ export default async function AdminEditProductPage({
         settings={settings}
         quickCreateCategoryAction={quickCreateCategoryAction.bind(null, tenant.id, tenantSlug)}
         existingReferences={products.map((p) => p.reference)}
+        aiAssistEnabled={Boolean(process.env.ANTHROPIC_API_KEY)}
       />
     </div>
   );

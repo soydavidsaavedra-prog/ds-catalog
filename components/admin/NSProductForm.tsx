@@ -10,6 +10,7 @@ import { NSImageUploader } from "@/components/admin/NSImageUploader";
 import { NSVariantListEditor } from "@/components/admin/NSVariantListEditor";
 import { NSProductCardPreview } from "@/components/admin/NSProductCardPreview";
 import { NSInlineCategoryCreator } from "@/components/admin/NSInlineCategoryCreator";
+import { NSProductAiAssistDialog } from "@/components/admin/NSProductAiAssistDialog";
 import { buildAccentOverrideVars } from "@/lib/utils/brand";
 import { availabilityLabel } from "@/lib/utils/format";
 import { deriveAvailabilityFromStock } from "@/lib/products/stock";
@@ -35,6 +36,7 @@ export function NSProductForm({
   settings,
   quickCreateCategoryAction,
   existingReferences = [],
+  aiAssistEnabled = false,
 }: {
   tenantSlug: string;
   action: (prevState: ActionState, formData: FormData) => Promise<ActionState>;
@@ -51,6 +53,8 @@ export function NSProductForm({
   quickCreateCategoryAction?: (formData: FormData) => Promise<Category | { error: string }>;
   /** Every other product's reference for this tenant (this product's own excluded below) — powers the "ya existen estas" suggestion list on the Referencia field. */
   existingReferences?: string[];
+  /** Whether ANTHROPIC_API_KEY is configured on the server — hides the "Sugerir con IA" button entirely when it isn't, instead of showing one that always fails. */
+  aiAssistEnabled?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
   // Set only when this form is rendered inside NSFloatingPanel (currently
@@ -63,6 +67,8 @@ export function NSProductForm({
   // this form (reference, slug, category, description, sizes, colors...)
   // stays uncontrolled/defaultValue, unchanged from before.
   const [name, setName] = useState(product?.name ?? "");
+  const [description, setDescription] = useState(product?.description ?? "");
+  const [showAiDialog, setShowAiDialog] = useState(false);
   const [price, setPrice] = useState(product?.price ?? 0);
   const [previousPrice, setPreviousPrice] = useState(product?.previousPrice ?? null);
   const [isNew, setIsNew] = useState(product?.isNew ?? false);
@@ -90,7 +96,20 @@ export function NSProductForm({
         <DSCard title="Información principal">
           <div className="grid gap-5 sm:grid-cols-2">
             <div>
-              <NSLabel htmlFor="name">Nombre</NSLabel>
+              <div className="flex items-center justify-between">
+                <NSLabel htmlFor="name">Nombre</NSLabel>
+                {aiAssistEnabled ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowAiDialog(true)}
+                    disabled={images.length === 0}
+                    title={images.length === 0 ? "Sube una foto primero" : undefined}
+                    className="mb-1.5 text-xs font-semibold text-accent-strong hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground disabled:no-underline"
+                  >
+                    ✨ Sugerir con IA
+                  </button>
+                ) : null}
+              </div>
               <NSInput id="name" name="name" value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
             <div>
@@ -237,7 +256,13 @@ export function NSProductForm({
         </DSCard>
 
         <DSCard title="Descripción">
-          <NSTextarea id="description" name="description" defaultValue={product?.description} rows={4} />
+          <NSTextarea
+            id="description"
+            name="description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+          />
         </DSCard>
 
         {showSizes || showColors ? (
@@ -415,6 +440,19 @@ export function NSProductForm({
           />
         </div>
       </div>
+
+      {showAiDialog && images[0] ? (
+        <NSProductAiAssistDialog
+          tenantSlug={tenantSlug}
+          imageUrl={images[0]}
+          onAccept={(suggestedName, suggestedDescription) => {
+            setName(suggestedName);
+            setDescription(suggestedDescription);
+            setShowAiDialog(false);
+          }}
+          onCancel={() => setShowAiDialog(false)}
+        />
+      ) : null}
     </div>
   );
 }
