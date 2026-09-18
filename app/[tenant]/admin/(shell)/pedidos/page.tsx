@@ -1,5 +1,6 @@
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { listOrders } from "@/lib/repositories/order-repository";
+import { getSettings } from "@/lib/repositories/settings-repository";
 import { updateOrderStatusAction } from "@/app/[tenant]/admin/actions";
 import { NSOrdersTable } from "@/components/admin/NSOrdersTable";
 import { DSPageHeader } from "@/components/ui/DSPageHeader";
@@ -11,7 +12,7 @@ export default async function AdminOrdersPage({
 }) {
   const { tenant: tenantSlug } = await params;
   const tenant = await resolveTenant(tenantSlug);
-  const orders = await listOrders(tenant.id);
+  const [orders, settings] = await Promise.all([listOrders(tenant.id), getSettings(tenant.id)]);
   const changeStatus = updateOrderStatusAction.bind(null, tenant.id, tenantSlug);
 
   return (
@@ -26,7 +27,7 @@ export default async function AdminOrdersPage({
           No hay pedidos registrados todavía.
         </div>
       ) : (
-        <NSOrdersTable orders={orders} onChangeOrderStatus={changeStatus} />
+        <NSOrdersTable orders={orders} onChangeOrderStatus={changeStatus} currency={settings.currency} />
       )}
     </div>
   );

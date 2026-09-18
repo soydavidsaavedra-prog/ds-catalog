@@ -81,6 +81,7 @@ export function NSQuickViewModal() {
                   product={context.product}
                   paymentBadge={context.paymentBadge}
                   brandName={context.brandName}
+                  currency={context.currency}
                 />
                 <Link
                   href={`/${context.tenantSlug}/producto/${context.product.slug}`}

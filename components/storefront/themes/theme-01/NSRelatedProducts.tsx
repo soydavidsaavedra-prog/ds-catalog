@@ -8,11 +8,13 @@ export function NSRelatedProducts({
   products,
   paymentBadge,
   brandName,
+  currency,
 }: {
   tenantSlug: string;
   products: Product[];
   paymentBadge?: PaymentBadgeInfo;
   brandName?: string;
+  currency?: string;
 }) {
   if (products.length === 0) return null;
 
@@ -26,6 +28,7 @@ export function NSRelatedProducts({
             products={products}
             paymentBadge={paymentBadge}
             brandName={brandName}
+            currency={currency}
           />
         </div>
       </div>

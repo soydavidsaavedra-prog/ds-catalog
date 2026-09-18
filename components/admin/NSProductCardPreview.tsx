@@ -27,6 +27,7 @@ export function NSProductCardPreview({
   cardAspectRatio,
   imageFit,
   brandName,
+  currency,
 }: {
   imageSrc?: string;
   name: string;
@@ -41,6 +42,7 @@ export function NSProductCardPreview({
   cardAspectRatio: CardAspectRatio;
   imageFit: ImageFit;
   brandName?: string;
+  currency?: string;
 }) {
   const showPaymentBadge = !hidePaymentBadge && paymentBadge?.icon;
 
@@ -81,7 +83,7 @@ export function NSProductCardPreview({
       <div className="mt-3 flex flex-col gap-1">
         <p className="truncate text-sm font-medium text-foreground">{name || "Nombre del producto"}</p>
         <p className="text-xs text-muted-foreground">{reference || "REF"}</p>
-        <NSPrice amount={price} compareAt={previousPrice} />
+        <NSPrice amount={price} compareAt={previousPrice} currency={currency} />
       </div>
     </div>
   );

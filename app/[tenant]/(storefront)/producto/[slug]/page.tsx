@@ -37,7 +37,7 @@ export async function generateMetadata({
   if (!product || !product.active) return {};
 
   const title = `${product.name} — ${product.reference}`;
-  const description = `${product.description} Precio: ${formatPrice(product.price)}.`;
+  const description = `${product.description} Precio: ${formatPrice(product.price, settings.currency)}.`;
   const url = absoluteUrl(`/${tenantSlug}/producto/${product.slug}`);
 
   return {

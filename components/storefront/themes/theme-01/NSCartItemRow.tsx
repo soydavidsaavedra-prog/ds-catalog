@@ -7,7 +7,15 @@ import { formatPrice } from "@/lib/utils/format";
 import { cartItemKey, type CartItem } from "@/lib/types/cart";
 import { useCartStore } from "@/lib/cart/cart-store";
 
-export function NSCartItemRow({ item, brandName }: { item: CartItem; brandName?: string }) {
+export function NSCartItemRow({
+  item,
+  brandName,
+  currency,
+}: {
+  item: CartItem;
+  brandName?: string;
+  currency?: string;
+}) {
   const key = cartItemKey(item);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
@@ -47,7 +55,7 @@ export function NSCartItemRow({ item, brandName }: { item: CartItem; brandName?:
             max={20}
             className="h-9 scale-90 origin-left"
           />
-          <span className="text-sm font-semibold">{formatPrice(item.price * item.quantity)}</span>
+          <span className="text-sm font-semibold">{formatPrice(item.price * item.quantity, currency)}</span>
         </div>
       </div>
     </div>

@@ -8,6 +8,7 @@ interface QuickViewContext {
   tenantSlug: string;
   brandName?: string;
   paymentBadge?: PaymentBadgeInfo;
+  currency?: string;
 }
 
 interface QuickViewState {

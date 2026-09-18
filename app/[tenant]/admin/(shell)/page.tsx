@@ -152,7 +152,7 @@ export default async function AdminDashboardPage({
                   <DSActivityRow
                     key={`order-${entry.order.id}`}
                     icon={<OrderIcon className="h-4 w-4" />}
-                    title={`Pedido de ${entry.order.items.length} artículo${entry.order.items.length === 1 ? "" : "s"} — ${formatPrice(entry.order.total)}`}
+                    title={`Pedido de ${entry.order.items.length} artículo${entry.order.items.length === 1 ? "" : "s"} — ${formatPrice(entry.order.total, settings.currency)}`}
                     meta={new Date(entry.order.createdAt).toLocaleDateString("es-VE")}
                     href={`${base}/pedidos`}
                   />

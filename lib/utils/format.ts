@@ -1,10 +1,19 @@
 import { siteConfig } from "@/lib/config/site";
+import { getCurrencyMeta } from "@/lib/config/currencies";
 import type { Availability } from "@/lib/types/catalog";
 
-export function formatPrice(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
+/**
+ * `currency` defaults to "USD" so every existing call site that doesn't pass
+ * one (DS Catalog's own subscription/billing prices — NSAccountPlanCard,
+ * NSOnboardingWizard, the landing's plans section, Super Admin's plans page)
+ * keeps showing USD untouched. Storefront/tenant call sites pass the
+ * tenant's `settings.currency` explicitly.
+ */
+export function formatPrice(amount: number, currency: string = siteConfig.commerce.currency): string {
+  const { locale } = getCurrencyMeta(currency);
+  return new Intl.NumberFormat(locale, {
     style: "currency",
-    currency: siteConfig.commerce.currency,
+    currency,
     minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
   }).format(amount);
 }

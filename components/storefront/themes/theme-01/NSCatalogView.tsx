@@ -88,6 +88,7 @@ export async function NSCatalogView({
           emptyDescription={emptyState.description}
           paymentBadge={{ icon: settings.paymentBadgeIcon, label: settings.paymentBadgeLabel }}
           brandName={settings.brandName}
+          currency={settings.currency}
         />
       </div>
     </div>

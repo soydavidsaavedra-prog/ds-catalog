@@ -19,9 +19,11 @@ const STATUS_FILTERS: { key: OrderStatus | "all"; label: string }[] = [
 export function NSOrdersTable({
   orders,
   onChangeOrderStatus,
+  currency,
 }: {
   orders: Order[];
   onChangeOrderStatus: (orderId: string, status: OrderStatus) => Promise<void>;
+  currency?: string;
 }) {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all");
@@ -76,7 +78,7 @@ export function NSOrdersTable({
             <td className="px-4 py-3 text-muted-foreground">{new Date(order.createdAt).toLocaleString("es-VE")}</td>
             <td className="px-4 py-3">{order.customerName ?? "—"}</td>
             <td className="px-4 py-3">{order.items.length}</td>
-            <td className="px-4 py-3 tabular-nums">{formatPrice(order.total)}</td>
+            <td className="px-4 py-3 tabular-nums">{formatPrice(order.total, currency)}</td>
             <td className="px-4 py-3">
               <NSOrderStatusSelect status={order.status} onChangeStatus={(status) => onChangeOrderStatus(order.id, status)} />
             </td>

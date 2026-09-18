@@ -411,6 +411,7 @@ export function NSProductForm({
             cardAspectRatio={cardAspectRatio}
             imageFit={imageFit}
             brandName={settings.brandName}
+            currency={settings.currency}
           />
         </div>
       </div>

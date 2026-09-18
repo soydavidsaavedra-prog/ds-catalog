@@ -46,6 +46,7 @@ export default async function AdminAccountPage({
       brandName={settings.brandName}
       catalogPreviewImage={settings.heroImage}
       publicUrl={absoluteUrl(`/${tenantSlug}`)}
+      currency={settings.currency}
     />
   );
 }

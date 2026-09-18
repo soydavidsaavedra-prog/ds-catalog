@@ -3,10 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createProduct, listProducts } from "@/lib/repositories/product-repository";
 import { listCategories, getCategoryBySlug } from "@/lib/repositories/category-repository";
-import { getTenantById } from "@/lib/repositories/tenant-repository";
 import { getEffectivePlanForTenant } from "@/lib/tenant/plan-limits";
 import { buildBatchProductDrafts, MAX_BATCH_IMAGES, type BatchImageItem } from "@/lib/products/image-batch";
-import { deriveReferencePrefix, detectExistingReferencePrefix } from "@/lib/products/reference-prefix";
 
 export interface ProductBatchError {
   filename: string;
@@ -55,20 +53,11 @@ export async function createProductBatchAction(
     return { created: 0, errors: items.map((i) => ({ filename: i.filename, reason: "Categoría no válida." })) };
   }
 
-  const [categories, existingProducts, plan, tenant] = await Promise.all([
+  const [categories, existingProducts, plan] = await Promise.all([
     listCategories(tenantId),
     listProducts(tenantId),
     getEffectivePlanForTenant(tenantId),
-    getTenantById(tenantId),
   ]);
-  const existingReferences = existingProducts.map((p) => p.reference);
-  const prefix = detectExistingReferencePrefix(existingReferences) ?? deriveReferencePrefix(tenant?.name ?? "");
-  const referencePattern = new RegExp(`^${prefix}-(\\d+)$`);
-  const startingReferenceNumber =
-    existingReferences.reduce((highest, reference) => {
-      const match = referencePattern.exec(reference.trim());
-      return match ? Math.max(highest, Number(match[1])) : highest;
-    }, 0) + 1;
   const existingSlugs = new Set(existingProducts.map((p) => p.slug));
 
   if (plan?.maxProducts != null) {
@@ -89,8 +78,6 @@ export async function createProductBatchAction(
     items: itemsToCreate,
     category,
     categories,
-    referencePrefix: prefix,
-    startingReferenceNumber,
     existingSlugs,
     price: options?.price,
     active: options?.active,

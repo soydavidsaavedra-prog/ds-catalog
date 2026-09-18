@@ -88,6 +88,7 @@ export default async function StorefrontLayout({
         tenantSlug={tenant.slug}
         whatsappNumber={settings.whatsappNumber}
         brandName={settings.brandName}
+        currency={settings.currency}
       />
       <NSWhatsAppButton whatsappNumber={settings.whatsappNumber} variant="floating" />
       <NSCartAddedToast />

@@ -2,9 +2,9 @@
 
 import { useMemo, useState, type KeyboardEvent } from "react";
 import Link from "next/link";
-import type { Availability, Product } from "@/lib/types/catalog";
+import type { Availability, Category, Product } from "@/lib/types/catalog";
 import { availabilityLabel } from "@/lib/utils/format";
-import { siteConfig } from "@/lib/config/site";
+import { getCurrencyMeta } from "@/lib/config/currencies";
 import { NSInput, NSSelect } from "@/components/ui/NSInput";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSMedia } from "@/components/ui/NSMedia";
@@ -18,11 +18,10 @@ import {
   duplicateProductAction,
   setProductsActiveAction,
   toggleProductFlagAction,
+  updateProductCategoryAction,
   updateProductQuickFieldsAction,
   updateProductStockAction,
 } from "@/app/[tenant]/admin/actions";
-
-const currencySymbol = siteConfig.commerce.currencySymbol;
 
 const AVAILABILITY_TONE: Record<Availability, "success" | "warning" | "danger"> = {
   in_stock: "success",
@@ -39,6 +38,8 @@ export function NSProductsTable({
   tenantSlug,
   products,
   categoryOptions,
+  categories,
+  currency,
   initialStatusFilter = "all",
 }: {
   tenantId: string;
@@ -46,6 +47,9 @@ export function NSProductsTable({
   products: Product[];
   /** [slug, name][] — only categories that actually have products, in display order. */
   categoryOptions: [string, string][];
+  /** Full category list (including empty ones) — lets a product move into any category via the inline dropdown. */
+  categories: Category[];
+  currency?: string;
   /** Preset from ?estado= in the URL — e.g. the "Ver borradores" link after a batch create lands here already filtered to inactive. */
   initialStatusFilter?: StatusFilter;
 }) {
@@ -56,7 +60,9 @@ export function NSProductsTable({
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const categoryName = new Map(categoryOptions);
+  const [categoryOverrides, setCategoryOverrides] = useState<Record<string, string>>({});
+  const currencySymbol = getCurrencyMeta(currency ?? "USD").symbol;
+  const categoryParents = categories.filter((c) => c.parentId === null);
 
   // Inline shortcut for the fields tenants most often need to fix right
   // after a lote-fotos batch (provisional name/reference/price) without
@@ -133,6 +139,25 @@ export function NSProductsTable({
     const result = await updateProductStockAction(tenantId, tenantSlug, product.id, nextStock);
     if (result.error) {
       input.value = revertTo;
+      setFieldErrors((prev) => ({ ...prev, [product.id]: result.error! }));
+    } else {
+      setFieldErrors((prev) => {
+        if (!(product.id in prev)) return prev;
+        const next = { ...prev };
+        delete next[product.id];
+        return next;
+      });
+    }
+  }
+
+  async function saveCategory(product: Product, categorySlug: string) {
+    if (categorySlug === product.categorySlug) return;
+    const previous = categoryOverrides[product.id] ?? product.categorySlug;
+    setCategoryOverrides((prev) => ({ ...prev, [product.id]: categorySlug }));
+
+    const result = await updateProductCategoryAction(tenantId, tenantSlug, product.id, categorySlug);
+    if (result.error) {
+      setCategoryOverrides((prev) => ({ ...prev, [product.id]: previous }));
       setFieldErrors((prev) => ({ ...prev, [product.id]: result.error! }));
     } else {
       setFieldErrors((prev) => {
@@ -343,8 +368,33 @@ export function NSProductsTable({
                 </div>
               </div>
             </td>
-            <td className="px-4 py-3 text-muted-foreground">
-              {categoryName.get(product.categorySlug) ?? product.categorySlug}
+            <td className="px-4 py-3">
+              <NSSelect
+                value={categoryOverrides[product.id] ?? product.categorySlug}
+                onChange={(e) => saveCategory(product, e.target.value)}
+                aria-label={`Categoría de ${product.name}`}
+                className="w-full min-w-[9rem] text-xs"
+              >
+                {categoryParents.map((parent) => {
+                  const children = categories.filter((c) => c.parentId === parent.id);
+                  if (children.length === 0) {
+                    return (
+                      <option key={parent.slug} value={parent.slug}>
+                        {parent.name}
+                      </option>
+                    );
+                  }
+                  return (
+                    <optgroup key={parent.id} label={parent.name}>
+                      {children.map((child) => (
+                        <option key={child.slug} value={child.slug}>
+                          {child.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })}
+              </NSSelect>
             </td>
             <td className="px-4 py-3">
               <div className="flex items-center gap-1 rounded border border-transparent px-1 py-0.5 -mx-1 hover:border-border has-[:focus]:border-accent-strong has-[:focus]:bg-surface has-[:focus]:ring-1 has-[:focus]:ring-accent/40">

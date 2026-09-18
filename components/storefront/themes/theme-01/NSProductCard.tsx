@@ -25,12 +25,14 @@ export function NSProductCard({
   priority = false,
   paymentBadge,
   brandName,
+  currency,
 }: {
   tenantSlug: string;
   product: Product;
   priority?: boolean;
   paymentBadge?: PaymentBadgeInfo;
   brandName?: string;
+  currency?: string;
 }) {
   const outOfStock = product.availability === "out_of_stock";
   const showPaymentBadge = !product.hidePaymentBadge && paymentBadge?.icon;
@@ -43,7 +45,7 @@ export function NSProductCard({
   function handleQuickView(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    openQuickView({ product, tenantSlug, brandName, paymentBadge });
+    openQuickView({ product, tenantSlug, brandName, paymentBadge, currency });
   }
 
   function handleQuickAdd(e: React.MouseEvent) {
@@ -51,7 +53,7 @@ export function NSProductCard({
     e.stopPropagation();
     if (outOfStock) return;
     if (hasVariants) {
-      openQuickView({ product, tenantSlug, brandName, paymentBadge });
+      openQuickView({ product, tenantSlug, brandName, paymentBadge, currency });
       return;
     }
     addItem({
@@ -154,7 +156,7 @@ export function NSProductCard({
         <p className="truncate text-sm font-medium text-foreground">{product.name}</p>
         <p className="text-xs text-muted-foreground">{product.reference}</p>
         <div className="mt-0.5 flex items-center justify-between">
-          <NSPrice amount={product.price} compareAt={product.previousPrice} />
+          <NSPrice amount={product.price} compareAt={product.previousPrice} currency={currency} />
           {product.colors.length > 0 ? (
             <div className="flex items-center gap-1" aria-hidden>
               {product.colors.slice(0, 4).map((c) => (

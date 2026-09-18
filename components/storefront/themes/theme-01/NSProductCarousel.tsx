@@ -12,6 +12,7 @@ export function NSProductCarousel({
   emptyDescription = "Prueba ajustando los filtros o la búsqueda.",
   paymentBadge,
   brandName,
+  currency,
 }: {
   tenantSlug: string;
   products: Product[];
@@ -19,6 +20,7 @@ export function NSProductCarousel({
   emptyDescription?: string;
   paymentBadge?: PaymentBadgeInfo;
   brandName?: string;
+  currency?: string;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
 
@@ -54,6 +56,7 @@ export function NSProductCarousel({
               priority={index < 4}
               paymentBadge={paymentBadge}
               brandName={brandName}
+              currency={currency}
             />
           </div>
         ))}

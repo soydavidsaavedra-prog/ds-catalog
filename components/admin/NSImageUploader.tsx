@@ -45,8 +45,30 @@ export function NSImageUploader({
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
   const [bgRemovalIndex, setBgRemovalIndex] = useState<number | null>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const atLimit = images.length >= MAX_IMAGES;
+
+  // Native OS drag-and-drop — a separate browser event system from the
+  // Pointer-Events-based thumbnail reorder above, so the two don't
+  // interfere: dropping a file anywhere in this container (not just the
+  // "+" button) reuses handleFiles exactly like the hidden file input does.
+  function handleDragOver(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    if (!atLimit) setIsDraggingOver(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent<HTMLDivElement>) {
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    setIsDraggingOver(false);
+  }
+
+  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    if (atLimit) return;
+    handleFiles(e.dataTransfer.files);
+  }
 
   // Drag-to-reorder — which photo is "Principal" (the first one) depends
   // purely on array order, so this is the only way to change it besides
@@ -166,7 +188,14 @@ export function NSImageUploader({
   return (
     <div>
       <input type="hidden" name={name} value={JSON.stringify(images)} />
-      <div className="flex flex-wrap gap-3">
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`flex flex-wrap gap-3 rounded-control transition-colors ${
+          isDraggingOver ? "outline outline-2 outline-dashed outline-accent-strong outline-offset-4" : ""
+        }`}
+      >
         {images.map((src, index) => (
           <div
             key={src + index}
@@ -226,8 +255,9 @@ export function NSImageUploader({
       />
       {error ? <p className="mt-2 text-xs text-danger">{error}</p> : null}
       <p className="mt-2 text-xs text-muted-foreground">
-        La primera imagen es la principal — arrastra las fotos para cambiar el orden. Sin imágenes, se usa un
-        placeholder de marca. Máximo {MAX_IMAGES} fotos por producto ({images.length}/{MAX_IMAGES}).
+        La primera imagen es la principal — arrastra las fotos para cambiar el orden. También puedes arrastrar
+        imágenes desde tu computadora y soltarlas aquí. Sin imágenes, se usa un placeholder de marca. Máximo{" "}
+        {MAX_IMAGES} fotos por producto ({images.length}/{MAX_IMAGES}).
       </p>
 
       {bgRemovalIndex !== null ? (

@@ -19,7 +19,7 @@ import { CARD_ASPECT_RATIO_CLASSES } from "@/components/storefront/themes/theme-
  * time it was saved) can go stale, so buying always goes through the real,
  * current product data.
  */
-export function NSFavoritesView({ tenantSlug }: { tenantSlug: string }) {
+export function NSFavoritesView({ tenantSlug, currency }: { tenantSlug: string; currency?: string }) {
   const items = useWishlistStore((s) => s.items);
   const remove = useWishlistStore((s) => s.remove);
 
@@ -79,7 +79,7 @@ export function NSFavoritesView({ tenantSlug }: { tenantSlug: string }) {
                 <div className="mt-3 flex flex-col gap-1">
                   <p className="truncate text-sm font-medium text-foreground">{item.name}</p>
                   <p className="text-xs text-muted-foreground">{item.reference}</p>
-                  <NSPrice amount={item.price} compareAt={item.previousPrice} />
+                  <NSPrice amount={item.price} compareAt={item.previousPrice} currency={currency} />
                 </div>
               </Link>
               <button
