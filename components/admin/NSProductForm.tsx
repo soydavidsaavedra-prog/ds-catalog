@@ -36,7 +36,7 @@ export function NSProductForm({
   settings,
   quickCreateCategoryAction,
   existingReferences = [],
-  aiAssistEnabled = false,
+  aiServerConfigured = false,
 }: {
   tenantSlug: string;
   action: (prevState: ActionState, formData: FormData) => Promise<ActionState>;
@@ -53,8 +53,8 @@ export function NSProductForm({
   quickCreateCategoryAction?: (formData: FormData) => Promise<Category | { error: string }>;
   /** Every other product's reference for this tenant (this product's own excluded below) — powers the "ya existen estas" suggestion list on the Referencia field. */
   existingReferences?: string[];
-  /** Whether ANTHROPIC_API_KEY is configured on the server — hides the "Sugerir con IA" button entirely when it isn't, instead of showing one that always fails. */
-  aiAssistEnabled?: boolean;
+  /** Whether ANTHROPIC_API_KEY is configured on the server — the "Sugerir con IA" button is always shown; this only decides which engine NSProductAiAssistDialog uses (Claude vs. the free in-browser model). */
+  aiServerConfigured?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
   // Set only when this form is rendered inside NSFloatingPanel (currently
@@ -98,17 +98,15 @@ export function NSProductForm({
             <div>
               <div className="flex items-center justify-between">
                 <NSLabel htmlFor="name">Nombre</NSLabel>
-                {aiAssistEnabled ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowAiDialog(true)}
-                    disabled={images.length === 0}
-                    title={images.length === 0 ? "Sube una foto primero" : undefined}
-                    className="mb-1.5 text-xs font-semibold text-accent-strong hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground disabled:no-underline"
-                  >
-                    ✨ Sugerir con IA
-                  </button>
-                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setShowAiDialog(true)}
+                  disabled={images.length === 0}
+                  title={images.length === 0 ? "Sube una foto primero" : undefined}
+                  className="mb-1.5 text-xs font-semibold text-accent-strong hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground disabled:no-underline"
+                >
+                  ✨ Sugerir con IA
+                </button>
               </div>
               <NSInput id="name" name="name" value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
@@ -445,6 +443,7 @@ export function NSProductForm({
         <NSProductAiAssistDialog
           tenantSlug={tenantSlug}
           imageUrl={images[0]}
+          useServerModel={aiServerConfigured}
           onAccept={(suggestedName, suggestedDescription) => {
             setName(suggestedName);
             setDescription(suggestedDescription);
