@@ -16,11 +16,13 @@ export function NSCartDrawer({
   tenantSlug,
   whatsappNumber,
   brandName,
+  currency,
 }: {
   tenantId: string;
   tenantSlug: string;
   whatsappNumber: string;
   brandName?: string;
+  currency?: string;
 }) {
   const isOpen = useCartStore((s) => s.isOpen);
   const items = useCartStore((s) => s.items);
@@ -123,7 +125,9 @@ export function NSCartDrawer({
                   />
                 </div>
               ) : (
-                items.map((item) => <NSCartItemRow key={cartItemKey(item)} item={item} brandName={brandName} />)
+                items.map((item) => (
+                  <NSCartItemRow key={cartItemKey(item)} item={item} brandName={brandName} currency={currency} />
+                ))
               )}
             </div>
 
@@ -133,10 +137,10 @@ export function NSCartDrawer({
                   <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                     Total
                   </span>
-                  <span className="text-xl font-bold">{formatPrice(total)}</span>
+                  <span className="text-xl font-bold">{formatPrice(total, currency)}</span>
                 </div>
                 <a
-                  href={buildWhatsAppOrderUrl(items, whatsappNumber, tenantSlug)}
+                  href={buildWhatsAppOrderUrl(items, whatsappNumber, tenantSlug, currency)}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={recordOrder}

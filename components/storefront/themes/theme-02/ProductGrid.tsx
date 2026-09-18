@@ -10,6 +10,7 @@ export function ProductGrid({
   emptyDescription = "Prueba ajustando los filtros o la búsqueda.",
   paymentBadge,
   brandName,
+  currency,
 }: {
   tenantSlug: string;
   products: Product[];
@@ -17,6 +18,7 @@ export function ProductGrid({
   emptyDescription?: string;
   paymentBadge?: PaymentBadgeInfo;
   brandName?: string;
+  currency?: string;
 }) {
   if (products.length === 0) {
     return (
@@ -43,6 +45,7 @@ export function ProductGrid({
           priority={index < 4}
           paymentBadge={paymentBadge}
           brandName={brandName}
+          currency={currency}
         />
       ))}
     </div>

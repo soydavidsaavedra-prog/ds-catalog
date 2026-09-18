@@ -76,6 +76,7 @@ export function Home({ tenantSlug, settings, categories, products, heroSlides, t
           ofertas={ofertas}
           paymentBadge={{ icon: settings.paymentBadgeIcon, label: settings.paymentBadgeLabel }}
           brandName={settings.brandName}
+          currency={settings.currency}
         />
       </NSStudioSelectable>
       <NSStudioSelectable id="statement" label="Frase destacada">

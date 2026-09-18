@@ -39,6 +39,7 @@ export function NSAccountCenter({
   brandName,
   catalogPreviewImage,
   publicUrl,
+  currency,
 }: {
   tenantId: string;
   tenantSlug: string;
@@ -54,6 +55,7 @@ export function NSAccountCenter({
   brandName: string;
   catalogPreviewImage?: string;
   publicUrl: string;
+  currency?: string;
 }) {
   const [editingEmail, setEditingEmail] = useState(false);
   const [editingPassword, setEditingPassword] = useState(false);
@@ -225,7 +227,7 @@ export function NSAccountCenter({
                 entry.kind === "order" ? (
                   <DSActivityRow
                     key={`order-${entry.order.id}`}
-                    title={`Pedido — ${formatPrice(entry.order.total)}`}
+                    title={`Pedido — ${formatPrice(entry.order.total, currency)}`}
                     meta={new Date(entry.order.createdAt).toLocaleDateString("es-VE")}
                     href={`/${tenantSlug}/admin/pedidos`}
                   />

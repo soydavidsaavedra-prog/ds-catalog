@@ -60,7 +60,13 @@ export function ProductDetail({ tenantSlug, product, category, related, settings
             </div>
           </div>
 
-          <NSProductPurchasePanel tenantSlug={tenantSlug} product={product} paymentBadge={paymentBadge} brandName={settings.brandName} />
+          <NSProductPurchasePanel
+            tenantSlug={tenantSlug}
+            product={product}
+            paymentBadge={paymentBadge}
+            brandName={settings.brandName}
+            currency={settings.currency}
+          />
         </div>
 
         <div className="mt-14 grid grid-cols-2 gap-6 border-t border-border pt-8 sm:grid-cols-4">
@@ -79,7 +85,13 @@ export function ProductDetail({ tenantSlug, product, category, related, settings
             <p className="text-xs font-semibold uppercase tracking-widest text-accent">Combina con</p>
             <h2 className="mt-2 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">También te puede interesar</h2>
             <div className="mt-8">
-              <ProductGrid tenantSlug={tenantSlug} products={related} paymentBadge={paymentBadge} brandName={settings.brandName} />
+              <ProductGrid
+                tenantSlug={tenantSlug}
+                products={related}
+                paymentBadge={paymentBadge}
+                brandName={settings.brandName}
+                currency={settings.currency}
+              />
             </div>
           </div>
         </section>

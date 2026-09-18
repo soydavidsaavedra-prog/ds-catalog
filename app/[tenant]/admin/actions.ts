@@ -418,6 +418,38 @@ export async function updateProductStockAction(
 }
 
 /**
+ * Quick category re-assign from the products list dropdown — same pattern
+ * as updateProductStockAction, but also recomputes `audience` (see
+ * resolveAudienceForCategory) since moving a product to a different
+ * top-level category changes which audience it belongs to.
+ */
+export async function updateProductCategoryAction(
+  tenantId: string,
+  tenantSlug: string,
+  id: string,
+  categorySlug: string,
+): Promise<{ error?: string }> {
+  const category = await getCategoryBySlug(tenantId, categorySlug);
+  if (!category) return { error: "Categoría no encontrada." };
+
+  const existing = await getProductById(tenantId, id);
+  const audience = await resolveAudienceForCategory(tenantId, categorySlug);
+
+  let updated;
+  try {
+    updated = await updateProduct(tenantId, id, { categorySlug, audience });
+  } catch (err) {
+    return { error: friendlyDbErrorMessage(err) };
+  }
+  if (!updated) return { error: "Producto no encontrado." };
+
+  revalidateStorefront(tenantSlug, existing?.categorySlug, existing?.slug);
+  revalidateStorefront(tenantSlug, updated.categorySlug, updated.slug);
+  revalidatePath(`/${tenantSlug}/admin/productos`);
+  return {};
+}
+
+/**
  * Clones a product as a new inactive draft — same data, fresh id/reference/
  * slug and no images (Storage files belong to the original; copying the
  * URLs would mean deleting one product's photos could silently break the

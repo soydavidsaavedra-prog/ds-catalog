@@ -28,6 +28,7 @@ export interface ThemeCartDrawerProps {
   tenantSlug: string;
   whatsappNumber: string;
   brandName?: string;
+  currency?: string;
 }
 
 /** app/[tenant]/(storefront)/page.tsx — the home page. The Theme decides which sections to show and in what order; it derives any per-section slices (e.g. "nuevos"/"destacados"/"ofertas") itself from `products`/`categories`. */

@@ -3,7 +3,8 @@
 import { useActionState, useState } from "react";
 import type { SiteSettings } from "@/lib/types/catalog";
 import { updateSettingsAction, type ActionState } from "@/app/[tenant]/admin/actions";
-import { NSInput, NSLabel, NSTextarea } from "@/components/ui/NSInput";
+import { NSInput, NSLabel, NSSelect, NSTextarea } from "@/components/ui/NSInput";
+import { CURRENCIES } from "@/lib/config/currencies";
 import { NSButton } from "@/components/ui/NSButton";
 import { DSCard } from "@/components/ui/DSCard";
 import { NSSingleImageUploader } from "@/components/admin/NSSingleImageUploader";
@@ -97,7 +98,13 @@ export function NSSettingsForm({ tenantId, tenantSlug, settings }: { tenantId: s
         <div className="flex flex-col gap-4">
           <div className="sm:max-w-xs">
             <NSLabel htmlFor="currency">Moneda</NSLabel>
-            <NSInput id="currency" name="currency" defaultValue={settings.currency} />
+            <NSSelect id="currency" name="currency" defaultValue={settings.currency}>
+              {CURRENCIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.label} ({c.symbol})
+                </option>
+              ))}
+            </NSSelect>
           </div>
           <div>
             <NSLabel>Ícono de método de pago (ej. Cashea)</NSLabel>

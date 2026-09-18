@@ -6,7 +6,7 @@ import { absoluteUrl, formatPrice } from "@/lib/utils/format";
  * the seller receives, including a direct product link per line so they
  * can open each item and confirm it before replying.
  */
-export function buildWhatsAppOrderMessage(items: CartItem[], tenantSlug: string): string {
+export function buildWhatsAppOrderMessage(items: CartItem[], tenantSlug: string, currency?: string): string {
   const header = "Hola, quiero realizar el siguiente pedido:";
 
   const blocks = items.map((item) => {
@@ -23,7 +23,7 @@ export function buildWhatsAppOrderMessage(items: CartItem[], tenantSlug: string)
       String(item.quantity),
       "",
       "PRECIO:",
-      formatPrice(item.price),
+      formatPrice(item.price, currency),
       "",
       "LINK:",
       absoluteUrl(`/${tenantSlug}/producto/${item.slug}`),
@@ -32,12 +32,17 @@ export function buildWhatsAppOrderMessage(items: CartItem[], tenantSlug: string)
   });
 
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const footer = `TOTAL:\n${formatPrice(total)}`;
+  const footer = `TOTAL:\n${formatPrice(total, currency)}`;
 
   return [header, ...blocks, footer].join("\n\n----------\n\n");
 }
 
-export function buildWhatsAppOrderUrl(items: CartItem[], whatsappNumber: string, tenantSlug: string): string {
-  const message = buildWhatsAppOrderMessage(items, tenantSlug);
+export function buildWhatsAppOrderUrl(
+  items: CartItem[],
+  whatsappNumber: string,
+  tenantSlug: string,
+  currency?: string,
+): string {
+  const message = buildWhatsAppOrderMessage(items, tenantSlug, currency);
   return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
 }

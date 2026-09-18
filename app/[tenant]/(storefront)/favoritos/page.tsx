@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
+import { getSettings } from "@/lib/repositories/settings-repository";
 import { NSFavoritesView } from "@/components/wishlist/NSFavoritesView";
 
 export const metadata: Metadata = {
@@ -9,6 +10,7 @@ export const metadata: Metadata = {
 
 export default async function FavoritosPage({ params }: { params: Promise<{ tenant: string }> }) {
   const { tenant: tenantSlug } = await params;
-  await resolveTenant(tenantSlug);
-  return <NSFavoritesView tenantSlug={tenantSlug} />;
+  const tenant = await resolveTenant(tenantSlug);
+  const settings = await getSettings(tenant.id);
+  return <NSFavoritesView tenantSlug={tenantSlug} currency={settings.currency} />;
 }

@@ -140,6 +140,7 @@ export function Home({ tenantSlug, settings, categories, products, heroSlides, t
                 emptyDescription="Estamos preparando esta selección."
                 paymentBadge={paymentBadge}
                 brandName={settings.brandName}
+                currency={settings.currency}
               />
             </div>
           </div>
@@ -160,7 +161,13 @@ export function Home({ tenantSlug, settings, categories, products, heroSlides, t
                 </Link>
               </div>
               <div className="mt-8">
-                <ProductGrid tenantSlug={tenantSlug} products={nuevos.slice(0, 8)} paymentBadge={paymentBadge} brandName={settings.brandName} />
+                <ProductGrid
+                  tenantSlug={tenantSlug}
+                  products={nuevos.slice(0, 8)}
+                  paymentBadge={paymentBadge}
+                  brandName={settings.brandName}
+                  currency={settings.currency}
+                />
               </div>
             </div>
           </section>

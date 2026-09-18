@@ -35,11 +35,23 @@ export function ProductDetail({ tenantSlug, product, category, related, settings
             cardAspectRatio={product.cardAspectRatio}
             imageFit={product.imageFit}
           />
-          <NSProductPurchasePanel tenantSlug={tenantSlug} product={product} paymentBadge={paymentBadge} brandName={settings.brandName} />
+          <NSProductPurchasePanel
+            tenantSlug={tenantSlug}
+            product={product}
+            paymentBadge={paymentBadge}
+            brandName={settings.brandName}
+            currency={settings.currency}
+          />
         </div>
       </div>
 
-      <NSRelatedProducts tenantSlug={tenantSlug} products={related} paymentBadge={paymentBadge} brandName={settings.brandName} />
+      <NSRelatedProducts
+        tenantSlug={tenantSlug}
+        products={related}
+        paymentBadge={paymentBadge}
+        brandName={settings.brandName}
+        currency={settings.currency}
+      />
     </div>
   );
 }

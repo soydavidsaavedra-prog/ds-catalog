@@ -8,9 +8,9 @@ import { normalizeForDuplicateCheck } from "@/lib/products/duplicates";
  * product per image, for a tenant with a pile of product photos and no
  * catalog data entered yet (see app/[tenant]/admin/(shell)/productos/
  * lote-fotos/). Each product is created INACTIVE (a draft, hidden from
- * the public storefront) with a provisional name derived from the
- * filename — the tenant is expected to open each one afterward and fill
- * in the real name, price and description. This is the image-upload
+ * the public storefront) with its name and reference both derived from the
+ * original filename — the tenant is expected to open each one afterward and
+ * fill in the price and description. This is the image-upload
  * sibling of lib/products/csv-import.ts, which instead bulk-creates from
  * a CSV with no photos; the two are deliberately opposite trade-offs
  * (real photos + fake text here, real text + placeholder photo there).
@@ -79,10 +79,6 @@ export interface BuildBatchDraftsInput {
   category: Category;
   /** Full tree, needed only to resolve `category`'s top-level parent for audience. */
   categories: Category[];
-  /** This tenant's own reference prefix (see lib/products/reference-prefix.ts) — e.g. "NS" for "NS-046", derived from their business name or detected from their existing products. */
-  referencePrefix: string;
-  /** First reference number to use (e.g. 46 for "NS-046") — the caller computes this once, then this function increments it locally per item so two batches submitted close together can never collide on the same number (same reasoning as createHeroSlideAction's `order` in app/[tenant]/admin/actions.ts). */
-  startingReferenceNumber: number;
   existingSlugs: Set<string>;
   /** Shared starting price applied to every product in the batch — still just a placeholder the tenant can fix per item, but saves re-typing the same number on every draft when a whole lote shares one price. Defaults to 0 (the original behavior). */
   price?: number;
@@ -109,13 +105,17 @@ export function buildBatchProductDrafts(input: BuildBatchDraftsInput): BuildBatc
   const audience = resolveAudience(input.category, categoriesById);
   const seenSlugs = new Set(input.existingSlugs);
   const seenNames = new Map((input.existingNames ?? []).map((n) => [normalizeForDuplicateCheck(n), n] as const));
-  let referenceNumber = input.startingReferenceNumber;
 
   const drafts: BatchProductDraft[] = [];
   const duplicates: BatchDuplicateSkip[] = [];
 
   for (const item of input.items) {
+    // Both name and reference come straight from the original filename — a
+    // tenant uploading photos already named after the real product (e.g.
+    // "camisa-azul-talla-m.jpg") gets a usable catalog entry immediately,
+    // no auto-numbered placeholder to rename by hand afterward.
     const name = deriveNameFromFilename(item.filename);
+    const reference = name;
     const normalizedName = normalizeForDuplicateCheck(name);
     const existingMatch = seenNames.get(normalizedName);
     if (existingMatch) {
@@ -124,10 +124,7 @@ export function buildBatchProductDrafts(input: BuildBatchDraftsInput): BuildBatc
     }
     seenNames.set(normalizedName, name);
 
-    const reference = `${input.referencePrefix}-${String(referenceNumber).padStart(3, "0")}`;
-    referenceNumber += 1;
-
-    const baseSlug = slugify(`${reference}-${name}`);
+    const baseSlug = slugify(name);
     let slug = baseSlug;
     let suffix = 2;
     while (seenSlugs.has(slug)) {

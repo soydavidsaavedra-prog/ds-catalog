@@ -24,6 +24,7 @@ export function NSFeaturedProducts({
   ofertas,
   paymentBadge,
   brandName,
+  currency,
 }: {
   tenantSlug: string;
   nuevos: Product[];
@@ -31,6 +32,7 @@ export function NSFeaturedProducts({
   ofertas: Product[];
   paymentBadge?: PaymentBadgeInfo;
   brandName?: string;
+  currency?: string;
 }) {
   const [tab, setTab] = useState<TabKey>("nuevos");
   const byTab: Record<TabKey, Product[]> = { nuevos, destacados, ofertas };
@@ -77,6 +79,7 @@ export function NSFeaturedProducts({
               emptyDescription="Estamos preparando esta selección."
               paymentBadge={paymentBadge}
               brandName={brandName}
+              currency={currency}
             />
           ) : (
             <NSProductGrid
@@ -86,6 +89,7 @@ export function NSFeaturedProducts({
               emptyDescription="Estamos preparando esta selección."
               paymentBadge={paymentBadge}
               brandName={brandName}
+              currency={currency}
             />
           )}
         </div>

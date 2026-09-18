@@ -45,8 +45,6 @@ describe("buildBatchProductDrafts", () => {
       items: [{ filename: "foto1.jpg", url: "https://cdn/foto1.jpg" }],
       category: jeans,
       categories,
-      referencePrefix: "NS",
-      startingReferenceNumber: 1,
       existingSlugs: new Set(),
     });
 
@@ -62,8 +60,6 @@ describe("buildBatchProductDrafts", () => {
       items: [{ filename: "a.jpg", url: "u" }],
       category: jeans,
       categories,
-      referencePrefix: "NS",
-      startingReferenceNumber: 1,
       existingSlugs: new Set(),
     });
     expect(drafts[0]!.input.audience).toBe("dama");
@@ -75,39 +71,23 @@ describe("buildBatchProductDrafts", () => {
       items: [{ filename: "a.jpg", url: "u" }],
       category: ferreteria,
       categories: [ferreteria],
-      referencePrefix: "NS",
-      startingReferenceNumber: 1,
       existingSlugs: new Set(),
     });
     expect(drafts[0]!.input.audience).toBe("unisex");
   });
 
-  it("assigns sequential references starting from the given number", () => {
+  it("derives both the name and the reference from the original filename", () => {
     const { drafts } = buildBatchProductDrafts({
       items: [
-        { filename: "a.jpg", url: "u1" },
-        { filename: "b.jpg", url: "u2" },
-        { filename: "c.jpg", url: "u3" },
+        { filename: "camisa_azul.jpg", url: "u1" },
+        { filename: "pantalon-negro.png", url: "u2" },
       ],
       category: dama,
       categories,
-      referencePrefix: "NS",
-      startingReferenceNumber: 45,
       existingSlugs: new Set(),
     });
-    expect(drafts.map((d) => d.input.reference)).toEqual(["NS-045", "NS-046", "NS-047"]);
-  });
-
-  it("uses the given reference prefix instead of a hardcoded one", () => {
-    const { drafts } = buildBatchProductDrafts({
-      items: [{ filename: "a.jpg", url: "u1" }],
-      category: dama,
-      categories,
-      referencePrefix: "FT",
-      startingReferenceNumber: 1,
-      existingSlugs: new Set(),
-    });
-    expect(drafts[0]!.input.reference).toBe("FT-001");
+    expect(drafts.map((d) => d.input.name)).toEqual(["Camisa Azul", "Pantalon Negro"]);
+    expect(drafts.map((d) => d.input.reference)).toEqual(["Camisa Azul", "Pantalon Negro"]);
   });
 
   it("appends a numeric suffix when the computed slug already exists", () => {
@@ -115,11 +95,9 @@ describe("buildBatchProductDrafts", () => {
       items: [{ filename: "foto.jpg", url: "u1" }],
       category: dama,
       categories,
-      referencePrefix: "NS",
-      startingReferenceNumber: 1,
-      existingSlugs: new Set(["ns-001-foto"]),
+      existingSlugs: new Set(["foto"]),
     });
-    expect(drafts[0]!.input.slug).toBe("ns-001-foto-2");
+    expect(drafts[0]!.input.slug).toBe("foto-2");
   });
 
   it("defaults to price 0 and inactive when price/active are not given", () => {
@@ -127,8 +105,6 @@ describe("buildBatchProductDrafts", () => {
       items: [{ filename: "a.jpg", url: "u" }],
       category: dama,
       categories,
-      referencePrefix: "NS",
-      startingReferenceNumber: 1,
       existingSlugs: new Set(),
     });
     expect(drafts[0]!.input.price).toBe(0);
@@ -143,8 +119,6 @@ describe("buildBatchProductDrafts", () => {
       ],
       category: dama,
       categories,
-      referencePrefix: "NS",
-      startingReferenceNumber: 1,
       existingSlugs: new Set(),
       price: 19.99,
       active: true,
@@ -158,8 +132,6 @@ describe("buildBatchProductDrafts", () => {
       items: [{ filename: "camisa_azul.jpg", url: "u1" }],
       category: dama,
       categories,
-      referencePrefix: "NS",
-      startingReferenceNumber: 1,
       existingSlugs: new Set(),
       existingNames: ["Camisa Azul"],
     });
@@ -172,8 +144,6 @@ describe("buildBatchProductDrafts", () => {
       items: [{ filename: "  CAMISA_azul .jpg", url: "u1" }],
       category: dama,
       categories,
-      referencePrefix: "NS",
-      startingReferenceNumber: 1,
       existingSlugs: new Set(),
       existingNames: ["camisa azul"],
     });
@@ -181,7 +151,7 @@ describe("buildBatchProductDrafts", () => {
     expect(duplicates).toHaveLength(1);
   });
 
-  it("skips a second item in the same batch that derives the same name as an earlier one, without wasting a reference number", () => {
+  it("skips a second item in the same batch that derives the same name as an earlier one", () => {
     const { drafts, duplicates } = buildBatchProductDrafts({
       items: [
         { filename: "camisa.jpg", url: "u1" },
@@ -190,12 +160,10 @@ describe("buildBatchProductDrafts", () => {
       ],
       category: dama,
       categories,
-      referencePrefix: "NS",
-      startingReferenceNumber: 1,
       existingSlugs: new Set(),
     });
     expect(drafts.map((d) => d.filename)).toEqual(["camisa.jpg", "pantalon.jpg"]);
-    expect(drafts.map((d) => d.input.reference)).toEqual(["NS-001", "NS-002"]);
+    expect(drafts.map((d) => d.input.reference)).toEqual(["Camisa", "Pantalon"]);
     expect(duplicates).toEqual([{ filename: "CAMISA.PNG", matchedName: "Camisa" }]);
   });
 
@@ -204,8 +172,6 @@ describe("buildBatchProductDrafts", () => {
       items: [{ filename: "a.jpg", url: "u1" }],
       category: dama,
       categories,
-      referencePrefix: "NS",
-      startingReferenceNumber: 1,
       existingSlugs: new Set(),
     });
     expect(drafts).toHaveLength(1);

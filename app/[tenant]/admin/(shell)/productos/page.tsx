@@ -1,6 +1,7 @@
 import { resolveTenant } from "@/lib/tenant/resolve-tenant";
 import { listProducts } from "@/lib/repositories/product-repository";
 import { listCategories } from "@/lib/repositories/category-repository";
+import { getSettings } from "@/lib/repositories/settings-repository";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSProductsTable } from "@/components/admin/NSProductsTable";
 import { DSPageHeader } from "@/components/ui/DSPageHeader";
@@ -15,7 +16,11 @@ export default async function AdminProductsPage({
   const { tenant: tenantSlug } = await params;
   const { estado } = await searchParams;
   const tenant = await resolveTenant(tenantSlug);
-  const [products, categories] = await Promise.all([listProducts(tenant.id), listCategories(tenant.id)]);
+  const [products, categories, settings] = await Promise.all([
+    listProducts(tenant.id),
+    listCategories(tenant.id),
+    getSettings(tenant.id),
+  ]);
   const categoryOptions: [string, string][] = categories
     .filter((c) => products.some((p) => p.categorySlug === c.slug))
     .map((c) => [c.slug, c.name]);
@@ -47,6 +52,8 @@ export default async function AdminProductsPage({
         tenantSlug={tenantSlug}
         products={products}
         categoryOptions={categoryOptions}
+        categories={categories}
+        currency={settings.currency}
         initialStatusFilter={initialStatusFilter}
       />
     </div>

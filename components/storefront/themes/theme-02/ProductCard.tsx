@@ -30,12 +30,14 @@ export function ProductCard({
   priority = false,
   paymentBadge,
   brandName,
+  currency,
 }: {
   tenantSlug: string;
   product: Product;
   priority?: boolean;
   paymentBadge?: PaymentBadgeInfo;
   brandName?: string;
+  currency?: string;
 }) {
   const outOfStock = product.availability === "out_of_stock";
   const showPaymentBadge = !product.hidePaymentBadge && paymentBadge?.icon;
@@ -48,7 +50,7 @@ export function ProductCard({
   function handleQuickView(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    openQuickView({ product, tenantSlug, brandName, paymentBadge });
+    openQuickView({ product, tenantSlug, brandName, paymentBadge, currency });
   }
 
   function handleQuickAdd(e: React.MouseEvent) {
@@ -56,7 +58,7 @@ export function ProductCard({
     e.stopPropagation();
     if (outOfStock) return;
     if (hasVariants) {
-      openQuickView({ product, tenantSlug, brandName, paymentBadge });
+      openQuickView({ product, tenantSlug, brandName, paymentBadge, currency });
       return;
     }
     addItem({
@@ -150,7 +152,7 @@ export function ProductCard({
           {outOfStock ? "Agotado" : product.availability === "low_stock" ? "Pocas unidades" : "Disponible"}
         </span>
         <div className="mt-auto flex items-end justify-between pt-1.5">
-          <NSPrice amount={product.price} compareAt={product.previousPrice} className="text-accent-strong" />
+          <NSPrice amount={product.price} compareAt={product.previousPrice} currency={currency} className="text-accent-strong" />
           {!outOfStock ? (
             <button
               type="button"
