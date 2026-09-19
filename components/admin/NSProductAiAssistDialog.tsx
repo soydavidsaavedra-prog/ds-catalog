@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { NSButton } from "@/components/ui/NSButton";
 import { NSInput, NSLabel, NSTextarea } from "@/components/ui/NSInput";
-import { captionProductImageLocally } from "@/lib/ai/caption-product-image-client";
 
 type Phase = "processing" | "success" | "error";
 
@@ -14,21 +13,19 @@ type Phase = "processing" | "success" | "error";
  * tenant explicitly clicks "Usar sugerencia", after reviewing/editing it,
  * same "never silently mutate" rule as the background-removal dialog.
  *
- * Two interchangeable engines, picked by `useServerModel`: the paid Claude
- * route (better quality, needs ANTHROPIC_API_KEY on the server) or a free
- * model that runs entirely in the browser (lower quality, no key/account
- * needed — see lib/ai/caption-product-image-client.ts). Same UI either way.
+ * Always calls the server route — the server itself picks the engine
+ * (Claude if ANTHROPIC_API_KEY is set, else the free Gemini fallback if
+ * GEMINI_API_KEY is set; see app/[tenant]/admin/api/analyze-product/route.ts),
+ * so this component doesn't need to know or care which one answered.
  */
 export function NSProductAiAssistDialog({
   tenantSlug,
   imageUrl,
-  useServerModel,
   onAccept,
   onCancel,
 }: {
   tenantSlug: string;
   imageUrl: string;
-  useServerModel: boolean;
   onAccept: (name: string, description: string) => void;
   onCancel: () => void;
 }) {
@@ -48,29 +45,21 @@ export function NSProductAiAssistDialog({
 
     (async () => {
       try {
-        if (useServerModel) {
-          const res = await fetch(`/${tenantSlug}/admin/api/analyze-product`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ imageUrl }),
-          });
-          const data = await res.json().catch(() => null);
-          if (cancelled) return;
-          if (!res.ok || !data) {
-            setErrorReason(data?.error ?? null);
-            setPhase("error");
-            return;
-          }
-          setName(data.name ?? "");
-          setDescription(data.description ?? "");
-          setPhase("success");
-        } else {
-          const result = await captionProductImageLocally(imageUrl);
-          if (cancelled) return;
-          setName(result.name);
-          setDescription(result.description);
-          setPhase("success");
+        const res = await fetch(`/${tenantSlug}/admin/api/analyze-product`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageUrl }),
+        });
+        const data = await res.json().catch(() => null);
+        if (cancelled) return;
+        if (!res.ok || !data) {
+          setErrorReason(data?.error ?? null);
+          setPhase("error");
+          return;
         }
+        setName(data.name ?? "");
+        setDescription(data.description ?? "");
+        setPhase("success");
       } catch {
         if (!cancelled) {
           setErrorReason(null);
@@ -82,7 +71,7 @@ export function NSProductAiAssistDialog({
     return () => {
       cancelled = true;
     };
-  }, [tenantSlug, imageUrl, useServerModel]);
+  }, [tenantSlug, imageUrl]);
 
   function handleAccept() {
     onAccept(nameRef.current, descriptionRef.current);
@@ -109,7 +98,7 @@ export function NSProductAiAssistDialog({
           ) : phase === "error" ? (
             <div className="flex h-48 flex-col items-center justify-center gap-3 text-center">
               <p className="max-w-xs text-sm text-danger">
-                {useServerModel && errorReason === "not_configured"
+                {errorReason === "not_configured"
                   ? "La función de IA no está configurada en este panel."
                   : "No pudimos analizar la imagen. Intenta de nuevo."}
               </p>
@@ -122,11 +111,6 @@ export function NSProductAiAssistDialog({
               <p className="mt-1 text-xs text-muted-foreground">
                 Sugerencia generada por IA a partir de la foto principal — revísala y ajústala antes de usarla.
               </p>
-              {!useServerModel ? (
-                <p className="mt-1 text-xs text-warning">
-                  Generada con un modelo gratuito básico — puede salir en inglés o impreciso.
-                </p>
-              ) : null}
               <div className="mt-4 flex flex-col gap-4">
                 <div>
                   <NSLabel htmlFor="ai-name">Nombre sugerido</NSLabel>

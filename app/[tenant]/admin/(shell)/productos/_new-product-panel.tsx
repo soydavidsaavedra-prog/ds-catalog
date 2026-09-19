@@ -40,7 +40,7 @@ export async function NewProductPanel({ tenantSlug }: { tenantSlug: string }) {
         settings={settings}
         quickCreateCategoryAction={quickCreateCategoryAction.bind(null, tenant.id, tenantSlug)}
         existingReferences={products.map((p) => p.reference)}
-        aiServerConfigured={Boolean(process.env.ANTHROPIC_API_KEY)}
+        aiAssistEnabled={Boolean(process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY)}
       />
     </NSFloatingPanel>
   );
