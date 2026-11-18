@@ -141,9 +141,6 @@ export default async function EstacionamientoPage() {
               </NSReveal>
             ))}
           </div>
-          <p className="mt-8 text-center text-xs uppercase tracking-wide text-ink-500">
-            Referencia: sistema ya implementado y en funcionamiento en <span className="text-accent">PARKEALO</span>
-          </p>
         </div>
       </section>
 
