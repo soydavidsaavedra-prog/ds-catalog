@@ -1506,3 +1506,46 @@ alter table ds_social_metrics_snapshots add constraint ds_social_metrics_snapsho
   check (platform in ('meta_facebook', 'meta_instagram', 'tiktok', 'whatsapp'));
 
 commit;
+
+-- =====================================================================
+-- DS Studio — página pública de estacionamiento + APK demo
+-- =====================================================================
+-- Bucket público: el botón "Descargar APK demo" de /estacionamiento
+-- enlaza directo a la URL pública del objeto, igual que ns-product-images.
+-- Las escrituras solo ocurren vía URL firmada (service_role, generada en
+-- app/superadmin/api/apk/upload-url/route.ts) — no hay policy pública de
+-- insert, solo de lectura. file_size_limit es un tope propio del bucket;
+-- el límite global de subida del proyecto Supabase (Dashboard > Storage >
+-- Settings) puede ser menor y manda sobre este valor.
+--
+-- Safe to re-run: on-conflict-do-nothing + add-column-if-not-exists.
+
+begin;
+
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('ds-studio-apks', 'ds-studio-apks', true, 209715200) -- 200MB
+on conflict (id) do nothing;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and policyname = 'Public read access to ds-studio-apks'
+  ) then
+    create policy "Public read access to ds-studio-apks"
+      on storage.objects for select
+      using (bucket_id = 'ds-studio-apks');
+  end if;
+end $$;
+
+-- Metadata del APK vigente, en el mismo singleton de platform_settings —
+-- null/vacío = aún no se ha subido ningún APK, la página pública muestra
+-- el botón de descarga deshabilitado en vez de un link roto.
+alter table platform_settings add column if not exists apk_url text;
+alter table platform_settings add column if not exists apk_file_name text;
+alter table platform_settings add column if not exists apk_size_bytes bigint;
+alter table platform_settings add column if not exists apk_uploaded_at timestamptz;
+
+commit;

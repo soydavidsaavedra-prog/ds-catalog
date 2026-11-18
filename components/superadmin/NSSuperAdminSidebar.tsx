@@ -41,6 +41,7 @@ const GROUPS: NavGroup[] = [
       { href: "/superadmin/auditoria", label: "Auditoría", icon: AuditIcon },
       { href: "/superadmin/seguridad", label: "Seguridad", icon: SecurityIcon },
       { href: "/superadmin/configuracion", label: "Configuración", icon: SettingsIcon },
+      { href: "/superadmin/estacionamiento", label: "Estacionamiento (APK)", icon: ParkingIcon },
     ],
   },
 ];
@@ -304,6 +305,9 @@ function SecurityIcon({ className }: { className?: string }) {
 }
 function AuditIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><path d="M5 2.5h7l3 3v12h-10Z" /><path d="M12 2.5V5.5h3" /><path d="M7 10h6M7 12.5h6M7 15h3.5" /></svg>;
+}
+function ParkingIcon({ className }: { className?: string }) {
+  return <svg className={className} {...iconProps()} aria-hidden><rect x="3" y="3" width="14" height="14" rx="2" /><path d="M8 14V6h3a2.5 2.5 0 0 1 0 5H8" /></svg>;
 }
 function MenuIcon({ className }: { className?: string }) {
   return <svg className={className} {...iconProps()} aria-hidden><path d="M3 5.5h14M3 10h14M3 14.5h14" /></svg>;

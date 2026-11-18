@@ -15,6 +15,7 @@
     "superadmin:create": "tsx scripts/create-superadmin.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.127.0",
     "@imgly/background-removal": "^1.7.0",
     "@sentry/nextjs": "^10.73.0",
     "@supabase/supabase-js": "^2.112.3",
