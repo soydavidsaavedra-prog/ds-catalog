@@ -42,7 +42,9 @@ import {
   findOrphanedFilesForTenant,
   type OrphanedFile,
 } from "@/lib/repositories/storage-repository";
-import { updatePlatformSettings } from "@/lib/repositories/platform-settings-repository";
+import { getPlatformSettings, updatePlatformSettings, updateParkingApk } from "@/lib/repositories/platform-settings-repository";
+import { getSupabaseClient } from "@/lib/db/supabaseClient";
+import { DS_STUDIO_APKS_BUCKET } from "@/lib/media/parking-apk-bucket";
 import { randomBytes } from "node:crypto";
 import { siteConfig } from "@/lib/config/site";
 import { slugify } from "@/lib/utils/slug";
@@ -591,7 +593,14 @@ export async function updatePlatformSettingsAction(
     return { error: "Escribe el número de soporte (solo dígitos, con código de país)." };
   }
 
-  await updatePlatformSettings({ supportWhatsappNumber, supportWhatsappDisplay, termsContent, privacyContent });
+  const current = await getPlatformSettings();
+  await updatePlatformSettings({
+    ...current,
+    supportWhatsappNumber,
+    supportWhatsappDisplay,
+    termsContent,
+    privacyContent,
+  });
 
   revalidatePath("/superadmin/configuracion");
   revalidatePath("/");
@@ -602,6 +611,35 @@ export async function updatePlatformSettingsAction(
     actorEmail: superadmin.email,
     action: "platform_settings.updated",
     summary: "Actualizó la configuración de soporte de la plataforma.",
+  });
+  return {};
+}
+
+// ---------- APK demo de estacionamiento ----------
+
+/**
+ * Called directly from NSParkingApkUploadForm (a Client Component) right
+ * after the browser's own PUT of the file straight to the signed Storage
+ * URL succeeds — same "called directly instead of through a <form action>"
+ * pattern as scanOrphanedFilesAction above, since the file transfer itself
+ * never goes through a server action or route handler.
+ */
+export async function setParkingApkAction(input: {
+  path: string;
+  fileName: string;
+  fileSize: number;
+}): Promise<{ error?: string }> {
+  const superadmin = await requireSuperadmin();
+
+  const { data } = getSupabaseClient().storage.from(DS_STUDIO_APKS_BUCKET).getPublicUrl(input.path);
+  await updateParkingApk({ apkUrl: data.publicUrl, apkFileName: input.fileName, apkSizeBytes: input.fileSize });
+
+  revalidatePath("/estacionamiento");
+  revalidatePath("/superadmin/estacionamiento");
+  await recordAuditLog({
+    actorEmail: superadmin.email,
+    action: "parking_apk.uploaded",
+    summary: `Subió una nueva APK demo de estacionamiento (${input.fileName}).`,
   });
   return {};
 }

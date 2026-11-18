@@ -59,6 +59,10 @@ export interface PlatformSettingsRow {
   support_whatsapp_display: string;
   terms_content: string | null;
   privacy_content: string | null;
+  apk_url: string | null;
+  apk_file_name: string | null;
+  apk_size_bytes: number | null;
+  apk_uploaded_at: string | null;
   updated_at: string;
 }
 

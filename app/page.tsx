@@ -92,6 +92,19 @@ export default async function RootLandingPage() {
         </div>
       </section>
 
+      <section className="border-t border-ink-800 py-16 text-center">
+        <NSReveal className="mx-auto max-w-xl px-6">
+          <p className="font-display text-xl uppercase tracking-wide sm:text-2xl">¿Administras un estacionamiento?</p>
+          <p className="mt-2 text-sm text-ink-400">
+            DS Studio también desarrolló un sistema de gestión de estacionamientos con app móvil y panel web en
+            tiempo real.
+          </p>
+          <NSButton href="/estacionamiento" variant="outline" className="mx-auto mt-6 max-w-xs">
+            Ver el sistema de estacionamientos
+          </NSButton>
+        </NSReveal>
+      </section>
+
       {activePlans.length > 0 ? (
         <section className="border-t border-ink-800 py-16">
           <div className="mx-auto max-w-5xl px-6">

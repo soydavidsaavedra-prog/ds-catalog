@@ -8,6 +8,11 @@ export interface PlatformSettings {
   /** Free text for /terminos and /privacidad (the platform's own, for people signing up at /registro) — same "empty = page doesn't exist yet, never fabricated" rule as ns_settings' termsContent/privacyContent (lib/types/catalog.ts). */
   termsContent: string;
   privacyContent: string;
+  /** Current demo APK for /estacionamiento's "Descargar APK demo" button — apkUrl empty = nothing uploaded yet, show a disabled button instead of a broken link. Uploaded from /superadmin/estacionamiento via a signed Storage URL (see app/superadmin/api/apk/upload-url/route.ts), never through this repository's own write path. */
+  apkUrl: string;
+  apkFileName: string;
+  apkSizeBytes: number | null;
+  apkUploadedAt: string | null;
 }
 
 function fromRow(row: PlatformSettingsRow): PlatformSettings {
@@ -16,6 +21,10 @@ function fromRow(row: PlatformSettingsRow): PlatformSettings {
     supportWhatsappDisplay: row.support_whatsapp_display,
     termsContent: row.terms_content ?? "",
     privacyContent: row.privacy_content ?? "",
+    apkUrl: row.apk_url ?? "",
+    apkFileName: row.apk_file_name ?? "",
+    apkSizeBytes: row.apk_size_bytes ?? null,
+    apkUploadedAt: row.apk_uploaded_at ?? null,
   };
 }
 
@@ -24,6 +33,10 @@ const EMPTY_SETTINGS: PlatformSettings = {
   supportWhatsappDisplay: "",
   termsContent: "",
   privacyContent: "",
+  apkUrl: "",
+  apkFileName: "",
+  apkSizeBytes: null,
+  apkUploadedAt: null,
 };
 
 /**
@@ -62,6 +75,34 @@ export async function updatePlatformSettings(input: PlatformSettings): Promise<v
     support_whatsapp_display: input.supportWhatsappDisplay,
     terms_content: input.termsContent,
     privacy_content: input.privacyContent,
+    apk_url: input.apkUrl,
+    apk_file_name: input.apkFileName,
+    apk_size_bytes: input.apkSizeBytes,
+    apk_uploaded_at: input.apkUploadedAt,
   });
+  if (error) throw error;
+}
+
+/**
+ * Narrower updater for the APK fields only, called right after a
+ * superadmin's browser finishes PUTting the file straight to Supabase
+ * Storage (see app/superadmin/api/apk/upload-url/route.ts) — doesn't
+ * round-trip the WhatsApp/terms/privacy fields it isn't touching.
+ */
+export async function updateParkingApk(input: {
+  apkUrl: string;
+  apkFileName: string;
+  apkSizeBytes: number;
+}): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase
+    .from("platform_settings")
+    .update({
+      apk_url: input.apkUrl,
+      apk_file_name: input.apkFileName,
+      apk_size_bytes: input.apkSizeBytes,
+      apk_uploaded_at: new Date().toISOString(),
+    })
+    .eq("id", true);
   if (error) throw error;
 }
