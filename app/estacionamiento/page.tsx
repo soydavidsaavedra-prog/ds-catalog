@@ -96,8 +96,8 @@ export default async function EstacionamientoPage() {
           Sistema inteligente de gestión de estacionamientos
         </h1>
         <p className="max-w-xl text-sm text-ink-300 sm:text-base">
-          Una app móvil y un panel web que conectan la operación diaria con el control administrativo — el mismo
-          sistema ya implementado y en funcionamiento en PARKEALO.
+          Una app móvil y un panel web que conectan la operación diaria con el control administrativo — ya
+          implementado y en funcionamiento en varios estacionamientos. Faltas tú.
         </p>
         <DownloadApkButton apkUrl={settings.apkUrl} />
       </main>
